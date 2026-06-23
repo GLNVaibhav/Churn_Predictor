@@ -1,0 +1,16 @@
+PatientID,Age,Gender,State,Tenure_Months,Specialty,Insurance_Type,Visits_Last_Year,Missed_Appointments,Days_Since_Last_Visit,Last_Interaction_Date,Overall_Satisfaction,Wait_Time_Satisfaction,Staff_Satisfaction,Provider_Rating,Avg_Out_Of_Pocket_Cost,Billing_Issues,Portal_Usage,Referrals_Made,Distance_To_Facility_Miles
+HC001,65,Female,CA,12,Cardiology,Medicaid,2,5,420,2024-04-15,1.8,2.0,2.1,2.3,2500,4,1,0,45
+HC002,42,Male,TX,84,General Practice,Private,14,0,20,2025-05-10,4.8,4.7,4.9,4.8,350,0,9,4,5
+HC003,58,Female,FL,18,Internal Medicine,Medicare,3,4,300,2024-08-01,2.2,2.5,2.7,2.9,1800,3,2,1,30
+HC004,35,Male,NY,96,Pediatrics,Private,16,0,12,2025-05-15,4.9,4.8,4.8,4.9,200,0,10,5,4
+HC005,50,Female,GA,24,Cardiology,Self-Pay,4,3,250,2024-10-10,2.5,2.4,2.8,3.0,2200,5,1,0,40
+HC006,29,Male,CA,60,Dermatology,Private,10,1,40,2025-04-20,4.3,4.1,4.5,4.4,500,0,7,2,8
+HC007,72,Female,PA,10,Neurology,Medicare,1,6,500,2024-03-01,1.5,1.9,2.0,2.2,3000,6,0,0,60
+HC008,46,Male,MI,72,General Practice,Private,12,1,35,2025-04-25,4.5,4.3,4.4,4.6,450,0,8,3,6
+HC009,55,Female,TX,20,Cardiology,Medicaid,3,5,380,2024-06-10,2.1,2.3,2.5,2.8,2100,4,1,1,35
+HC010,31,Male,CA,90,Orthopedics,Private,18,0,8,2025-05-18,4.9,4.9,4.8,4.9,250,0,10,5,3
+HC011,63,Female,FL,16,Internal Medicine,Self-Pay,2,4,340,2024-07-01,2.0,2.2,2.4,2.6,2600,5,1,0,42
+HC012,39,Male,GA,78,Dermatology,Private,11,1,25,2025-05-01,4.6,4.5,4.4,4.7,400,0,8,3,7
+HC013,68,Female,PA,14,Neurology,Medicare,2,5,460,2024-05-01,1.7,2.0,2.1,2.4,2800,5,0,0,55
+HC014,44,Male,NY,88,General Practice,Private,15,0,15,2025-05-12,4.8,4.7,4.8,4.8,300,0,9,4,4
+HC015,53,Female,TX,22,Cardiology,Medicaid,4,4,290,2024-09-15,2.4,2.5,2.7,2.9,1900,3,2,1,28

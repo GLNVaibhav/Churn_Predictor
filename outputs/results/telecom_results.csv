@@ -1,0 +1,4 @@
+Sector,Model,Accuracy,Precision,Recall,F1,ROC_AUC
+Telecom,Logistic Regression,0.8055,0.6582,0.5561,0.6029,0.8421
+Telecom,Random Forest,0.7899,0.6291,0.508,0.5621,0.8244
+Telecom,XGBoost,0.7935,0.6436,0.4973,0.5611,0.8401

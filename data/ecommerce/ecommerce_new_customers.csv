@@ -1,0 +1,11 @@
+CustomerID,Tenure,PreferredLoginDevice,CityTier,WarehouseToHome,PreferredPaymentMode,Gender,HourSpendOnApp,NumberOfDeviceRegistered,PreferedOrderCat,SatisfactionScore,MaritalStatus,NumberOfAddress,Complain,OrderAmountHikeFromlastYear,CouponUsed,OrderCount,DaySinceLastOrder,CashbackAmount,Expected_Churn
+EC-001,1,Mobile Phone,3,30,Debit Card,Male,2,3,Mobile Phone,2,Single,3,1,15,1,2,25,150,Yes
+EC-002,18,Computer,1,8,Credit Card,Female,4,4,Laptop & Accessory,5,Married,2,0,22,5,12,2,280,No
+EC-003,2,Mobile Phone,3,25,Cash on Delivery,Male,1,2,Fashion,1,Single,4,1,10,0,1,30,120,Yes
+EC-004,24,Computer,1,5,Credit Card,Female,5,5,Laptop & Accessory,5,Married,3,0,28,8,18,1,320,No
+EC-005,1,Mobile Phone,3,35,Debit Card,Male,2,2,Mobile Phone,2,Single,2,1,12,1,1,28,140,Yes
+EC-006,30,Computer,1,6,UPI,Female,4,4,Grocery,5,Married,4,0,25,6,15,3,290,No
+EC-007,3,Mobile Phone,2,20,Cash on Delivery,Male,2,3,Fashion,2,Divorced,3,1,14,1,2,22,160,Yes
+EC-008,20,Computer,1,7,Credit Card,Female,5,4,Laptop & Accessory,4,Married,2,0,20,7,14,2,310,No
+EC-009,1,Mobile Phone,3,28,Debit Card,Male,1,2,Mobile Phone,1,Single,5,1,11,0,1,31,130,Yes
+EC-010,36,Computer,1,4,Credit Card,Female,5,5,Laptop & Accessory,5,Married,3,0,30,9,20,1,350,No

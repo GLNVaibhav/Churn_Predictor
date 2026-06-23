@@ -1,0 +1,7 @@
+Sector,Model,Accuracy,Precision,Recall,F1,ROC_AUC
+Telecom,Logistic Regression,0.8055,0.6582,0.5561,0.6029,0.8421
+Telecom,Random Forest,0.7899,0.6291,0.508,0.5621,0.8244
+Telecom,XGBoost,0.7935,0.6436,0.4973,0.5611,0.8401
+E-Commerce,Logistic Regression,0.7709,0.4096,0.8105,0.5442,0.8566
+E-Commerce,Random Forest,0.9769,0.9409,0.9211,0.9309,0.9968
+E-Commerce,XGBoost,0.9387,0.838,0.7895,0.813,0.9668

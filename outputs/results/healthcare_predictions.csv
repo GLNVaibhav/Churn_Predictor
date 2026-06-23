@@ -1,0 +1,16 @@
+PatientID,LR_Prediction,LR_Probability,RF_Prediction,RF_Probability,XGB_Prediction,XGB_Probability,Majority_Vote
+HC001,Churn,0.993,Churn,0.696,Churn,0.941,Churn
+HC002,No Churn,0.016,No Churn,0.462,No Churn,0.313,No Churn
+HC003,Churn,0.952,Churn,0.664,Churn,0.876,Churn
+HC004,No Churn,0.011,Churn,0.524,No Churn,0.289,No Churn
+HC005,Churn,0.991,Churn,0.686,Churn,0.933,Churn
+HC006,No Churn,0.052,No Churn,0.408,No Churn,0.335,No Churn
+HC007,Churn,1.0,Churn,0.718,Churn,0.969,Churn
+HC008,No Churn,0.031,No Churn,0.291,No Churn,0.169,No Churn
+HC009,Churn,0.987,Churn,0.681,Churn,0.931,Churn
+HC010,No Churn,0.01,Churn,0.515,No Churn,0.246,No Churn
+HC011,Churn,0.996,Churn,0.727,Churn,0.982,Churn
+HC012,No Churn,0.023,No Churn,0.29,No Churn,0.186,No Churn
+HC013,Churn,0.999,Churn,0.75,Churn,0.968,Churn
+HC014,No Churn,0.014,No Churn,0.466,No Churn,0.266,No Churn
+HC015,Churn,0.945,Churn,0.66,Churn,0.881,Churn

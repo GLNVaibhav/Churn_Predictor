@@ -1,0 +1,16 @@
+CustomerID,LR_Prediction,LR_Probability,LR_Risk,RF_Prediction,RF_Probability,RF_Risk,XGB_Prediction,XGB_Probability,XGB_Risk,Majority_Vote
+EC101,No Churn,0.008,Low,No Churn,0.44,Medium,Churn,0.751,High,No Churn
+EC102,No Churn,0.001,Low,No Churn,0.1,Low,No Churn,0.001,Low,No Churn
+EC103,No Churn,0.035,Low,No Churn,0.4,Medium,Churn,0.753,High,No Churn
+EC104,No Churn,0.004,Low,No Churn,0.04,Low,No Churn,0.002,Low,No Churn
+EC105,No Churn,0.086,Low,No Churn,0.23,Low,No Churn,0.32,Low,No Churn
+EC106,No Churn,0.0,Low,No Churn,0.08,Low,No Churn,0.0,Low,No Churn
+EC107,No Churn,0.002,Low,No Churn,0.38,Low,No Churn,0.488,Medium,No Churn
+EC108,No Churn,0.002,Low,No Churn,0.06,Low,No Churn,0.001,Low,No Churn
+EC109,No Churn,0.207,Low,No Churn,0.36,Low,No Churn,0.227,Low,No Churn
+EC110,No Churn,0.001,Low,No Churn,0.1,Low,No Churn,0.0,Low,No Churn
+EC111,No Churn,0.022,Low,No Churn,0.3,Low,No Churn,0.428,Medium,No Churn
+EC112,No Churn,0.006,Low,No Churn,0.02,Low,No Churn,0.003,Low,No Churn
+EC113,No Churn,0.102,Low,No Churn,0.04,Low,No Churn,0.045,Low,No Churn
+EC114,No Churn,0.0,Low,No Churn,0.13,Low,No Churn,0.001,Low,No Churn
+EC115,No Churn,0.0,Low,No Churn,0.42,Medium,Churn,0.765,High,No Churn
