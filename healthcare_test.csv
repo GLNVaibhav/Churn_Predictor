@@ -1,0 +1,16 @@
+PatientID,Age,MedicalCondition,PolicyType,MonthlyPremium,FrequencyOfVisits,ClaimHistoryCount,CustomerSupportCalls,Attrition
+H_HIGH_01,23,None,Basic,140.00,0,0,6,1
+H_HIGH_02,31,Injury,Standard,195.00,1,0,5,1
+H_HIGH_03,45,None,Premium,310.00,0,0,4,1
+H_HIGH_04,29,Chronic,Basic,110.00,2,1,5,1
+H_MID_05,38,Chronic,Standard,185.00,4,2,3,0
+H_MID_06,52,Injury,Premium,290.00,3,1,4,1
+H_MID_07,60,None,Standard,210.00,1,0,3,1
+H_MID_08,41,Chronic,Premium,325.00,6,4,2,0
+H_LOYAL_09,74,Chronic,Premium,380.00,14,11,1,0
+H_LOYAL_10,68,Chronic,Standard,220.00,9,7,0,0
+H_LOYAL_11,55,Injury,Standard,190.00,5,4,1,0
+H_EDGE_12,22,None,Premium,340.00,0,0,0,1
+H_EDGE_13,65,Chronic,Basic,95.00,12,10,7,0
+H_EDGE_14,47,None,Standard,200.00,8,0,1,0
+H_EDGE_15,34,Injury,Premium,315.00,2,2,5,1

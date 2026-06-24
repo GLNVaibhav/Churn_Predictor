@@ -1,0 +1,2 @@
+Sector,Model,Accuracy,Precision,Recall,F1,ROC_AUC
+Banking,XGBoost,0.847,0.6305,0.5995,0.6146,0.8589

@@ -1,0 +1,16 @@
+CustomerId,LR_Prediction,LR_Probability,RF_Prediction,RF_Probability,XGB_Prediction,XGB_Probability,Majority_Vote,Average_Probability,Risk
+BC001,Retained,0.106,Retained,0.05,Retained,0.025,Retained,0.06,Low
+BC002,Exited,0.944,Exited,0.909,Exited,0.906,Exited,0.92,High
+BC003,Retained,0.215,Retained,0.153,Retained,0.067,Retained,0.145,Low
+BC004,Exited,0.979,Exited,0.825,Exited,0.983,Exited,0.929,High
+BC005,Retained,0.055,Exited,0.505,Exited,0.507,Exited,0.356,Low
+BC006,Exited,0.911,Exited,0.77,Exited,0.851,Exited,0.844,High
+BC007,Retained,0.141,Retained,0.08,Retained,0.028,Retained,0.083,Low
+BC008,Exited,0.967,Exited,0.865,Exited,0.906,Exited,0.913,High
+BC009,Retained,0.135,Retained,0.071,Retained,0.028,Retained,0.078,Low
+BC010,Exited,0.965,Exited,0.854,Exited,0.934,Exited,0.918,High
+BC011,Retained,0.098,Retained,0.06,Retained,0.03,Retained,0.063,Low
+BC012,Exited,0.927,Exited,0.774,Exited,0.837,Exited,0.846,High
+BC013,Retained,0.15,Retained,0.081,Retained,0.047,Retained,0.093,Low
+BC014,Exited,0.971,Exited,0.856,Exited,0.911,Exited,0.913,High
+BC015,Retained,0.189,Retained,0.12,Retained,0.061,Retained,0.123,Low

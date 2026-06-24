@@ -1,0 +1,4 @@
+Sector,Model,Accuracy,Precision,Recall,F1,ROC_AUC
+Banking,Logistic Regression,0.7095,0.3827,0.6978,0.4943,0.767
+Banking,Random Forest,0.8215,0.5492,0.6855,0.6098,0.8563
+Banking,XGBoost,0.847,0.6305,0.5995,0.6146,0.8589

@@ -1,0 +1,2 @@
+Sector,Model,Accuracy,Precision,Recall,F1,ROC_AUC
+Banking,Random Forest,0.8215,0.5492,0.6855,0.6098,0.8563

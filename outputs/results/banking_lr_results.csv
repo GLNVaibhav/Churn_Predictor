@@ -1,0 +1,2 @@
+Sector,Model,Accuracy,Precision,Recall,F1,ROC_AUC
+Banking,Logistic Regression,0.7095,0.3827,0.6978,0.4943,0.767

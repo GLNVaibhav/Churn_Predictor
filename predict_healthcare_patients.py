@@ -43,7 +43,7 @@ customer_ids = df['PatientID'].copy()
 # --------------------------------------------------
 # Remove Non-Feature Columns
 # --------------------------------------------------
-
+    
 drop_cols = [
     'PatientID',
     'Last_Interaction_Date'
