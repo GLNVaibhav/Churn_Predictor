@@ -9,4 +9,9 @@ is_senior_or_high_risk
 has_support
 contract_stability
 payment_auto
+engagement_score
+coupon_dependency
+cashback_engagement
+recency_score
+convenience_score
 Sector_Encoded

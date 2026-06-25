@@ -1,0 +1,9 @@
+CustomerID,Sector,Feature_A_Tenure_Or_Visits,Feature_B_Charges_Or_Balance,Feature_C_Contract_Or_Products,Feature_D_Complains_Or_Support,Actual_Churn
+ADV_TEL_01,telecom,1,15.00,Two year,5,1
+ADV_TEL_02,telecom,72,125.50,Month-to-month,0,1
+ADV_BNK_03,banking,12,250000.00,4,0,1
+ADV_BNK_04,banking,65,15.50,1,4,0
+ADV_ECO_05,ecommerce,0,500.00,5,1,0
+ADV_ECO_06,ecommerce,48,0.00,1,0,1
+ADV_HCA_07,healthcare,0,450.00,Basic,7,1
+ADV_HCA_08,healthcare,45,50.00,Premium,0,0

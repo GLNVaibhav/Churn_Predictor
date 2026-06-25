@@ -1,16 +1,6 @@
-CustomerID,Tenure,Contract,MonthlyCharges,InternetService,TechSupport,PaperlessBilling,Churn
-T_HIGH_01,1,Month-to-month,115.80,Fiber optic,No,Yes,1
-T_HIGH_02,3,Month-to-month,98.45,Fiber optic,No,Yes,1
-T_HIGH_03,2,Month-to-month,104.20,Fiber optic,No,No,1
-T_HIGH_04,5,Month-to-month,89.90,DSL,No,Yes,1
-T_MID_05,14,One year,75.40,Fiber optic,Yes,Yes,1
-T_MID_06,24,Month-to-month,60.15,DSL,Yes,No,0
-T_MID_07,11,Month-to-month,85.00,Fiber optic,No,Yes,1
-T_MID_08,18,One year,95.30,Fiber optic,Yes,Yes,0
-T_LOYAL_09,72,Two year,118.00,Fiber optic,Yes,No,0
-T_LOYAL_10,65,Two year,24.20,None,No,No,0
-T_LOYAL_11,48,Two year,64.70,DSL,Yes,No,0
-T_EDGE_12,1,Two year,110.00,Fiber optic,Yes,Yes,0
-T_EDGE_13,71,Month-to-month,112.50,Fiber optic,No,Yes,1
-T_EDGE_14,3,One year,20.00,None,No,Yes,0
-T_EDGE_15,12,Month-to-month,25.00,DSL,No,No,0
+customerID,Tenure,Contract,MonthlyCharges,InternetService,TechSupport,PaperlessBilling,Churn
+ADV_TEL_01,1,Two year,15.00,DSL,Yes,No,1
+ADV_TEL_02,72,Month-to-month,125.50,Fiber optic,No,Yes,1
+ADV_TEL_03,3,Month-to-month,110.00,Fiber optic,No,Yes,1
+ADV_TEL_04,68,Two year,115.00,Fiber optic,Yes,No,0
+ADV_TEL_05,12,One year,45.00,DSL,No,No,0
