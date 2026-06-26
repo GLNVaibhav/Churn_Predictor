@@ -14,4 +14,6 @@ coupon_dependency
 cashback_engagement
 recency_score
 convenience_score
+lockin_risk
+dormant_loyalty_risk
 Sector_Encoded

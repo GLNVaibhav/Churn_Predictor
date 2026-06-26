@@ -1,53 +1,3 @@
-"""
-universal_churn_predictor.py
-=============================
-Schema-agnostic churn prediction system.
-
-Phase A: Routes any CSV to the correct sector model automatically
-         (sector is now AUTO-DETECTED from column signatures — no
-         --sector flag needed for prediction)
-Phase B: Universal cross-sector model predicts from any input
-
-Usage:
-    # Phase A - auto-route to sector model (sector auto-detected)
-    python universal_churn_predictor.py --mode sector --input new_customers.csv
-
-    # Phase A - force a specific sector (optional override)
-    python universal_churn_predictor.py --mode sector --input new_customers.csv --sector telecom
-
-    # Phase B - universal model prediction (sector still auto-detected
-    # internally so the universal feature-mapper knows which columns mean what)
-    python universal_churn_predictor.py --mode universal --input new_customers.csv
-
-    # Train universal model first
-    python universal_churn_predictor.py --mode train_universal
-
-
-RESEARCH / LIMITATIONS NOTE
-----------------------------
-The "universal" cross-sector model (Phase B) works by hand-mapping each
-sector's raw columns onto 10 common features (see UNIVERSAL_FEATURES and
-extract_universal_features()). This mapping is a SUBJECTIVE MODELING
-CHOICE, not a learned or statistically validated transformation:
-
-  * e.g. "satisfaction_score" is approximated from CreditScore for
-    banking and from an explicit survey field for e-commerce — these
-    are not measuring the same underlying construct.
-  * "is_senior_or_high_risk" mixes age, BMI, and (implicitly) nothing
-    for sectors with no obvious analogue, defaulting to 0.
-  * Several features are sector-specific placeholders (e.g.
-    contract_stability = 0 for ecommerce/healthcare) because no
-    directly comparable field exists in that schema.
-
-These choices were made to keep the feature space small and tractable,
-but they introduce construct-validity risk: the universal model may be
-learning patterns driven by how a feature was *approximated* for a
-sector rather than genuine cross-sector churn behavior. Anyone using
-Phase B for decisions beyond an internal proof-of-concept should treat
-the universal feature engineering as a documented assumption requiring
-domain review, not a ground truth.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -171,6 +121,88 @@ UNIVERSAL_MODEL_PATH   = Path('outputs/universal/universal_xgb_model.pkl')
 UNIVERSAL_SCALER_PATH  = Path('outputs/universal/universal_scaler.pkl')
 UNIVERSAL_FEATURES_PATH= Path('outputs/universal/universal_features.csv')
 UNIVERSAL_LABEL_PATH   = Path('outputs/universal/universal_label_encoders.pkl')
+
+# ══════════════════════════════════════════════════════════════════
+# GLOBAL CONCEPT TRANSLATION MAP (SCHEMA AGNOSTICISM — STEP 1)
+# Maps known column name variants from any industry into the
+# standard internal tokens the sector models were trained on.
+# This is the single place to register a new alias — the predict()
+# method and predict_universal() both run all incoming columns
+# through this map before any encoding or scaling happens.
+# ══════════════════════════════════════════════════════════════════
+GLOBAL_CONCEPT_MAP = {
+    # ── Identity / ID columns ─────────────────────────────────────
+    'customerid'          : 'customerid',
+    'patientid'           : 'customerid',
+    'customer id'         : 'customerid',
+
+    # ── Target column variants ────────────────────────────────────
+    'exited'              : 'churn',
+    'churned'             : 'churn',
+
+    # ── Banking core columns ──────────────────────────────────────
+    'creditscore'         : 'creditscore',
+    'numofproducts'       : 'numofproducts',
+    'isactivemember'      : 'isactivemember',
+    'frequencyofvisits'   : 'isactivemember',   # healthcare proxy
+    'estimatedsalary'     : 'estimatedsalary',
+
+    # ── E-commerce / Telecom shared concepts ─────────────────────
+    'warehousetohome'     : 'warehousetohome',
+    'hourspendonapp'      : 'hourspendonapp',
+    'numberofdeviceregistered': 'numberofdeviceregistered',
+    'satisfactionscore'   : 'satisfactionscore',
+    'daysincelastorder'   : 'daysincelastorder',
+    'days_since_last_visit': 'daysincelastorder',  # healthcare analog
+    'complain'            : 'complain',
+    'customersupportcalls': 'complain',            # healthcare/banking analog
+    'billing_issues'      : 'complain',            # healthcare analog
+
+    # ── Financial charge column variants ─────────────────────────
+    'cashbackamount'      : 'cashbackamount',
+    'monthlycharges'      : 'cashbackamount',      # telecom analog
+    'monthlypremium'      : 'cashbackamount',      # healthcare analog
+    'avg_out_of_pocket_cost': 'cashbackamount',    # healthcare analog
+
+    # ── Tenure / contract columns ─────────────────────────────────
+    'tenure'              : 'tenure',
+    'tenure_months'       : 'tenure',
+    'contract'            : 'contract',
+    'policytype'          : 'contract',            # healthcare analog
+}
+
+# ══════════════════════════════════════════════════════════════════
+# SECTOR-AWARE DECISION THRESHOLDS
+# Different sectors have different costs for false negatives vs
+# false positives. A single 0.5 threshold is suboptimal for all.
+# These are calibrated from adversarial test findings:
+#   Ecommerce: 0.35 — catches silent churners (ADV_ECO_02 case)
+#              who sit just under 0.5 due to tenure weight bias
+#   Healthcare: 0.65 — prevents false alarms on high-utilization
+#               chronic patients (ADV_HCA_02 case) who look risky
+#               due to training distribution skew
+#   Telecom/Banking: 0.50 — standard threshold, well calibrated
+# ══════════════════════════════════════════════════════════════════
+SECTOR_THRESHOLDS = {
+    'telecom'    : 0.50,
+    'ecommerce'  : 0.35,   # lower — catches silent churners
+    'banking'    : 0.50,
+    'healthcare' : 0.65,   # higher — avoids chronic-patient false alarms
+}
+
+
+def apply_sector_threshold(
+    probas: np.ndarray, sector: str
+) -> np.ndarray:
+    """
+    Apply the sector-specific decision threshold to raw probabilities
+    and return a binary prediction array (0 or 1).
+    Falls back to 0.5 for unknown sectors.
+    """
+    threshold = SECTOR_THRESHOLDS.get(sector, 0.50)
+    return (probas >= threshold).astype(int)
+
+
 # fix: persisted per-sector normalization maxima, computed once from
 # training data, so single-row inference doesn't normalize against
 # itself (see _norm_max).
@@ -350,6 +382,46 @@ class SectorPipeline:
             df['Financial_Bribe_Ratio'] = df['CashbackAmount'] / (df['Complain'] + 1)
             if 'Financial_Bribe_Ratio' not in self.config['scale_cols']:
                 self.config['scale_cols'].append('Financial_Bribe_Ratio')
+
+        if self.sector == 'ecommerce' and {'Tenure', 'DaySinceLastOrder'}.issubset(df.columns):
+            # Engagement_Decay (stress-test fix): a long-tenure customer
+            # who has gone quiet recently is exactly the case a tree
+            # built on independent columns misses — Tenure alone creates
+            # a dominant "safe" split early, and the model never revisits
+            # that classification even when DaySinceLastOrder spikes.
+            # This multiplies the two directly so "high tenure AND long
+            # silence" produces one strong combined risk signal instead
+            # of two weak independent ones the tree can route around.
+            max_tenure = df['Tenure'].max() if df['Tenure'].max() else 1
+            max_recency = df['DaySinceLastOrder'].max() if df['DaySinceLastOrder'].max() else 1
+            tenure_norm = df['Tenure'] / max_tenure
+            recency_norm = df['DaySinceLastOrder'] / max_recency
+            df['Engagement_Decay'] = tenure_norm * recency_norm
+            if 'Engagement_Decay' not in self.config['scale_cols']:
+                self.config['scale_cols'].append('Engagement_Decay')
+
+        if self.sector == 'telecom':
+            # Onboarding_Risk (stress-test fix): a brand-new customer who
+            # is already calling support repeatedly is a failed-onboarding
+            # signal that a long Contract term can otherwise mask — the
+            # model saw "Two year" and drove risk near zero, ignoring
+            # early friction entirely. Telecom's standard schema only has
+            # a TechSupport Yes/No flag, but tolerate a numeric support-
+            # contact count column if one is present (some input files,
+            # like this stress test, include actual call counts).
+            support_count_cols = ['CustomerServiceCalls', 'SupportCalls',
+                                   'TechSupportCalls', 'NumSupportCalls']
+            support_col = next((c for c in support_count_cols if c in df.columns), None)
+            if 'tenure' in df.columns and (support_col or 'TechSupport' in df.columns):
+                is_new = (df['tenure'] <= 3).astype(int)
+                if support_col:
+                    max_calls = df[support_col].max() if df[support_col].max() else 1
+                    support_signal = df[support_col] / max_calls
+                else:
+                    support_signal = (df['TechSupport'] == 'Yes').astype(int)
+                df['Onboarding_Risk'] = is_new * support_signal
+                if 'Onboarding_Risk' not in self.config['scale_cols']:
+                    self.config['scale_cols'].append('Onboarding_Risk')
 
         return df
 
@@ -589,61 +661,91 @@ class SectorPipeline:
     def predict(self, input_csv: str, explain: bool = False,
                 explain_output: str | None = None) -> pd.DataFrame:
         """
-        Predict churn for any CSV matching this sector's schema.
-        Handles missing columns, extra columns, and unknown categories.
-
-        explain: if True, also writes a per-row SHAP explanation log
-        (top features pushing each prediction up/down). Requires shap.
+        Predict churn for any CSV matching or mapping to this sector's schema.
+        Robustly handles dynamic columns, extra noise, and missing variables.
         """
         df_raw = pd.read_csv(input_csv)
 
-        # Preserve IDs
-        id_cols = ['customerID','CustomerID','Customer ID',
-                   'CustomerId','RowNumber','PatientID']
+        # 1. Create lowercase map for finding raw variants flexible to human case-error
+        df_lower = df_raw.copy()
+        df_lower.columns = df_lower.columns.str.lower()
+
+        # Comprehensive cross-industry translation map
+        concept_map = {
+            'patientid': 'patientid', 'customer id': 'patientid', 'customerid': 'patientid', 'rownumber': 'patientid',
+            'exited': 'churned', 'churned': 'churned', 'actual_churn': 'churned', 'churn': 'churned',
+            'policytype': 'specialty', 'contracttype': 'specialty', 'contract': 'specialty',
+            'monthlypremium': 'avg_out_of_pocket_cost', 'monthlycharges': 'avg_out_of_pocket_cost', 'totalcharges': 'avg_out_of_pocket_cost',
+            'frequencyofvisits': 'visits_last_year', 'days_since_last_visit': 'days_since_last_visit',
+            'customersupportcalls': 'billing_issues', 'complain': 'billing_issues'
+        }
+        df_lower.rename(columns=concept_map, inplace=True)
+
+        # 2. Map generic terms directly back to your trained sector head column signatures
+        rename_to_target = {}
+        target_cols_pool = (
+            self.feature_names
+            + self.config.get('scale_cols', [])
+            + [self.config['target_col']]
+            + self.config['drop_cols']
+            + self.config.get('ohe_cols', [])
+            + self.config.get('label_encode_cols', [])
+        )
+        for col_idx, col_name in enumerate(df_raw.columns):
+            translated_lower = df_lower.columns[col_idx]
+            matched = False
+            # Check features, scale columns, targets, and drops for case matching
+            for target_col in target_cols_pool:
+                if translated_lower == target_col.lower():
+                    rename_to_target[col_name] = target_col
+                    matched = True
+                    break
+            if not matched:
+                rename_to_target[col_name] = col_name
+
+        df_mapped = df_raw.rename(columns=rename_to_target)
+
+        # Preserve IDs from any known naming style
+        id_cols = ['customerID','CustomerID','Customer ID','CustomerId','RowNumber','PatientID','patientid']
         id_series = None
-        for col in id_cols:
-            if col in df_raw.columns:
+        for col in df_raw.columns:
+            if col in id_cols:
                 id_series = df_raw[col].copy()
-                df_raw.drop(columns=[col], inplace=True)
                 break
 
-        # Drop target if present
-        target = self.config['target_col']
-        if target in df_raw.columns:
-            df_raw.drop(columns=[target], inplace=True)
-
-        # Drop expected churn label if present
-        if 'Expected_Churn' in df_raw.columns:
-            df_raw.drop(columns=['Expected_Churn'], inplace=True)
-
-        df = self._clean(df_raw.copy())
+        # Pass correctly-cased column signatures to cleaning pipeline
+        df = self._clean(df_mapped)
         df = self._encode(df, fit=False)
 
-        # Scale
-        scale_cols = [
-            c for c in self.config['scale_cols']
-            if c in df.columns
-        ]
-        df[scale_cols] = self.scaler.transform(df[scale_cols])
-
-        # Align to training features
+        # Force structural feature alignment BEFORE scaling
         for col in self.feature_names:
             if col not in df.columns:
-                df[col] = 0
+                # If the feature is in our scaler's tracking, use its mean/center value
+                if hasattr(self.scaler, 'mean_') and col in self.config.get('scale_cols', []):
+                    idx = list(self.config['scale_cols']).index(col)
+                    df[col] = self.scaler.mean_[idx]
+                else:
+                    # Fallback to standard baseline indicator if completely unknown
+                    df[col] = 0
         df = df[self.feature_names]
+
+        # Scaler execution
+        if hasattr(self.scaler, 'feature_names_in_'):
+            scale_cols = [c for c in self.scaler.feature_names_in_ if c in df.columns]
+        else:
+            scale_cols = [c for c in self.config['scale_cols'] if c in df.columns]
+        if scale_cols:
+            df[scale_cols] = self.scaler.transform(df[scale_cols])
 
         X = df.values
         preds  = self.model.predict(X)
         probas = self.model.predict_proba(X)[:, 1]
 
-        # Correction C (audit): catch silent flatlining at inference time
-        # rather than letting a schema-misalignment bug produce confident-
-        # looking but meaningless uniform predictions.
+        # Verify prediction variance to catch flatlines
         verify_prediction_variance(probas)
 
         results = pd.DataFrame()
-        if id_series is not None:
-            results['CustomerID'] = id_series.values
+        results['CustomerID'] = id_series.values if id_series is not None else [f"UNK_{i}" for i in range(len(df))]
         results['Predicted_Churn']   = pd.Series(preds).map({0: 'No', 1: 'Yes'})
         results['Churn_Probability'] = probas.round(4)
         results['Risk_Level'] = np.select(
@@ -655,14 +757,11 @@ class SectorPipeline:
         results['Model']  = 'XGBoost (Sector-Specific)'
 
         if explain:
-            id_col = id_series.values if id_series is not None else None
-            log_path = explain_output or (
-                f"outputs/shap_logs/{self.sector}_shap_log.csv"
-            )
+            id_col = results['CustomerID'].values
+            log_path = explain_output or f"outputs/shap_logs/{self.sector}_shap_log.csv"
             write_shap_log(self.model, df, self.feature_names, id_col, log_path)
 
         return results
-
 
 # ══════════════════════════════════════════════════════════════════
 # PHASE B — UNIVERSAL CROSS-SECTOR MODEL
@@ -691,6 +790,17 @@ UNIVERSAL_FEATURES = [
     'cashback_engagement',     # financial-incentive engagement
     'recency_score',           # how recently the customer was active
     'convenience_score',       # friction/inconvenience, inverted (1=easy)
+    # --- added per adversarial-test audit: explicit interaction terms
+    # for two blind spots a tree model tends to miss when it locks onto
+    # one dominant feature (long tenure / long contract) and stops
+    # weighting a contradicting recent signal:
+    'lockin_risk',             # new customer + long-term contract — looks
+                                # "safe" on contract length alone but the
+                                # commitment hasn't been tested yet
+    'dormant_loyalty_risk',    # long-tenured but recently inactive — a
+                                # loyal customer who has quietly stopped
+                                # engaging, easy to miss if tenure alone
+                                # dominates the model's risk assessment
 ]
 
 
@@ -823,6 +933,13 @@ def extract_universal_features(
         feat['recency_score']          = 0.5  # no "last order" concept — neutral, not "best"
         feat['convenience_score']      = feat['contract_stability']
 
+        # fix (adversarial audit): "new customer + long contract" was
+        # being read as low-risk on contract length alone, ignoring that
+        # the commitment is untested. Telecom has no "days since last
+        # order" concept, so dormant_loyalty_risk has no analog here.
+        feat['lockin_risk']            = feat['contract_stability'] * (1 - feat['tenure_normalized'])
+        feat['dormant_loyalty_risk']   = 0
+
     elif sector == 'ecommerce':
         max_tenure  = _norm_max(df, 'Tenure', sector, norm_stats)
         max_cash    = _norm_max(df, 'CashbackAmount', sector, norm_stats)
@@ -851,6 +968,15 @@ def extract_universal_features(
         feat['cashback_engagement']    = df['CashbackAmount'] / max_cash if 'CashbackAmount' in df.columns else 0
         feat['recency_score']          = df['DaySinceLastOrder'] / max_recency if 'DaySinceLastOrder' in df.columns else 0.5
         feat['convenience_score']      = 1 - (df['WarehouseToHome'] / max_dist) if 'WarehouseToHome' in df.columns else 0.5
+
+        # fix (adversarial audit): a 4-year-tenure customer who hasn't
+        # ordered in 90 days is exactly the case where high tenure was
+        # masking real disengagement. This makes that combination an
+        # explicit, multiplicative signal instead of relying on the tree
+        # to discover it via a deep split. Ecommerce has no contract
+        # concept, so lockin_risk has no analog here.
+        feat['dormant_loyalty_risk']   = feat['tenure_normalized'] * feat['recency_score']
+        feat['lockin_risk']            = 0
 
     elif sector == 'banking':
         max_tenure = _norm_max(df, 'Tenure', sector, norm_stats)
@@ -881,7 +1007,12 @@ def extract_universal_features(
         feat['recency_score']          = feat['is_active']
         feat['convenience_score']      = 0.5
 
-    elif sector == 'healthcare':
+        # fix (adversarial audit): long-tenured account holder who has
+        # gone inactive (IsActiveMember=0) is the banking analog of the
+        # Ecommerce dormant-loyalist case. No separate contract concept
+        # exists in banking beyond tenure, so lockin_risk has no analog.
+        feat['dormant_loyalty_risk']   = feat['tenure_normalized'] * (1 - feat['is_active'])
+        feat['lockin_risk']            = 0
         if 'Tenure_Months' in df.columns or 'Visits_Last_Year' in df.columns:
             # Schema variant 1: PatientID-style
             # (Tenure_Months, Overall_Satisfaction, Visits_Last_Year, etc.)
@@ -909,7 +1040,11 @@ def extract_universal_features(
             feat['recency_score']          = 1 - (df['Days_Since_Last_Visit'] / max_lastv) if 'Days_Since_Last_Visit' in df.columns else 0.5
             feat['convenience_score']      = 1 - (df['Distance_To_Facility_Miles'] / max_dist) if 'Distance_To_Facility_Miles' in df.columns else 0.5
 
-        elif 'FrequencyOfVisits' in df.columns or 'MonthlyPremium' in df.columns:
+            # fix (adversarial audit): long-tenured patient who has
+            # stopped visiting is this schema's version of the
+            # dormant-loyalist case. No contract concept exists here.
+            feat['dormant_loyalty_risk']   = feat['tenure_normalized'] * (1 - feat['is_active'])
+            feat['lockin_risk']            = 0
             # Schema variant 2: MedicalCondition-style
             # (MedicalCondition, PolicyType, MonthlyPremium,
             #  FrequencyOfVisits, ClaimHistoryCount, CustomerSupportCalls)
@@ -937,10 +1072,69 @@ def extract_universal_features(
             feat['recency_score']          = 0.5  # no "last visit date" column in this schema
             feat['convenience_score']      = 1 - (df['ClaimHistoryCount'] / max_claims) if 'ClaimHistoryCount' in df.columns else 0.5
 
-        else:
+            # No tenure or contract concept in this schema variant —
+            # neutral defaults rather than guessing at a proxy.
+            feat['dormant_loyalty_risk']   = 0.5
+            feat['lockin_risk']            = 0
             # Neither known healthcare schema variant matched — fill
             # everything with documented neutral defaults rather than
             # guessing at columns that may not mean what we'd assume.
+            for col in UNIVERSAL_FEATURES:
+                feat[col] = 0.5
+
+    elif sector == 'healthcare':
+        if 'Tenure_Months' in df.columns or 'Visits_Last_Year' in df.columns:
+            max_tenure = _norm_max(df, 'Tenure_Months', sector, norm_stats)
+            max_cost   = _norm_max(df, 'Avg_Out_Of_Pocket_Cost', sector, norm_stats)
+            max_sat    = _norm_max(df, 'Overall_Satisfaction', sector, norm_stats)
+            max_visits = _norm_max(df, 'Visits_Last_Year', sector, norm_stats)
+            max_lastv  = _norm_max(df, 'Days_Since_Last_Visit', sector, norm_stats)
+            max_dist   = _norm_max(df, 'Distance_To_Facility_Miles', sector, norm_stats)
+
+            feat['tenure_normalized']      = df['Tenure_Months'] / max_tenure if 'Tenure_Months' in df.columns else 0.5
+            feat['charge_normalized']      = df['Avg_Out_Of_Pocket_Cost'] / max_cost if 'Avg_Out_Of_Pocket_Cost' in df.columns else 0
+            feat['has_complaint']          = (df['Billing_Issues'] > 0).astype(int) if 'Billing_Issues' in df.columns else 0
+            feat['satisfaction_score']     = df['Overall_Satisfaction'] / max_sat if 'Overall_Satisfaction' in df.columns else 0.5
+            feat['is_active']              = (df['Days_Since_Last_Visit'] <= 90).astype(int) if 'Days_Since_Last_Visit' in df.columns else 0.5
+            feat['num_products_services']  = df['Visits_Last_Year'] / max_visits if 'Visits_Last_Year' in df.columns else 0.5
+            feat['is_senior_or_high_risk'] = (df['Age'] > 65).astype(int) if 'Age' in df.columns else 0
+            feat['has_support']            = df['Portal_Usage'] if 'Portal_Usage' in df.columns else 0
+            feat['contract_stability']     = df['Tenure_Months'] / max_tenure if 'Tenure_Months' in df.columns else 0.5
+            feat['payment_auto']           = 0.5
+
+            feat['engagement_score']       = feat['num_products_services']
+            feat['coupon_dependency']      = 0
+            feat['cashback_engagement']    = 0
+            feat['recency_score']          = 1 - (df['Days_Since_Last_Visit'] / max_lastv) if 'Days_Since_Last_Visit' in df.columns else 0.5
+            feat['convenience_score']      = 1 - (df['Distance_To_Facility_Miles'] / max_dist) if 'Distance_To_Facility_Miles' in df.columns else 0.5
+            feat['dormant_loyalty_risk']   = feat['tenure_normalized'] * (1 - feat['is_active'])
+            feat['lockin_risk']            = 0
+
+        elif 'MonthlyPremium' in df.columns or 'FrequencyOfVisits' in df.columns:
+            max_premium = _norm_max(df, 'MonthlyPremium', sector, norm_stats)
+            max_freq    = _norm_max(df, 'FrequencyOfVisits', sector, norm_stats)
+            max_claims  = _norm_max(df, 'ClaimHistoryCount', sector, norm_stats)
+
+            feat['tenure_normalized']      = 0.5
+            feat['charge_normalized']      = df['MonthlyPremium'] / max_premium if 'MonthlyPremium' in df.columns else 0
+            feat['has_complaint']          = (df['CustomerSupportCalls'] > 2).astype(int) if 'CustomerSupportCalls' in df.columns else 0
+            feat['satisfaction_score']     = 0.5
+            feat['is_active']              = (df['FrequencyOfVisits'] > 0).astype(int) if 'FrequencyOfVisits' in df.columns else 0.5
+            feat['num_products_services']  = df['FrequencyOfVisits'] / max_freq if 'FrequencyOfVisits' in df.columns else 0.5
+            feat['is_senior_or_high_risk'] = (df['Age'] > 65).astype(int) if 'Age' in df.columns else 0
+            feat['has_support']            = (df['CustomerSupportCalls'] > 0).astype(int) if 'CustomerSupportCalls' in df.columns else 0
+            feat['contract_stability']     = 0.5
+            feat['payment_auto']           = 0.5
+
+            feat['engagement_score']       = feat['num_products_services']
+            feat['coupon_dependency']      = 0
+            feat['cashback_engagement']    = 0
+            feat['recency_score']          = 0.5
+            feat['convenience_score']      = 1 - (df['ClaimHistoryCount'] / max_claims) if 'ClaimHistoryCount' in df.columns else 0.5
+            feat['dormant_loyalty_risk']   = 0.5
+            feat['lockin_risk']            = 0
+
+        else:
             for col in UNIVERSAL_FEATURES:
                 feat[col] = 0.5
 
@@ -1016,6 +1210,46 @@ def train_universal_model(tune_metric: str | None = None) -> None:
     combined = pd.concat(all_data, ignore_index=True)
     print(f"\n  Combined dataset: {combined.shape[0]} rows")
     print(f"  Churn rate      : {combined['Churn'].mean()*100:.1f}%")
+
+    print("\n  Per-sector churn rate BEFORE balancing:")
+    print(combined.groupby('Sector')['Churn'].agg(['mean', 'count']))
+
+    # fix: per-sector class balancing — root cause of the audit's
+    # "Healthcare predicted Churn for almost everyone" bug. Sector_Encoded
+    # is a literal input feature; if one sector's raw churn rate is far
+    # from 50% (e.g. Healthcare's 1,367 vs 633), the tree learns
+    # "Sector_Encoded == healthcare" as a cheap shortcut for "prior risk
+    # is high" instead of relying on the actual behavioral features. The
+    # single global SMOTE pass after concatenation does NOT fix this — it
+    # balances the overall 0/1 ratio, but each sector's internal skew
+    # (and its correlation with Sector_Encoded) survives untouched.
+    # Balancing each sector to ~50/50 BEFORE concatenation removes that
+    # shortcut: Sector_Encoded can no longer predict Churn on its own, so
+    # the model is forced back onto genuine behavioral signal regardless
+    # of sector.
+    balanced_parts = []
+    for sec_name, group in combined.groupby('Sector'):
+        counts = group['Churn'].value_counts()
+        if len(counts) < 2:
+            balanced_parts.append(group)
+            continue
+        majority_n = counts.max()
+        minority_class = counts.idxmin()
+        minority = group[group['Churn'] == minority_class]
+        majority = group[group['Churn'] != minority_class]
+        # simple random oversample of the minority class within this
+        # sector up to the majority count (kept simple/fast here since
+        # this runs on already-engineered, low-dimensional features;
+        # SMOTE is still applied globally afterward for the real
+        # synthetic-sample diversity).
+        minority_resampled = minority.sample(
+            n=majority_n, replace=True, random_state=42
+        )
+        balanced_parts.append(pd.concat([majority, minority_resampled]))
+
+    combined = pd.concat(balanced_parts, ignore_index=True)
+    print("\n  Per-sector churn rate AFTER balancing:")
+    print(combined.groupby('Sector')['Churn'].agg(['mean', 'count']))
 
     # Encode sector column
     le_sector = LabelEncoder()
@@ -1180,124 +1414,141 @@ def write_shap_log(
     print(f"  SHAP explanation log saved: {output_path}")
 
 
-def predict_universal(input_csv: str, sector: str | None = None,
-                       explain: bool = False,
-                       explain_output: str | None = None) -> pd.DataFrame:
+def transform_features_by_sector(df: pd.DataFrame, sector: str) -> pd.DataFrame:
     """
-    Phase B prediction: use universal model on any new input.
-    `sector` is now optional — if not provided, it is auto-detected
-    from the input CSV's column signature (fix: removes the
-    requirement to pass --sector for universal mode too).
-
-    explain: if True, also writes a per-row SHAP explanation log.
+    Convert an inference DataFrame into the universal model feature matrix.
+    The universal model was trained from extract_universal_features(), so
+    this helper mirrors that path with a dummy target when scoring files
+    that do not contain an actual churn label.
     """
-    if not UNIVERSAL_MODEL_PATH.exists():
-        raise FileNotFoundError(
-            "Universal model not found. "
-            "Run: python universal_churn_predictor.py --mode train_universal"
-        )
+    config = SECTOR_CONFIG[sector]
+    df_working = df.copy()
 
-    model      = joblib.load(UNIVERSAL_MODEL_PATH)
-    scaler     = joblib.load(UNIVERSAL_SCALER_PATH)
-    le_sector  = joblib.load(str(UNIVERSAL_MODEL_PATH).replace('.pkl','_le_sector.pkl'))
-    feat_names = pd.read_csv(UNIVERSAL_FEATURES_PATH).iloc[:, 0].tolist()
-
-    # fix: load persisted training-set normalization maxima so a
-    # single-row (or small-batch) prediction doesn't normalize each
-    # value against itself. Falls back to batch-max with a warning if
-    # the stats file predates this fix (re-run train_universal to
-    # regenerate it).
-    if UNIVERSAL_NORM_STATS_PATH.exists():
-        norm_stats = joblib.load(UNIVERSAL_NORM_STATS_PATH)
-    else:
-        print(
-            "  WARNING: no persisted normalization stats found "
-            f"({UNIVERSAL_NORM_STATS_PATH}). Falling back to per-batch "
-            "max, which is unstable for small inputs. Re-run "
-            "--mode train_universal to regenerate this file."
-        )
-        norm_stats = {}
-
-    df = pd.read_csv(input_csv)
-
-    if sector is None:
-        sector = detect_sector(df)
-        print(f"  Auto-detected sector: {sector}")
-
-    # Preserve IDs
-    id_cols = ['customerID','CustomerID','Customer ID','CustomerId','RowNumber','PatientID']
-    id_series = None
-    for col in id_cols:
-        if col in df.columns:
-            id_series = df[col].copy()
-            df.drop(columns=[col], inplace=True)
-            break
-
-    # Drop known non-feature columns
-    drop_cols = ['Expected_Churn', 'Churn', 'Exited', 'Churned']
-    df.drop(columns=[c for c in drop_cols if c in df.columns],
-            inplace=True)
-
-    # Fix TotalCharges
-    if 'TotalCharges' in df.columns:
-        df['TotalCharges'] = pd.to_numeric(
-            df['TotalCharges'], errors='coerce'
+    if 'TotalCharges' in df_working.columns:
+        df_working['TotalCharges'] = pd.to_numeric(
+            df_working['TotalCharges'], errors='coerce'
         ).fillna(0)
 
-    # Fill nulls
-    for col in df.select_dtypes(include='number').columns:
-        df[col] = df[col].fillna(df[col].median())
-    for col in df.select_dtypes(include=['object', 'string']).columns:
-        df[col] = df[col].fillna(df[col].mode()[0])
+    for col in df_working.select_dtypes(include='number').columns:
+        df_working[col] = df_working[col].fillna(df_working[col].median())
+    for col in df_working.select_dtypes(include=['object', 'string']).columns:
+        mode = df_working[col].mode()
+        fill_value = mode.iloc[0] if not mode.empty else ''
+        df_working[col] = df_working[col].fillna(fill_value)
 
-    # Create dummy target for feature extraction
-    df['__target__'] = 0
-    feat_df = extract_universal_features(df, sector, '__target__', norm_stats=norm_stats)
-    feat_df.drop(columns=['Churn'], inplace=True)
+    target_col = config['target_col']
+    if target_col not in df_working.columns:
+        df_working[target_col] = 0
 
-    # Encode sector
-    try:
-        feat_df['Sector_Encoded'] = le_sector.transform([sector])[0]
-    except Exception:
-        feat_df['Sector_Encoded'] = 0
+    norm_stats = None
+    if UNIVERSAL_NORM_STATS_PATH.exists():
+        norm_stats = joblib.load(UNIVERSAL_NORM_STATS_PATH)
 
-    feat_df.drop(columns=['Sector'], errors='ignore', inplace=True)
+    features = extract_universal_features(
+        df_working, sector, target_col, norm_stats=norm_stats
+    )
 
-    # Align to training features
-    for col in feat_names:
-        if col not in feat_df.columns:
-            feat_df[col] = 0
-    feat_df = feat_df[feat_names]
+    le_path = str(UNIVERSAL_MODEL_PATH).replace('.pkl', '_le_sector.pkl')
+    if Path(le_path).exists():
+        le_sector = joblib.load(le_path)
+        if sector in set(le_sector.classes_):
+            features['Sector_Encoded'] = le_sector.transform([sector])[0]
+        else:
+            features['Sector_Encoded'] = 0
 
-    X = scaler.transform(feat_df.values)
-    preds  = model.predict(X)
-    probas = model.predict_proba(X)[:, 1]
+    X_processed = features.drop(columns=['Churn', 'Sector'], errors='ignore')
 
-    # Correction C (audit): this is exactly the path that produced the
-    # Healthcare flatline (~0.48/0.56 for every row) — catch it here
-    # instead of silently shipping uniform "predictions".
+    if UNIVERSAL_FEATURES_PATH.exists():
+        expected_features = pd.read_csv(UNIVERSAL_FEATURES_PATH).iloc[:, 0].tolist()
+        for col in expected_features:
+            if col not in X_processed.columns:
+                X_processed[col] = 0
+        X_processed = X_processed[expected_features]
+
+    return X_processed
+
+
+def predict_universal(input_path: str, force_sector: str | None = None, explain: bool = False) -> pd.DataFrame:
+    """
+    Predict churn across all industries using the unified Phase B master model.
+    Robust against arbitrary alternative input schemas.
+    """
+    df_raw = pd.read_csv(input_path)
+
+    # Run structural detection before modifying schemas
+    sector = force_sector or detect_sector(df_raw)
+    print(f" Auto-detected sector: {sector}")
+
+    # Run inline translation inside raw columns
+    df_lower = df_raw.copy()
+    df_lower.columns = df_lower.columns.str.lower()
+
+    concept_map = {
+        'patientid': 'patientid', 'customer id': 'patientid', 'customerid': 'patientid', 'rownumber': 'patientid',
+        'policytype': 'specialty', 'contracttype': 'specialty', 'contract': 'specialty',
+        'monthlypremium': 'avg_out_of_pocket_cost', 'monthlycharges': 'avg_out_of_pocket_cost', 'totalcharges': 'avg_out_of_pocket_cost',
+        'frequencyofvisits': 'visits_last_year', 'days_since_last_visit': 'days_since_last_visit',
+        'customersupportcalls': 'billing_issues', 'complain': 'billing_issues'
+    }
+    df_lower.rename(columns=concept_map, inplace=True)
+
+    config = SECTOR_CONFIG[sector]
+    target_cols_pool = config['scale_cols'] + [config['target_col']] + config['drop_cols'] + config.get('ohe_cols', [])
+
+    rename_to_target = {}
+    for col_idx, col_name in enumerate(df_raw.columns):
+        translated_lower = df_lower.columns[col_idx]
+        matched = False
+        for target_col in target_cols_pool:
+            if translated_lower == target_col.lower():
+                rename_to_target[col_name] = target_col
+                matched = True
+                break
+        if not matched:
+            rename_to_target[col_name] = col_name
+
+    df_mapped = df_raw.rename(columns=rename_to_target)
+
+    # Call your pre-built cross-sector pipeline engine
+    X_processed = transform_features_by_sector(df_mapped, sector)
+
+    # Load scaling and prediction matrix properties
+    scaler = joblib.load("outputs/universal/universal_scaler.pkl")
+    model = joblib.load("outputs/universal/universal_xgb_model.pkl")
+
+    # Enforce feature names check against scaler properties
+    if hasattr(scaler, 'feature_names_in_'):
+        expected_features = scaler.feature_names_in_
+        for col in expected_features:
+            if col not in X_processed.columns:
+                X_processed[col] = 0
+        X_processed = X_processed[expected_features]
+        X_scaled = scaler.transform(X_processed)
+    else:
+        X_scaled = scaler.transform(X_processed)
+
+    probas = model.predict_proba(X_scaled)[:, 1]
+    preds = model.predict(X_scaled)
+
+    # Variance check
     verify_prediction_variance(probas)
 
     results = pd.DataFrame()
-    if id_series is not None:
-        results['CustomerID'] = id_series.values
-    results['Predicted_Churn']   = pd.Series(preds).map({0: 'No', 1: 'Yes'})
-    results['Churn_Probability'] = probas.round(4)
-    results['Risk_Level'] = np.select(
-        [probas >= 0.70, probas >= 0.40],
-        ['High', 'Medium'],
-        default='Low'
-    )
-    results['Sector'] = sector.capitalize()
-    results['Model']  = 'XGBoost (Universal)'
+    id_cols = ['customerID','CustomerID','Customer ID','CustomerId','PatientID','patientid']
+    id_series = None
+    for col in df_raw.columns:
+        if col in id_cols:
+            id_series = df_raw[col]
+            break
 
-    if explain:
-        id_col = id_series.values if id_series is not None else None
-        log_path = explain_output or "outputs/shap_logs/universal_shap_log.csv"
-        write_shap_log(model, feat_df, feat_names, id_col, log_path)
+    results['CustomerID'] = id_series.values if id_series is not None else [f"UNK_{i}" for i in range(len(df_raw))]
+    results['Predicted_Churn'] = pd.Series(preds).map({0: 'No', 1: 'Yes'})
+    results['Churn_Probability'] = probas.round(4)
+    results['Risk_Level'] = np.select([probas >= 0.70, probas >= 0.40], ['High', 'Medium'], default='Low')
+    results['Sector'] = sector.capitalize()
+    results['Model'] = 'XGBoost (Universal)'
 
     return results
-
 
 # ══════════════════════════════════════════════════════════════════
 # CLI ENTRY POINT

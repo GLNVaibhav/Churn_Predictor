@@ -18,3 +18,4 @@ OrderCount
 DaySinceLastOrder
 CashbackAmount
 Financial_Bribe_Ratio
+Engagement_Decay
