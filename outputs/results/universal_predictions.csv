@@ -1,6 +1,6 @@
 CustomerID,Predicted_Churn,Churn_Probability,Risk_Level,Sector,Model
-ADV_BNK_01,Yes,0.9722,High,Banking,XGBoost (Universal)
-ADV_BNK_02,Yes,0.5881,Medium,Banking,XGBoost (Universal)
-ADV_BNK_03,Yes,0.939,High,Banking,XGBoost (Universal)
-ADV_BNK_04,No,0.242,Low,Banking,XGBoost (Universal)
-ADV_BNK_05,Yes,0.8318,High,Banking,XGBoost (Universal)
+ADV_BNK_01,Yes,0.9986,High,Banking,XGBoost (Sector-Specific)
+ADV_BNK_02,No,0.0762,Low,Banking,XGBoost (Sector-Specific)
+ADV_BNK_03,Yes,0.7698,High,Banking,XGBoost (Sector-Specific)
+ADV_BNK_04,No,0.0293,Low,Banking,XGBoost (Sector-Specific)
+ADV_BNK_05,Yes,0.933,High,Banking,XGBoost (Sector-Specific)

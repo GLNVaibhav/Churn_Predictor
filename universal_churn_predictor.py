@@ -567,8 +567,25 @@ class SectorPipeline:
         print("NaNs in X_train:", np.isnan(X_train.astype(float)).sum())
         print("NaNs in y_train:", pd.Series(y_train).isna().sum())
 
-        # SMOTE
-        smote = SMOTE(random_state=42)
+        # Bug 7 fix: SMOTE interpolates between integer-encoded categorical
+        # columns (e.g. Geography=0,1,2) and can produce fractional values
+        # like 1.5 that corrupt decision boundaries. Identify the categorical
+        # column indices (label-encoded or binary-mapped object cols) so
+        # SMOTENC can treat them as categorical instead of continuous.
+        cat_col_names = set(self.config.get('label_encode_cols', []))
+        # Also treat binary-mapped columns as categorical
+        for col in df.columns:
+            if col in self.config.get('binary_map', {}):
+                cat_col_names.add(col)
+        cat_indices = [
+            i for i, col in enumerate(df.columns)
+            if col in cat_col_names
+        ]
+        if cat_indices:
+            from imblearn.over_sampling import SMOTENC
+            smote = SMOTENC(categorical_features=cat_indices, random_state=42)
+        else:
+            smote = SMOTE(random_state=42)
         X_train_sm, y_train_sm = smote.fit_resample(X_train, y_train)
 
         if self.tune_metric:
@@ -668,18 +685,16 @@ class SectorPipeline:
 
         # 1. Create lowercase map for finding raw variants flexible to human case-error
         df_lower = df_raw.copy()
-        df_lower.columns = df_lower.columns.str.lower()
+        # Bug 6 fix: strip spaces and underscores so "Monthly Charges" matches "monthlycharges"
+        df_lower.columns = df_lower.columns.str.lower().str.replace(' ', '', regex=False).str.replace('_', '', regex=False)
 
-        # Comprehensive cross-industry translation map
-        concept_map = {
-            'patientid': 'patientid', 'customer id': 'patientid', 'customerid': 'patientid', 'rownumber': 'patientid',
-            'exited': 'churned', 'churned': 'churned', 'actual_churn': 'churned', 'churn': 'churned',
-            'policytype': 'specialty', 'contracttype': 'specialty', 'contract': 'specialty',
-            'monthlypremium': 'avg_out_of_pocket_cost', 'monthlycharges': 'avg_out_of_pocket_cost', 'totalcharges': 'avg_out_of_pocket_cost',
-            'frequencyofvisits': 'visits_last_year', 'days_since_last_visit': 'days_since_last_visit',
-            'customersupportcalls': 'billing_issues', 'complain': 'billing_issues'
+        # Use the global concept map (sector-neutral) instead of a hardcoded healthcare map
+        # that incorrectly renamed Telecom/Ecommerce columns to healthcare terms (Bug 4 fix)
+        normalized_global_map = {
+            k.replace('_', '').replace(' ', ''): v
+            for k, v in GLOBAL_CONCEPT_MAP.items()
         }
-        df_lower.rename(columns=concept_map, inplace=True)
+        df_lower.rename(columns=normalized_global_map, inplace=True)
 
         # 2. Map generic terms directly back to your trained sector head column signatures
         rename_to_target = {}
@@ -1013,74 +1028,6 @@ def extract_universal_features(
         # exists in banking beyond tenure, so lockin_risk has no analog.
         feat['dormant_loyalty_risk']   = feat['tenure_normalized'] * (1 - feat['is_active'])
         feat['lockin_risk']            = 0
-        if 'Tenure_Months' in df.columns or 'Visits_Last_Year' in df.columns:
-            # Schema variant 1: PatientID-style
-            # (Tenure_Months, Overall_Satisfaction, Visits_Last_Year, etc.)
-            max_tenure = _norm_max(df, 'Tenure_Months', sector, norm_stats)
-            max_cost   = _norm_max(df, 'Avg_Out_Of_Pocket_Cost', sector, norm_stats)
-            max_sat    = _norm_max(df, 'Overall_Satisfaction', sector, norm_stats)
-            max_visits = _norm_max(df, 'Visits_Last_Year', sector, norm_stats)
-            max_lastv  = _norm_max(df, 'Days_Since_Last_Visit', sector, norm_stats)
-            max_dist   = _norm_max(df, 'Distance_To_Facility_Miles', sector, norm_stats)
-
-            feat['tenure_normalized']      = df['Tenure_Months'] / max_tenure if 'Tenure_Months' in df.columns else 0.5
-            feat['charge_normalized']      = df['Avg_Out_Of_Pocket_Cost'] / max_cost if 'Avg_Out_Of_Pocket_Cost' in df.columns else 0
-            feat['has_complaint']          = (df['Billing_Issues'] > 0).astype(int) if 'Billing_Issues' in df.columns else 0
-            feat['satisfaction_score']     = df['Overall_Satisfaction'] / max_sat if 'Overall_Satisfaction' in df.columns else 0.5
-            feat['is_active']              = (df['Days_Since_Last_Visit'] <= 90).astype(int) if 'Days_Since_Last_Visit' in df.columns else 0.5
-            feat['num_products_services']  = df['Visits_Last_Year'] / max_visits if 'Visits_Last_Year' in df.columns else 0.5
-            feat['is_senior_or_high_risk'] = (df['Age'] > 65).astype(int) if 'Age' in df.columns else 0
-            feat['has_support']            = df['Portal_Usage'] if 'Portal_Usage' in df.columns else 0
-            feat['contract_stability']     = df['Tenure_Months'] / max_tenure if 'Tenure_Months' in df.columns else 0.5
-            feat['payment_auto']           = 0.5  # fix: no payment-method column in this schema either
-
-            feat['engagement_score']       = feat['num_products_services']
-            feat['coupon_dependency']      = 0
-            feat['cashback_engagement']    = 0
-            feat['recency_score']          = 1 - (df['Days_Since_Last_Visit'] / max_lastv) if 'Days_Since_Last_Visit' in df.columns else 0.5
-            feat['convenience_score']      = 1 - (df['Distance_To_Facility_Miles'] / max_dist) if 'Distance_To_Facility_Miles' in df.columns else 0.5
-
-            # fix (adversarial audit): long-tenured patient who has
-            # stopped visiting is this schema's version of the
-            # dormant-loyalist case. No contract concept exists here.
-            feat['dormant_loyalty_risk']   = feat['tenure_normalized'] * (1 - feat['is_active'])
-            feat['lockin_risk']            = 0
-            # Schema variant 2: MedicalCondition-style
-            # (MedicalCondition, PolicyType, MonthlyPremium,
-            #  FrequencyOfVisits, ClaimHistoryCount, CustomerSupportCalls)
-            max_premium = _norm_max(df, 'MonthlyPremium', sector, norm_stats)
-            max_freq    = _norm_max(df, 'FrequencyOfVisits', sector, norm_stats)
-            max_claims  = _norm_max(df, 'ClaimHistoryCount', sector, norm_stats)
-            max_calls   = _norm_max(df, 'CustomerSupportCalls', sector, norm_stats)
-
-            # No direct tenure/contract-length analog in this schema —
-            # neutral default rather than guessing.
-            feat['tenure_normalized']      = 0.5
-            feat['charge_normalized']      = df['MonthlyPremium'] / max_premium if 'MonthlyPremium' in df.columns else 0
-            feat['has_complaint']          = (df['CustomerSupportCalls'] > 2).astype(int) if 'CustomerSupportCalls' in df.columns else 0
-            feat['satisfaction_score']     = 0.5  # no satisfaction survey field in this schema
-            feat['is_active']              = (df['FrequencyOfVisits'] > 0).astype(int) if 'FrequencyOfVisits' in df.columns else 0.5
-            feat['num_products_services']  = df['FrequencyOfVisits'] / max_freq if 'FrequencyOfVisits' in df.columns else 0.5
-            feat['is_senior_or_high_risk'] = (df['Age'] > 65).astype(int) if 'Age' in df.columns else 0
-            feat['has_support']            = (df['CustomerSupportCalls'] > 0).astype(int) if 'CustomerSupportCalls' in df.columns else 0
-            feat['contract_stability']     = 0.5
-            feat['payment_auto']           = 0.5
-
-            feat['engagement_score']       = df['FrequencyOfVisits'] / max_freq if 'FrequencyOfVisits' in df.columns else 0.5
-            feat['coupon_dependency']      = 0
-            feat['cashback_engagement']    = 0
-            feat['recency_score']          = 0.5  # no "last visit date" column in this schema
-            feat['convenience_score']      = 1 - (df['ClaimHistoryCount'] / max_claims) if 'ClaimHistoryCount' in df.columns else 0.5
-
-            # No tenure or contract concept in this schema variant —
-            # neutral defaults rather than guessing at a proxy.
-            feat['dormant_loyalty_risk']   = 0.5
-            feat['lockin_risk']            = 0
-            # Neither known healthcare schema variant matched — fill
-            # everything with documented neutral defaults rather than
-            # guessing at columns that may not mean what we'd assume.
-            for col in UNIVERSAL_FEATURES:
-                feat[col] = 0.5
 
     elif sector == 'healthcare':
         if 'Tenure_Months' in df.columns or 'Visits_Last_Year' in df.columns:
@@ -1263,10 +1210,10 @@ def train_universal_model(tune_metric: str | None = None) -> None:
         print("  WARNING: NaNs found in combined dataset. Filling with 0.")
         combined = combined.fillna(0)
 
-    X = combined.drop(columns=['Churn']).values
+    X = combined.drop(columns=['Churn'])
     y = combined['Churn'].values
 
-    feature_names = combined.drop(columns=['Churn']).columns.tolist()
+    feature_names = X.columns.tolist()
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
@@ -1481,16 +1428,16 @@ def predict_universal(input_path: str, force_sector: str | None = None, explain:
 
     # Run inline translation inside raw columns
     df_lower = df_raw.copy()
-    df_lower.columns = df_lower.columns.str.lower()
+    # Bug 6 fix: strip spaces and underscores so "Monthly Charges" matches "monthlycharges"
+    df_lower.columns = df_lower.columns.str.lower().str.replace(' ', '', regex=False).str.replace('_', '', regex=False)
 
-    concept_map = {
-        'patientid': 'patientid', 'customer id': 'patientid', 'customerid': 'patientid', 'rownumber': 'patientid',
-        'policytype': 'specialty', 'contracttype': 'specialty', 'contract': 'specialty',
-        'monthlypremium': 'avg_out_of_pocket_cost', 'monthlycharges': 'avg_out_of_pocket_cost', 'totalcharges': 'avg_out_of_pocket_cost',
-        'frequencyofvisits': 'visits_last_year', 'days_since_last_visit': 'days_since_last_visit',
-        'customersupportcalls': 'billing_issues', 'complain': 'billing_issues'
+    # Use the global concept map (sector-neutral) instead of a hardcoded healthcare map
+    # that incorrectly renamed Telecom/Ecommerce columns to healthcare terms (Bug 4 fix)
+    normalized_global_map = {
+        k.replace('_', '').replace(' ', ''): v
+        for k, v in GLOBAL_CONCEPT_MAP.items()
     }
-    df_lower.rename(columns=concept_map, inplace=True)
+    df_lower.rename(columns=normalized_global_map, inplace=True)
 
     config = SECTOR_CONFIG[sector]
     target_cols_pool = config['scale_cols'] + [config['target_col']] + config['drop_cols'] + config.get('ohe_cols', [])
