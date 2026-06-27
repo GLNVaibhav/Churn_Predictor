@@ -683,6 +683,10 @@ class SectorPipeline:
         """
         df_raw = pd.read_csv(input_csv)
 
+        # Strip unit suffixes / currency symbols from numeric columns before
+        # any feature extraction or normalization arithmetic runs.
+        df_raw = sanitize_numerical_columns(df_raw)
+
         # 1. Create lowercase map for finding raw variants flexible to human case-error
         df_lower = df_raw.copy()
         # Bug 6 fix: strip spaces and underscores so "Monthly Charges" matches "monthlycharges"
@@ -1030,46 +1034,79 @@ def extract_universal_features(
         feat['lockin_risk']            = 0
 
     elif sector == 'healthcare':
-        if 'Tenure_Months' in df.columns or 'Visits_Last_Year' in df.columns:
-            max_tenure = _norm_max(df, 'Tenure_Months', sector, norm_stats)
-            max_cost   = _norm_max(df, 'Avg_Out_Of_Pocket_Cost', sector, norm_stats)
-            max_sat    = _norm_max(df, 'Overall_Satisfaction', sector, norm_stats)
-            max_visits = _norm_max(df, 'Visits_Last_Year', sector, norm_stats)
-            max_lastv  = _norm_max(df, 'Days_Since_Last_Visit', sector, norm_stats)
-            max_dist   = _norm_max(df, 'Distance_To_Facility_Miles', sector, norm_stats)
+        # Column names may arrive in their original mixed-case spaced form
+        # (e.g. "Visits Last Year") OR already lowercased+stripped by the
+        # column normalization pass (e.g. "visitslastyear"). Check both so
+        # the correct schema branch is entered regardless of how the caller
+        # processed the DataFrame before passing it here.
+        _has_tenure  = any(c in df.columns for c in ('Tenure_Months',  'tenuremonths',  'Tenure Months'))
+        _has_visits  = any(c in df.columns for c in ('Visits_Last_Year', 'visitslastyear', 'Visits Last Year'))
+        _has_premium = any(c in df.columns for c in ('MonthlyPremium', 'monthlypremium'))
+        _has_freq    = any(c in df.columns for c in ('FrequencyOfVisits', 'frequencyofvisits'))
 
-            feat['tenure_normalized']      = df['Tenure_Months'] / max_tenure if 'Tenure_Months' in df.columns else 0.5
-            feat['charge_normalized']      = df['Avg_Out_Of_Pocket_Cost'] / max_cost if 'Avg_Out_Of_Pocket_Cost' in df.columns else 0
-            feat['has_complaint']          = (df['Billing_Issues'] > 0).astype(int) if 'Billing_Issues' in df.columns else 0
-            feat['satisfaction_score']     = df['Overall_Satisfaction'] / max_sat if 'Overall_Satisfaction' in df.columns else 0.5
-            feat['is_active']              = (df['Days_Since_Last_Visit'] <= 90).astype(int) if 'Days_Since_Last_Visit' in df.columns else 0.5
-            feat['num_products_services']  = df['Visits_Last_Year'] / max_visits if 'Visits_Last_Year' in df.columns else 0.5
-            feat['is_senior_or_high_risk'] = (df['Age'] > 65).astype(int) if 'Age' in df.columns else 0
-            feat['has_support']            = df['Portal_Usage'] if 'Portal_Usage' in df.columns else 0
-            feat['contract_stability']     = df['Tenure_Months'] / max_tenure if 'Tenure_Months' in df.columns else 0.5
+        # Helper: find first matching column regardless of name variant
+        def _hcol(df, *candidates):
+            for c in candidates:
+                if c in df.columns:
+                    return c
+            return None
+
+        if _has_tenure or _has_visits:
+            c_tenure  = _hcol(df, 'Tenure_Months',  'tenuremonths',  'Tenure Months')
+            c_cost    = _hcol(df, 'Avg_Out_Of_Pocket_Cost', 'avgoutofpocketcost', 'Avg Out Of Pocket Cost')
+            c_sat     = _hcol(df, 'Overall_Satisfaction', 'overallsatisfaction')
+            c_visits  = _hcol(df, 'Visits_Last_Year', 'visitslastyear', 'Visits Last Year')
+            c_lastv   = _hcol(df, 'Days_Since_Last_Visit', 'daysincelastvisit')
+            c_dist    = _hcol(df, 'Distance_To_Facility_Miles', 'distancetofacilitymiles')
+            c_billing = _hcol(df, 'Billing_Issues', 'billingissues', 'Billing Issues')
+            c_portal  = _hcol(df, 'Portal_Usage', 'portalusage')
+            c_age     = _hcol(df, 'Age', 'age')
+
+            max_tenure = _norm_max(df, c_tenure,  sector, norm_stats) if c_tenure  else 1
+            max_cost   = _norm_max(df, c_cost,    sector, norm_stats) if c_cost    else 1
+            max_sat    = _norm_max(df, c_sat,     sector, norm_stats) if c_sat     else 1
+            max_visits = _norm_max(df, c_visits,  sector, norm_stats) if c_visits  else 1
+            max_lastv  = _norm_max(df, c_lastv,   sector, norm_stats) if c_lastv   else 1
+            max_dist   = _norm_max(df, c_dist,    sector, norm_stats) if c_dist    else 1
+
+            feat['tenure_normalized']      = df[c_tenure]  / max_tenure if c_tenure  else 0.5
+            feat['charge_normalized']      = df[c_cost]    / max_cost   if c_cost    else 0
+            feat['has_complaint']          = (df[c_billing] > 0).astype(int) if c_billing else 0
+            feat['satisfaction_score']     = df[c_sat]     / max_sat    if c_sat     else 0.5
+            feat['is_active']              = (df[c_lastv] <= 90).astype(int) if c_lastv else 0.5
+            feat['num_products_services']  = df[c_visits]  / max_visits if c_visits  else 0.5
+            feat['is_senior_or_high_risk'] = (df[c_age] > 65).astype(int) if c_age else 0
+            feat['has_support']            = df[c_portal]  if c_portal else 0
+            feat['contract_stability']     = df[c_tenure]  / max_tenure if c_tenure  else 0.5
             feat['payment_auto']           = 0.5
 
             feat['engagement_score']       = feat['num_products_services']
             feat['coupon_dependency']      = 0
             feat['cashback_engagement']    = 0
-            feat['recency_score']          = 1 - (df['Days_Since_Last_Visit'] / max_lastv) if 'Days_Since_Last_Visit' in df.columns else 0.5
-            feat['convenience_score']      = 1 - (df['Distance_To_Facility_Miles'] / max_dist) if 'Distance_To_Facility_Miles' in df.columns else 0.5
+            feat['recency_score']          = 1 - (df[c_lastv] / max_lastv) if c_lastv else 0.5
+            feat['convenience_score']      = 1 - (df[c_dist]  / max_dist)  if c_dist  else 0.5
             feat['dormant_loyalty_risk']   = feat['tenure_normalized'] * (1 - feat['is_active'])
             feat['lockin_risk']            = 0
 
-        elif 'MonthlyPremium' in df.columns or 'FrequencyOfVisits' in df.columns:
-            max_premium = _norm_max(df, 'MonthlyPremium', sector, norm_stats)
-            max_freq    = _norm_max(df, 'FrequencyOfVisits', sector, norm_stats)
-            max_claims  = _norm_max(df, 'ClaimHistoryCount', sector, norm_stats)
+        elif _has_premium or _has_freq:
+            c_premium = _hcol(df, 'MonthlyPremium', 'monthlypremium')
+            c_freq    = _hcol(df, 'FrequencyOfVisits', 'frequencyofvisits')
+            c_claims  = _hcol(df, 'ClaimHistoryCount', 'claimhistorycount')
+            c_calls   = _hcol(df, 'CustomerSupportCalls', 'customersupportcalls')
+            c_age     = _hcol(df, 'Age', 'age')
+
+            max_premium = _norm_max(df, c_premium, sector, norm_stats) if c_premium else 1
+            max_freq    = _norm_max(df, c_freq,    sector, norm_stats) if c_freq    else 1
+            max_claims  = _norm_max(df, c_claims,  sector, norm_stats) if c_claims  else 1
 
             feat['tenure_normalized']      = 0.5
-            feat['charge_normalized']      = df['MonthlyPremium'] / max_premium if 'MonthlyPremium' in df.columns else 0
-            feat['has_complaint']          = (df['CustomerSupportCalls'] > 2).astype(int) if 'CustomerSupportCalls' in df.columns else 0
+            feat['charge_normalized']      = df[c_premium] / max_premium if c_premium else 0
+            feat['has_complaint']          = (df[c_calls] > 2).astype(int) if c_calls else 0
             feat['satisfaction_score']     = 0.5
-            feat['is_active']              = (df['FrequencyOfVisits'] > 0).astype(int) if 'FrequencyOfVisits' in df.columns else 0.5
-            feat['num_products_services']  = df['FrequencyOfVisits'] / max_freq if 'FrequencyOfVisits' in df.columns else 0.5
-            feat['is_senior_or_high_risk'] = (df['Age'] > 65).astype(int) if 'Age' in df.columns else 0
-            feat['has_support']            = (df['CustomerSupportCalls'] > 0).astype(int) if 'CustomerSupportCalls' in df.columns else 0
+            feat['is_active']              = (df[c_freq] > 0).astype(int) if c_freq else 0.5
+            feat['num_products_services']  = df[c_freq] / max_freq if c_freq else 0.5
+            feat['is_senior_or_high_risk'] = (df[c_age] > 65).astype(int) if c_age else 0
+            feat['has_support']            = (df[c_calls] > 0).astype(int) if c_calls else 0
             feat['contract_stability']     = 0.5
             feat['payment_auto']           = 0.5
 
@@ -1077,7 +1114,7 @@ def extract_universal_features(
             feat['coupon_dependency']      = 0
             feat['cashback_engagement']    = 0
             feat['recency_score']          = 0.5
-            feat['convenience_score']      = 1 - (df['ClaimHistoryCount'] / max_claims) if 'ClaimHistoryCount' in df.columns else 0.5
+            feat['convenience_score']      = 1 - (df[c_claims] / max_claims) if c_claims else 0.5
             feat['dormant_loyalty_risk']   = 0.5
             feat['lockin_risk']            = 0
 
@@ -1383,6 +1420,13 @@ def transform_features_by_sector(df: pd.DataFrame, sector: str) -> pd.DataFrame:
         fill_value = mode.iloc[0] if not mode.empty else ''
         df_working[col] = df_working[col].fillna(fill_value)
 
+    # Last-line-of-defence: re-run numeric coercion on df_working using
+    # standardized (lowercased, stripped) column names so that any dirty
+    # string values that slipped through the earlier sanitize pass (e.g.
+    # due to pandas StringDtype preventing assignment) are cleaned before
+    # the arithmetic in extract_universal_features runs.
+    df_working = sanitize_numerical_columns(df_working)
+
     target_col = config['target_col']
     if target_col not in df_working.columns:
         df_working[target_col] = 0
@@ -1415,12 +1459,67 @@ def transform_features_by_sector(df: pd.DataFrame, sector: str) -> pd.DataFrame:
     return X_processed
 
 
+def sanitize_numerical_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Cleans raw human strings like '12 months', '₹85.50', '120 USD',
+    and '14 visits' into clean, processable floats before any feature
+    extraction or normalization runs.
+
+    Works by matching each column's lowercased/stripped name against a
+    known list of columns that must be numeric across all sector variants,
+    then stripping everything except digits, decimal points, and minus
+    signs before casting to float.
+    """
+    numeric_targets = {
+        'tenure', 'monthlycharges', 'totalcharges',
+        'age', 'visitslastyear', 'avgoutofpocketcost', 'billingissues',
+        'creditscore', 'balance', 'numofproducts',
+        'satisfactionscore', 'cashbackamount',
+        # additional healthcare / ecommerce variants
+        'tenuremonths', 'daysincelastvisit', 'overallsatisfaction',
+        'waittimesatisfaction', 'staffsatisfaction', 'providerrating',
+        'portalusage', 'referralsmade', 'distancetofacilitymiles',
+        'missedappointments', 'daysincelastorder', 'couponused',
+        'ordercount', 'cashbackamount', 'warehousetohome',
+        'hourspendonapp', 'numberofdeviceregistered', 'numberofaddress',
+        'orderamounthikefromlastyear', 'estimatedsalary',
+    }
+
+    df_clean = df.copy()
+    lower_cols = (
+        df_clean.columns
+        .str.lower()
+        .str.replace(' ', '', regex=False)
+        .str.replace('_', '', regex=False)
+    )
+    col_mapping = dict(zip(df_clean.columns, lower_cols))
+
+    for original_col, standardized_name in col_mapping.items():
+        if standardized_name in numeric_targets:
+            # Cast to Python object dtype first so StringDtype (pandas 3+
+            # future.infer_string default) doesn't block numeric assignment.
+            raw = df_clean[original_col].astype(object).astype(str).str.strip()
+            # Strip currency symbols, unit words, and anything non-numeric
+            # (keeps digits, decimal dot, and leading minus sign)
+            s_clean = raw.str.replace(r'[^\d\.\-]', '', regex=True)
+            s_clean = s_clean.replace('', np.nan)
+            # Assign as plain float64 to guarantee downstream arithmetic works
+            df_clean[original_col] = pd.to_numeric(s_clean, errors='coerce').astype('float64')
+
+    return df_clean
+
+
 def predict_universal(input_path: str, force_sector: str | None = None, explain: bool = False) -> pd.DataFrame:
     """
     Predict churn across all industries using the unified Phase B master model.
     Robust against arbitrary alternative input schemas.
     """
     df_raw = pd.read_csv(input_path)
+
+    # Strip unit suffixes and currency symbols from numeric columns before
+    # any sector detection or feature extraction runs, so strings like
+    # "12 months" or "₹120" don't crash normalization arithmetic.
+    df_raw = sanitize_numerical_columns(df_raw)
 
     # Run structural detection before modifying schemas
     sector = force_sector or detect_sector(df_raw)
