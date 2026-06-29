@@ -117,6 +117,90 @@ SECTOR_CONFIG = {
     },
 }
 
+# ── Feature importance weights for coverage scoring ──────────────
+# Each value reflects how much predictive signal the feature carries
+# in its sector model, based on domain knowledge and SHAP analysis.
+# Features that are absent hurt the coverage score proportionally more
+# than low-weight features. Quality (non-null, non-constant) is also
+# required for a feature to count toward the score.
+#
+# Scale: 5 = critical  4 = high  3 = medium  2 = low  1 = minor
+SECTOR_FEATURE_WEIGHTS: dict[str, dict[str, int]] = {
+    'telecom': {
+        'Contract'          : 5,   # strongest single churn predictor in telecom
+        'tenure'            : 5,
+        'MonthlyCharges'    : 5,
+        'TotalCharges'      : 4,
+        'InternetService'   : 4,
+        'TechSupport'       : 3,
+        'OnlineSecurity'    : 3,
+        'PaymentMethod'     : 3,
+        'MultipleLines'     : 2,
+        'OnlineBackup'      : 2,
+        'DeviceProtection'  : 2,
+        'StreamingTV'       : 2,
+        'StreamingMovies'   : 2,
+        'PaperlessBilling'  : 1,
+        'SeniorCitizen'     : 1,
+        'Partner'           : 1,
+        'Dependents'        : 1,
+        'PhoneService'      : 1,
+        'gender'            : 1,
+    },
+    'banking': {
+        'NumOfProducts'     : 5,
+        'Age'               : 5,
+        'Balance'           : 5,
+        'IsActiveMember'    : 5,
+        'Geography'         : 4,
+        'CreditScore'       : 4,
+        'Tenure'            : 4,
+        'EstimatedSalary'   : 3,
+        'HasCrCard'         : 2,
+        'Gender'            : 1,
+    },
+    'ecommerce': {
+        'Tenure'                      : 5,
+        'Complain'                    : 5,
+        'DaySinceLastOrder'           : 5,
+        'SatisfactionScore'           : 4,
+        'OrderCount'                  : 4,
+        'CashbackAmount'              : 4,
+        'OrderAmountHikeFromlastYear' : 3,
+        'CouponUsed'                  : 3,
+        'NumberOfDeviceRegistered'    : 3,
+        'HourSpendOnApp'              : 3,
+        'WarehouseToHome'             : 2,
+        'NumberOfAddress'             : 2,
+        'CityTier'                    : 1,
+        'PreferredLoginDevice'        : 1,
+        'PreferredPaymentMode'        : 1,
+        'PreferedOrderCat'            : 1,
+        'MaritalStatus'               : 1,
+        'Gender'                      : 1,
+    },
+    'healthcare': {
+        'Days_Since_Last_Visit'     : 5,
+        'Billing_Issues'            : 5,
+        'Overall_Satisfaction'      : 5,
+        'Visits_Last_Year'          : 5,
+        'Avg_Out_Of_Pocket_Cost'    : 4,
+        'Age'                       : 4,
+        'Missed_Appointments'       : 4,
+        'Wait_Time_Satisfaction'    : 3,
+        'Staff_Satisfaction'        : 3,
+        'Provider_Rating'           : 3,
+        'Distance_To_Facility_Miles': 3,
+        'Tenure_Months'             : 3,
+        'Portal_Usage'              : 2,
+        'Referrals_Made'            : 2,
+        'Insurance_Type'            : 2,
+        'Specialty'                 : 2,
+        'Gender'                    : 1,
+        'State'                     : 1,
+    },
+}
+
 UNIVERSAL_MODEL_PATH   = Path('outputs/universal/universal_xgb_model.pkl')
 UNIVERSAL_SCALER_PATH  = Path('outputs/universal/universal_scaler.pkl')
 UNIVERSAL_FEATURES_PATH= Path('outputs/universal/universal_features.csv')
@@ -594,14 +678,36 @@ class SectorPipeline:
             # for everyone. Optimize the search for recall/F1 instead of
             # the estimator's default scoring.
             print(f"\n  Tuning hyperparameters (scoring='{self.tune_metric}')...")
-            param_grid = {
-                'n_estimators': [100, 200, 300],
-                'max_depth': [3, 4, 6],
-                'learning_rate': [0.05, 0.1, 0.2],
-            }
+            # Healthcare note: if tuning for 'roc_auc', expand the grid to
+            # cover params that directly affect probability ranking quality
+            # (min_child_weight, gamma, subsample) in addition to the
+            # standard depth/rate grid used by the other sectors.
+            if self.sector == 'healthcare' or self.tune_metric == 'roc_auc':
+                param_grid = {
+                    'n_estimators'     : [200, 300, 400],
+                    'max_depth'        : [3, 4, 5],
+                    'learning_rate'    : [0.03, 0.05, 0.1],
+                    'min_child_weight' : [3, 5, 7],
+                    'gamma'            : [0, 0.1, 0.3],
+                    'subsample'        : [0.7, 0.8],
+                    'colsample_bytree' : [0.7, 0.8],
+                }
+            else:
+                param_grid = {
+                    'n_estimators': [100, 200, 300],
+                    'max_depth': [3, 4, 6],
+                    'learning_rate': [0.05, 0.1, 0.2],
+                }
+            # Compute scale_pos_weight from the SMOTE-resampled training set
+            # so XGBoost's internal probability calibration reflects the real
+            # imbalance ratio rather than the post-SMOTE 50/50 split.
+            neg_count = (y_train == 0).sum()
+            pos_count = (y_train == 1).sum()
+            spw = neg_count / pos_count if pos_count > 0 else 1.0
             base_model = XGBClassifier(
                 random_state=42, use_label_encoder=False,
-                eval_metric='logloss', verbosity=0
+                eval_metric='logloss', verbosity=0,
+                scale_pos_weight=spw if self.sector == 'healthcare' else 1,
             )
             search = GridSearchCV(
                 base_model, param_grid,
@@ -613,13 +719,38 @@ class SectorPipeline:
             print(f"  Best params: {search.best_params_}")
             print(f"  Best CV {self.tune_metric}: {search.best_score_:.4f}")
         else:
-            # Train XGBoost with fixed defaults
-            self.model = XGBClassifier(
-                n_estimators=200, learning_rate=0.1,
-                max_depth=4, random_state=42,
-                use_label_encoder=False,
-                eval_metric='logloss', verbosity=0
-            )
+            # Healthcare gets dedicated AUC-oriented defaults:
+            # - lower max_depth (4→3) to reduce overfitting on a smaller dataset
+            # - higher min_child_weight (1→5) to prevent splits on noisy small
+            #   patient subgroups, which is the main cause of poor probability
+            #   ranking (low ROC-AUC) even when recall looks acceptable
+            # - gamma=0.1 requires a minimum loss reduction before splitting,
+            #   further discouraging splits that only boost accuracy/recall
+            # - scale_pos_weight calibrates probabilities against the real
+            #   class ratio so the full [0,1] probability range is used
+            #   rather than clustering near the base rate
+            if self.sector == 'healthcare':
+                neg_count = (y_train == 0).sum()
+                pos_count = (y_train == 1).sum()
+                spw = neg_count / pos_count if pos_count > 0 else 1.0
+                self.model = XGBClassifier(
+                    n_estimators=300, learning_rate=0.05,
+                    max_depth=3, min_child_weight=5,
+                    gamma=0.1, subsample=0.8,
+                    colsample_bytree=0.8,
+                    scale_pos_weight=spw,
+                    random_state=42,
+                    use_label_encoder=False,
+                    eval_metric='auc', verbosity=0,
+                )
+            else:
+                # Train XGBoost with fixed defaults for other sectors
+                self.model = XGBClassifier(
+                    n_estimators=200, learning_rate=0.1,
+                    max_depth=4, random_state=42,
+                    use_label_encoder=False,
+                    eval_metric='logloss', verbosity=0,
+                )
             self.model.fit(X_train_sm, y_train_sm)
 
         # Evaluate
@@ -679,29 +810,65 @@ class SectorPipeline:
                 explain_output: str | None = None) -> pd.DataFrame:
         """
         Predict churn for any CSV matching or mapping to this sector's schema.
-        Robustly handles dynamic columns, extra noise, and missing variables.
+
+        Routing:
+          Green  (≥85% weighted coverage) → full sector-specific XGBoost
+          Yellow (60–85%)                 → universal XGBoost fallback
+          Red    (<60%)                   → hard stop, no prediction returned
         """
         df_raw = pd.read_csv(input_csv)
-
-        # Strip unit suffixes / currency symbols from numeric columns before
-        # any feature extraction or normalization arithmetic runs.
         df_raw = sanitize_numerical_columns(df_raw)
+        df_raw = derive_temporal_features(df_raw)
 
-        # 1. Create lowercase map for finding raw variants flexible to human case-error
+        # ── Coverage scoring ──────────────────────────────────────
+        coverage = compute_coverage_score(
+            df_input=df_raw,
+            sector=self.sector,
+            mode='sector',
+        )
+
+        # ── Red band: refuse prediction ───────────────────────────
+        if coverage['prediction_mode'] == 'Refused':
+            critical = coverage['missing_critical']
+            msg = (
+                f"Prediction refused for sector '{self.sector}': weighted "
+                f"coverage score is {coverage['coverage_score']*100:.1f}% "
+                f"(threshold 60%). The following high-importance features are "
+                f"missing or unusable: {critical}. "
+                f"Enrich the input CSV and rerun."
+            )
+            raise ValueError(msg)
+
+        # ── Yellow band: route to universal model ─────────────────
+        if coverage['prediction_mode'] == 'Fallback':
+            print(f"\n  Routing to universal model (coverage "
+                  f"{coverage['coverage_score']*100:.1f}% < 85%)...")
+            results = predict_universal(input_csv, force_sector=self.sector)
+            results['Prediction_Model']  = 'XGBoost (Universal)'
+            results['Prediction_Mode']   = 'Fallback'
+            results['Coverage_Score']    = f"{coverage['coverage_score']*100:.1f}%"
+            results['Coverage_Status']   = coverage['status']
+            results['Coverage_Warning']  = (
+                f"Sector model skipped — coverage "
+                f"{coverage['coverage_score']*100:.1f}% below 85% threshold. "
+                f"Missing critical features: {coverage['missing_critical']}"
+            )
+            return results
+
+        # ── Green band: full sector model ─────────────────────────
+        # 1. Create lowercase+stripped map for flexible column matching
         df_lower = df_raw.copy()
-        # Bug 6 fix: strip spaces and underscores so "Monthly Charges" matches "monthlycharges"
-        df_lower.columns = df_lower.columns.str.lower().str.replace(' ', '', regex=False).str.replace('_', '', regex=False)
+        df_lower.columns = (df_lower.columns.str.lower()
+                            .str.replace(' ', '', regex=False)
+                            .str.replace('_', '', regex=False))
 
-        # Use the global concept map (sector-neutral) instead of a hardcoded healthcare map
-        # that incorrectly renamed Telecom/Ecommerce columns to healthcare terms (Bug 4 fix)
         normalized_global_map = {
             k.replace('_', '').replace(' ', ''): v
             for k, v in GLOBAL_CONCEPT_MAP.items()
         }
         df_lower.rename(columns=normalized_global_map, inplace=True)
 
-        # 2. Map generic terms directly back to your trained sector head column signatures
-        rename_to_target = {}
+        # 2. Map back to trained sector column signatures
         target_cols_pool = (
             self.feature_names
             + self.config.get('scale_cols', [])
@@ -710,45 +877,51 @@ class SectorPipeline:
             + self.config.get('ohe_cols', [])
             + self.config.get('label_encode_cols', [])
         )
+        target_lower_map = {
+            t.lower().replace('_', '').replace(' ', ''): t
+            for t in target_cols_pool
+        }
+        rename_to_target = {}
         for col_idx, col_name in enumerate(df_raw.columns):
-            translated_lower = df_lower.columns[col_idx]
+            translated_lower  = df_lower.columns[col_idx]
+            translated_stripped = translated_lower.replace('_', '').replace(' ', '')
             matched = False
-            # Check features, scale columns, targets, and drops for case matching
             for target_col in target_cols_pool:
                 if translated_lower == target_col.lower():
                     rename_to_target[col_name] = target_col
                     matched = True
                     break
+            if not matched and translated_stripped in target_lower_map:
+                rename_to_target[col_name] = target_lower_map[translated_stripped]
+                matched = True
             if not matched:
                 rename_to_target[col_name] = col_name
 
         df_mapped = df_raw.rename(columns=rename_to_target)
 
-        # Preserve IDs from any known naming style
-        id_cols = ['customerID','CustomerID','Customer ID','CustomerId','RowNumber','PatientID','patientid']
+        # Preserve customer ID column
+        id_cols = ['customerID', 'CustomerID', 'Customer ID', 'CustomerId',
+                   'RowNumber', 'PatientID', 'patientid']
         id_series = None
         for col in df_raw.columns:
             if col in id_cols:
                 id_series = df_raw[col].copy()
                 break
 
-        # Pass correctly-cased column signatures to cleaning pipeline
         df = self._clean(df_mapped)
         df = self._encode(df, fit=False)
 
-        # Force structural feature alignment BEFORE scaling
+        # Align to trained feature set
         for col in self.feature_names:
             if col not in df.columns:
-                # If the feature is in our scaler's tracking, use its mean/center value
                 if hasattr(self.scaler, 'mean_') and col in self.config.get('scale_cols', []):
                     idx = list(self.config['scale_cols']).index(col)
                     df[col] = self.scaler.mean_[idx]
                 else:
-                    # Fallback to standard baseline indicator if completely unknown
                     df[col] = 0
         df = df[self.feature_names]
 
-        # Scaler execution
+        # Scale
         if hasattr(self.scaler, 'feature_names_in_'):
             scale_cols = [c for c in self.scaler.feature_names_in_ if c in df.columns]
         else:
@@ -756,27 +929,31 @@ class SectorPipeline:
         if scale_cols:
             df[scale_cols] = self.scaler.transform(df[scale_cols])
 
-        X = df.values
+        X      = df.values
         preds  = self.model.predict(X)
         probas = self.model.predict_proba(X)[:, 1]
 
-        # Verify prediction variance to catch flatlines
         verify_prediction_variance(probas)
 
         results = pd.DataFrame()
-        results['CustomerID'] = id_series.values if id_series is not None else [f"UNK_{i}" for i in range(len(df))]
-        results['Predicted_Churn']   = pd.Series(preds).map({0: 'No', 1: 'Yes'})
+        results['CustomerID']       = (id_series.values if id_series is not None
+                                       else [f"UNK_{i}" for i in range(len(df))])
+        results['Predicted_Churn']  = pd.Series(preds).map({0: 'No', 1: 'Yes'})
         results['Churn_Probability'] = probas.round(4)
-        results['Risk_Level'] = np.select(
-            [probas >= 0.70, probas >= 0.40],
-            ['High', 'Medium'],
-            default='Low'
+        results['Risk_Level']       = np.select(
+            [probas >= 0.70, probas >= 0.40], ['High', 'Medium'], default='Low'
         )
-        results['Sector'] = self.sector.capitalize()
-        results['Model']  = 'XGBoost (Sector-Specific)'
+        results['Prediction_Model'] = f"{self.sector.capitalize()} XGBoost (Sector-Specific)"
+        results['Prediction_Mode']  = 'Full'
+        results['Coverage_Score']   = f"{coverage['coverage_score']*100:.1f}%"
+        results['Coverage_Status']  = coverage['status']
+        results['Coverage_Warning'] = (
+            '' if not coverage['missing_all']
+            else f"Low-weight features missing: {coverage['missing_all']}"
+        )
 
         if explain:
-            id_col = results['CustomerID'].values
+            id_col   = results['CustomerID'].values
             log_path = explain_output or f"outputs/shap_logs/{self.sector}_shap_log.csv"
             write_shap_log(self.model, df, self.feature_names, id_col, log_path)
 
@@ -813,13 +990,16 @@ UNIVERSAL_FEATURES = [
     # for two blind spots a tree model tends to miss when it locks onto
     # one dominant feature (long tenure / long contract) and stops
     # weighting a contradicting recent signal:
-    'lockin_risk',             # new customer + long-term contract — looks
-                                # "safe" on contract length alone but the
-                                # commitment hasn't been tested yet
-    'dormant_loyalty_risk',    # long-tenured but recently inactive — a
-                                # loyal customer who has quietly stopped
-                                # engaging, easy to miss if tenure alone
-                                # dominates the model's risk assessment
+    'lockin_risk',             # new customer + long-term contract
+    'dormant_loyalty_risk',    # long-tenured but recently inactive
+    # --- healthcare ROC-AUC improvement: rich schema columns previously
+    # collapsed or silently dropped. Distinct features give the model
+    # genuine ranking signal instead of an under-resolved feature set.
+    'missed_appt_rate',        # missed appointments / total visits (0-1)
+    'composite_satisfaction',  # average of all satisfaction sub-scores
+    'billing_friction',        # billing_issues / visits (issue rate)
+    'care_accessibility',      # 1 - distance_normalized + portal_usage
+    'referral_engagement',     # referrals_made / max_referrals
 ]
 
 
@@ -870,6 +1050,14 @@ SECTOR_NORM_COLUMNS = {
     'healthcare': ['Tenure_Months', 'Avg_Out_Of_Pocket_Cost',
                    'Overall_Satisfaction', 'Visits_Last_Year',
                    'Days_Since_Last_Visit', 'Distance_To_Facility_Miles',
+                   # satisfaction sub-scores (composite_satisfaction)
+                   'Wait_Time_Satisfaction', 'Staff_Satisfaction', 'Provider_Rating',
+                   # missed appointment rate
+                   'Missed_Appointments',
+                   # billing friction
+                   'Billing_Issues',
+                   # referral engagement
+                   'Referrals_Made', 'Portal_Usage',
                    # schema-2 variant columns
                    'FrequencyOfVisits', 'MonthlyPremium',
                    'ClaimHistoryCount', 'CustomerSupportCalls'],
@@ -958,6 +1146,12 @@ def extract_universal_features(
         # order" concept, so dormant_loyalty_risk has no analog here.
         feat['lockin_risk']            = feat['contract_stability'] * (1 - feat['tenure_normalized'])
         feat['dormant_loyalty_risk']   = 0
+        # New healthcare-specific features — neutral defaults for telecom
+        feat['missed_appt_rate']       = 0
+        feat['composite_satisfaction'] = feat['satisfaction_score']
+        feat['billing_friction']       = 0
+        feat['care_accessibility']     = 0.5
+        feat['referral_engagement']    = 0
 
     elif sector == 'ecommerce':
         max_tenure  = _norm_max(df, 'Tenure', sector, norm_stats)
@@ -996,6 +1190,12 @@ def extract_universal_features(
         # concept, so lockin_risk has no analog here.
         feat['dormant_loyalty_risk']   = feat['tenure_normalized'] * feat['recency_score']
         feat['lockin_risk']            = 0
+        # New healthcare-specific features — neutral defaults for ecommerce
+        feat['missed_appt_rate']       = 0
+        feat['composite_satisfaction'] = feat['satisfaction_score']
+        feat['billing_friction']       = feat['has_complaint']  # complaint as friction proxy
+        feat['care_accessibility']     = feat['convenience_score']
+        feat['referral_engagement']    = 0
 
     elif sector == 'banking':
         max_tenure = _norm_max(df, 'Tenure', sector, norm_stats)
@@ -1032,6 +1232,12 @@ def extract_universal_features(
         # exists in banking beyond tenure, so lockin_risk has no analog.
         feat['dormant_loyalty_risk']   = feat['tenure_normalized'] * (1 - feat['is_active'])
         feat['lockin_risk']            = 0
+        # New healthcare-specific features — neutral defaults for banking
+        feat['missed_appt_rate']       = 0
+        feat['composite_satisfaction'] = feat['satisfaction_score']
+        feat['billing_friction']       = 0
+        feat['care_accessibility']     = 0.5
+        feat['referral_engagement']    = 0
 
     elif sector == 'healthcare':
         # Column names may arrive in their original mixed-case spaced form
@@ -1055,20 +1261,31 @@ def extract_universal_features(
             c_tenure  = _hcol(df, 'Tenure_Months',  'tenuremonths',  'Tenure Months')
             c_cost    = _hcol(df, 'Avg_Out_Of_Pocket_Cost', 'avgoutofpocketcost', 'Avg Out Of Pocket Cost')
             c_sat     = _hcol(df, 'Overall_Satisfaction', 'overallsatisfaction')
+            c_wait    = _hcol(df, 'Wait_Time_Satisfaction', 'waittimesatisfaction')
+            c_staff   = _hcol(df, 'Staff_Satisfaction', 'staffsatisfaction')
+            c_rating  = _hcol(df, 'Provider_Rating', 'providerrating')
             c_visits  = _hcol(df, 'Visits_Last_Year', 'visitslastyear', 'Visits Last Year')
+            c_missed  = _hcol(df, 'Missed_Appointments', 'missedappointments')
             c_lastv   = _hcol(df, 'Days_Since_Last_Visit', 'daysincelastvisit')
             c_dist    = _hcol(df, 'Distance_To_Facility_Miles', 'distancetofacilitymiles')
             c_billing = _hcol(df, 'Billing_Issues', 'billingissues', 'Billing Issues')
             c_portal  = _hcol(df, 'Portal_Usage', 'portalusage')
+            c_refs    = _hcol(df, 'Referrals_Made', 'referralsmade')
             c_age     = _hcol(df, 'Age', 'age')
 
-            max_tenure = _norm_max(df, c_tenure,  sector, norm_stats) if c_tenure  else 1
-            max_cost   = _norm_max(df, c_cost,    sector, norm_stats) if c_cost    else 1
-            max_sat    = _norm_max(df, c_sat,     sector, norm_stats) if c_sat     else 1
-            max_visits = _norm_max(df, c_visits,  sector, norm_stats) if c_visits  else 1
-            max_lastv  = _norm_max(df, c_lastv,   sector, norm_stats) if c_lastv   else 1
-            max_dist   = _norm_max(df, c_dist,    sector, norm_stats) if c_dist    else 1
+            max_tenure  = _norm_max(df, c_tenure,  sector, norm_stats) if c_tenure  else 1
+            max_cost    = _norm_max(df, c_cost,    sector, norm_stats) if c_cost    else 1
+            max_sat     = _norm_max(df, c_sat,     sector, norm_stats) if c_sat     else 1
+            max_wait    = _norm_max(df, c_wait,    sector, norm_stats) if c_wait    else 1
+            max_staff   = _norm_max(df, c_staff,   sector, norm_stats) if c_staff   else 1
+            max_rating  = _norm_max(df, c_rating,  sector, norm_stats) if c_rating  else 1
+            max_visits  = _norm_max(df, c_visits,  sector, norm_stats) if c_visits  else 1
+            max_lastv   = _norm_max(df, c_lastv,   sector, norm_stats) if c_lastv   else 1
+            max_dist    = _norm_max(df, c_dist,    sector, norm_stats) if c_dist    else 1
+            max_billing = _norm_max(df, c_billing, sector, norm_stats) if c_billing else 1
+            max_refs    = _norm_max(df, c_refs,    sector, norm_stats) if c_refs    else 1
 
+            # --- core universal features ---
             feat['tenure_normalized']      = df[c_tenure]  / max_tenure if c_tenure  else 0.5
             feat['charge_normalized']      = df[c_cost]    / max_cost   if c_cost    else 0
             feat['has_complaint']          = (df[c_billing] > 0).astype(int) if c_billing else 0
@@ -1079,7 +1296,6 @@ def extract_universal_features(
             feat['has_support']            = df[c_portal]  if c_portal else 0
             feat['contract_stability']     = df[c_tenure]  / max_tenure if c_tenure  else 0.5
             feat['payment_auto']           = 0.5
-
             feat['engagement_score']       = feat['num_products_services']
             feat['coupon_dependency']      = 0
             feat['cashback_engagement']    = 0
@@ -1087,6 +1303,56 @@ def extract_universal_features(
             feat['convenience_score']      = 1 - (df[c_dist]  / max_dist)  if c_dist  else 0.5
             feat['dormant_loyalty_risk']   = feat['tenure_normalized'] * (1 - feat['is_active'])
             feat['lockin_risk']            = 0
+
+            # --- new healthcare ROC-AUC features ---
+            # missed_appt_rate: ratio of missed to total visits. Saturates
+            # at 1.0. Patients who frequently miss are signalling low
+            # commitment before formal churn; using rate (not raw count)
+            # normalises across patients with different total visit volumes.
+            if c_missed and c_visits:
+                total = df[c_visits].replace(0, np.nan)
+                feat['missed_appt_rate'] = (df[c_missed] / total).clip(0, 1).fillna(0)
+            elif c_missed:
+                feat['missed_appt_rate'] = (df[c_missed] / max_visits).clip(0, 1)
+            else:
+                feat['missed_appt_rate'] = pd.Series(0.0, index=df.index)
+
+            # composite_satisfaction: mean of all available sub-scores
+            # rather than just one field. Divergence between sub-scores
+            # (e.g. overall=4, staff=1) is a disengagement signal that a
+            # single overall score masks.
+            sat_scores = []
+            if c_sat:    sat_scores.append(df[c_sat]    / max_sat)
+            if c_wait:   sat_scores.append(df[c_wait]   / max_wait)
+            if c_staff:  sat_scores.append(df[c_staff]  / max_staff)
+            if c_rating: sat_scores.append(df[c_rating] / max_rating)
+            if sat_scores:
+                feat['composite_satisfaction'] = pd.concat(sat_scores, axis=1).mean(axis=1)
+            else:
+                feat['composite_satisfaction'] = feat['satisfaction_score']
+
+            # billing_friction: complaints per visit. A single complaint
+            # across 20 visits is very different from 3 across 3 visits.
+            if c_billing and c_visits:
+                total = df[c_visits].replace(0, np.nan)
+                feat['billing_friction'] = (df[c_billing] / total).clip(0, 1).fillna(0)
+            elif c_billing:
+                feat['billing_friction'] = (df[c_billing] / max_billing).clip(0, 1)
+            else:
+                feat['billing_friction'] = pd.Series(0.0, index=df.index)
+
+            # care_accessibility: combines physical friction (distance)
+            # with digital offset (portal reduces friction). Range [0, 1];
+            # higher = more accessible. Low accessibility + low portal
+            # usage = maximum disengagement risk.
+            dist_norm   = (df[c_dist] / max_dist).clip(0, 1) if c_dist   else pd.Series(0.5, index=df.index)
+            portal_norm = df[c_portal].clip(0, 1)             if c_portal else pd.Series(0.0, index=df.index)
+            feat['care_accessibility'] = ((1 - dist_norm) + portal_norm).clip(0, 1)
+
+            # referral_engagement: normalized referrals. Long-tenured
+            # patients with zero referrals are a distinct disengagement
+            # signal not captured by any existing feature.
+            feat['referral_engagement'] = (df[c_refs] / max_refs).clip(0, 1) if c_refs else 0
 
         elif _has_premium or _has_freq:
             c_premium = _hcol(df, 'MonthlyPremium', 'monthlypremium')
@@ -1098,6 +1364,7 @@ def extract_universal_features(
             max_premium = _norm_max(df, c_premium, sector, norm_stats) if c_premium else 1
             max_freq    = _norm_max(df, c_freq,    sector, norm_stats) if c_freq    else 1
             max_claims  = _norm_max(df, c_claims,  sector, norm_stats) if c_claims  else 1
+            max_calls   = _norm_max(df, c_calls,   sector, norm_stats) if c_calls   else 1
 
             feat['tenure_normalized']      = 0.5
             feat['charge_normalized']      = df[c_premium] / max_premium if c_premium else 0
@@ -1109,7 +1376,6 @@ def extract_universal_features(
             feat['has_support']            = (df[c_calls] > 0).astype(int) if c_calls else 0
             feat['contract_stability']     = 0.5
             feat['payment_auto']           = 0.5
-
             feat['engagement_score']       = feat['num_products_services']
             feat['coupon_dependency']      = 0
             feat['cashback_engagement']    = 0
@@ -1117,12 +1383,16 @@ def extract_universal_features(
             feat['convenience_score']      = 1 - (df[c_claims] / max_claims) if c_claims else 0.5
             feat['dormant_loyalty_risk']   = 0.5
             feat['lockin_risk']            = 0
+            # New features for schema-2 (partial analogs where available)
+            feat['missed_appt_rate']       = 0
+            feat['composite_satisfaction'] = feat['satisfaction_score']
+            feat['billing_friction']       = (df[c_calls] / max_calls).clip(0, 1) if c_calls else 0
+            feat['care_accessibility']     = 0.5
+            feat['referral_engagement']    = 0
 
         else:
             for col in UNIVERSAL_FEATURES:
                 feat[col] = 0.5
-
-    # Encode target
     y = df[target_col].astype(str).str.strip()
     y = y.map({
         'Yes': 1, 'No': 0,
@@ -1346,6 +1616,151 @@ def verify_prediction_variance(probabilities: np.ndarray, threshold: float = 1e-
         )
 
 
+def compute_coverage_score(
+    df_input: pd.DataFrame,
+    sector: str,
+    mode: str = 'sector',
+    green_threshold: float = 0.85,
+    yellow_threshold: float = 0.60,
+) -> dict:
+    """
+    Compute a weighted feature coverage score for the input CSV and
+    determine which model should be used for prediction.
+
+    Coverage Score = sum(weight_i × quality_i) / sum(weight_i)
+
+    where quality_i = 1 if the feature is:
+        • present in the input CSV  (column exists, after alias normalisation)
+        • non-null                  (< 95% null values)
+        • non-constant              (more than one unique non-null value)
+    and quality_i = 0 otherwise.
+
+    Routing bands
+    ─────────────
+    Green  ≥ 85%  →  Full sector-specific XGBoost  (Prediction_Mode = 'Full')
+    Yellow 60–85% →  Universal XGBoost fallback     (Prediction_Mode = 'Fallback')
+    Red    < 60%  →  Hard stop, no prediction       (Prediction_Mode = 'Refused')
+
+    Returns
+    ───────
+    coverage_score   float   weighted score in [0, 1]
+    status           str     'Green' | 'Yellow' | 'Red'
+    prediction_mode  str     'Full' | 'Fallback' | 'Refused'
+    missing_critical list    weight≥4 features that failed quality check
+    missing_all      list    all features that failed quality check
+    detail           list[dict]  per-feature breakdown for logging
+    """
+    weights = SECTOR_FEATURE_WEIGHTS.get(sector, {})
+    if not weights:
+        # Unknown sector — treat all present columns as weight-1
+        weights = {c: 1 for c in df_input.columns}
+
+    total_weight = sum(weights.values())
+
+    # Normalise input column names once for O(1) lookup
+    def _strip(s: str) -> str:
+        return s.lower().replace('_', '').replace(' ', '')
+
+    stripped_to_original = {_strip(c): c for c in df_input.columns}
+
+    detail          = []
+    earned_weight   = 0.0
+    missing_all     = []
+    missing_critical = []
+
+    for feat, weight in weights.items():
+        feat_stripped = _strip(feat)
+        orig_col      = stripped_to_original.get(feat_stripped)
+
+        if orig_col is None:
+            quality  = 0
+            reason   = 'absent'
+        else:
+            col = df_input[orig_col]
+            pct_null = col.isna().mean()
+            numeric  = pd.to_numeric(col, errors='coerce')
+            n_unique = numeric.dropna().nunique()
+
+            if pct_null >= 0.95:
+                quality = 0
+                reason  = f'mostly null ({pct_null*100:.0f}%)'
+            elif n_unique <= 1:
+                quality = 0
+                reason  = 'constant (no variance)'
+            else:
+                quality = 1
+                reason  = 'OK'
+
+        earned_weight += weight * quality
+        detail.append({
+            'feature' : feat,
+            'weight'  : weight,
+            'quality' : quality,
+            'reason'  : reason,
+        })
+        if quality == 0:
+            missing_all.append(feat)
+            if weight >= 4:
+                missing_critical.append(feat)
+
+    coverage_score = earned_weight / total_weight if total_weight > 0 else 0.0
+
+    if coverage_score >= green_threshold:
+        status          = 'Green'
+        prediction_mode = 'Full'
+    elif coverage_score >= yellow_threshold:
+        status          = 'Yellow'
+        prediction_mode = 'Fallback'
+    else:
+        status          = 'Red'
+        prediction_mode = 'Refused'
+
+    # ── Print report ──────────────────────────────────────────────
+    sep   = '─' * 60
+    icons = {'Green': '✔', 'Yellow': '△', 'Red': '✖'}
+    print(f"\n{sep}")
+    print(f"  COVERAGE SCORE REPORT  [{mode.upper()} / {sector.upper()}]")
+    print(sep)
+    print(f"  Weighted coverage score : {coverage_score*100:.1f}%")
+    print(f"  Status                  : {icons[status]} {status}")
+    print(f"  Prediction mode         : {prediction_mode}")
+
+    if missing_critical:
+        print(f"\n  High-weight features missing or unusable (weight ≥ 4):")
+        for f in missing_critical:
+            w = weights[f]
+            r = next(d['reason'] for d in detail if d['feature'] == f)
+            print(f"    [{w}]  {f}  ({r})")
+
+    low_missing = [f for f in missing_all if f not in missing_critical]
+    if low_missing:
+        print(f"\n  Lower-weight features missing or unusable:")
+        for f in low_missing:
+            w = weights[f]
+            r = next(d['reason'] for d in detail if d['feature'] == f)
+            print(f"    [{w}]  {f}  ({r})")
+
+    if status == 'Green':
+        print(f"\n  Using full sector-specific model.")
+    elif status == 'Yellow':
+        print(f"\n  Coverage below 85% — routing to universal model fallback.")
+        print(f"  Predictions will be less precise than the sector model.")
+    else:
+        print(f"\n  Coverage below 60% — prediction refused.")
+        print(f"  Enrich the input CSV with the critical features listed above.")
+
+    print(sep)
+
+    return {
+        'coverage_score'    : round(coverage_score, 4),
+        'status'            : status,
+        'prediction_mode'   : prediction_mode,
+        'missing_critical'  : missing_critical,
+        'missing_all'       : missing_all,
+        'detail'            : detail,
+    }
+
+
 def write_shap_log(
     model,
     X_df: pd.DataFrame,
@@ -1459,6 +1874,57 @@ def transform_features_by_sector(df: pd.DataFrame, sector: str) -> pd.DataFrame:
     return X_processed
 
 
+def derive_temporal_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Detect date columns (last interaction, last visit, last order, etc.)
+    and derive numeric gap-in-days columns from them so feature extraction
+    can use recency/activity signals even when the raw CSV has a date field
+    instead of a pre-computed days-since column.
+
+    Looks for columns whose lowercased+stripped name contains any of:
+      'lastinteraction', 'lastvisit', 'lastorder', 'lastseen',
+      'lastcontact', 'lastpurchase', 'lastappointment'
+    and derives 'Days_Since_Last_Visit' (healthcare/universal) or
+    'DaySinceLastOrder' (ecommerce) from them.
+
+    Reference date: today (at pipeline run time).  Negative values
+    (future dates) are clamped to 0.
+    """
+    df_out = df.copy()
+    today  = pd.Timestamp.now().normalize()
+
+    # Map of normalized column-name substrings → derived column name to add
+    patterns = [
+        ('lastinteraction', 'Days_Since_Last_Visit'),
+        ('lastvisit',       'Days_Since_Last_Visit'),
+        ('lastappointment', 'Days_Since_Last_Visit'),
+        ('lastcontact',     'Days_Since_Last_Visit'),
+        ('lastseen',        'Days_Since_Last_Visit'),
+        ('lastorder',       'DaySinceLastOrder'),
+        ('lastpurchase',    'DaySinceLastOrder'),
+    ]
+
+    for original_col in df.columns:
+        normalized = original_col.lower().replace(' ', '').replace('_', '')
+        for pattern, derived_col in patterns:
+            if pattern in normalized:
+                # Only derive if the target column doesn't already exist
+                if derived_col in df_out.columns:
+                    break
+                try:
+                    parsed = pd.to_datetime(df_out[original_col], infer_datetime_format=True, errors='coerce')
+                    days   = (today - parsed).dt.days.clip(lower=0)
+                    if days.notna().any():
+                        df_out[derived_col] = days.fillna(days.median())
+                        print(f"  [temporal] '{original_col}' → '{derived_col}' "
+                              f"(range: {int(days.min())}–{int(days.max())} days)")
+                except Exception:
+                    pass  # unparseable date column — leave as-is
+                break
+
+    return df_out
+
+
 def sanitize_numerical_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
     Cleans raw human strings like '12 months', '₹85.50', '120 USD',
@@ -1520,6 +1986,20 @@ def predict_universal(input_path: str, force_sector: str | None = None, explain:
     # any sector detection or feature extraction runs, so strings like
     # "12 months" or "₹120" don't crash normalization arithmetic.
     df_raw = sanitize_numerical_columns(df_raw)
+
+    # Parse any date column (Last_Interaction_Date, etc.) into a numeric
+    # days-since column so recency signal isn't silently lost when the
+    # CSV has a date instead of a pre-computed gap.
+    df_raw = derive_temporal_features(df_raw)
+
+    # Coverage scoring — use detected sector once known; pre-check with
+    # raw columns to surface a warning before heavy feature extraction.
+    _sector_for_coverage = force_sector if force_sector else detect_sector(df_raw)
+    _coverage = compute_coverage_score(
+        df_input=df_raw,
+        sector=_sector_for_coverage,
+        mode='universal',
+    )
 
     # Run structural detection before modifying schemas
     sector = force_sector or detect_sector(df_raw)
@@ -1591,8 +2071,16 @@ def predict_universal(input_path: str, force_sector: str | None = None, explain:
     results['Predicted_Churn'] = pd.Series(preds).map({0: 'No', 1: 'Yes'})
     results['Churn_Probability'] = probas.round(4)
     results['Risk_Level'] = np.select([probas >= 0.70, probas >= 0.40], ['High', 'Medium'], default='Low')
-    results['Sector'] = sector.capitalize()
-    results['Model'] = 'XGBoost (Universal)'
+    results['Sector']           = sector.capitalize()
+    results['Model']            = 'XGBoost (Universal)'
+    results['Prediction_Model'] = 'XGBoost (Universal)'
+    results['Prediction_Mode']  = 'Universal'
+    results['Coverage_Score']   = f"{_coverage['coverage_score']*100:.1f}%"
+    results['Coverage_Status']  = _coverage['status']
+    results['Coverage_Warning'] = (
+        '' if not _coverage['missing_critical']
+        else f"Missing critical features: {_coverage['missing_critical']}"
+    )
 
     return results
 

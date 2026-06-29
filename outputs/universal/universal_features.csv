@@ -16,4 +16,9 @@ recency_score
 convenience_score
 lockin_risk
 dormant_loyalty_risk
+missed_appt_rate
+composite_satisfaction
+billing_friction
+care_accessibility
+referral_engagement
 Sector_Encoded
