@@ -1,6 +1,0 @@
-customerID,Tenure,Contract,MonthlyCharges,InternetService,TechSupport,PaperlessBilling,Churn
-ADV_TEL_01,1,Two year,15.00,DSL,Yes,No,1
-ADV_TEL_02,72,Month-to-month,125.50,Fiber optic,No,Yes,1
-ADV_TEL_03,3,Month-to-month,110.00,Fiber optic,No,Yes,1
-ADV_TEL_04,68,Two year,115.00,Fiber optic,Yes,No,0
-ADV_TEL_05,12,One year,45.00,DSL,No,No,0

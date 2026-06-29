@@ -15,7 +15,7 @@ except ImportError as exc:
     raise ImportError("xgboost is required to score the XGBoost model.") from exc
 
 
-DEFAULT_INPUT = Path("new_telecom_customers.csv")
+DEFAULT_INPUT = Path("data/telecom/new_telecom_customers.csv")
 DEFAULT_OUTPUT = Path("outputs/results/new_customer_predictions.csv")
 DEFAULT_SCALER = Path("outputs/scaler_telecom.pkl")
 DEFAULT_FEATURES = Path("outputs/telecom_feature_names.csv")
