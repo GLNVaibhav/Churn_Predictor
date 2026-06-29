@@ -1,0 +1,6 @@
+CustomerId,CreditScore,Geography,Gender,Age,Balance,NumOfProducts,HasCrCard,IsActiveMember,EstimatedSalary
+BNK_GOLD_01,420,France,Female,44,120000.00,1,1,0,50000.00
+BNK_GOLD_02,690,Germany,Male,36,0.00,2,1,1,72000.00
+BNK_GOLD_03,810,Spain,Female,29,45000.00,1,1,1,98000.00
+BNK_GOLD_04,560,France,Male,52,78000.00,3,0,0,41000.00
+BNK_GOLD_05,730,Germany,Female,41,2500.00,2,1,1,61000.00

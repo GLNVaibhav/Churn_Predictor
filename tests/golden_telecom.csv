@@ -1,0 +1,6 @@
+customerID,tenure,InternetService,Contract,MonthlyCharges,TotalCharges
+TEL_GOLD_01,2,Fiber optic,Month-to-month,89.90,179.80
+TEL_GOLD_02,24,DSL,One year,56.45,1354.80
+TEL_GOLD_03,72,No,Two year,20.10,1447.20
+TEL_GOLD_04,8,Fiber optic,Month-to-month,99.50,796.00
+TEL_GOLD_05,48,DSL,Two year,65.00,3120.00

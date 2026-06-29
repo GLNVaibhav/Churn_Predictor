@@ -1,0 +1,6 @@
+PatientID,Age,MedicalCondition,PolicyType,MonthlyPremium,FrequencyOfVisits,ClaimHistoryCount,CustomerSupportCalls,Churned
+ADV_HCA_01,22,None,Premium,450.00,0,0,7,1
+ADV_HCA_02,65,Chronic,Basic,95.00,15,12,0,0
+ADV_HCA_03,34,Injury,Premium,315.00,1,1,5,1
+ADV_HCA_04,45,None,Standard,180.00,4,2,1,0
+ADV_HCA_05,58,Chronic,Premium,380.00,12,10,2,0

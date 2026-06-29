@@ -1,0 +1,6 @@
+customerID,tenure,Gender,PreferredLoginDevice,WarehouseToHome,HourSpendOnApp,NumberOfDeviceRegistered,PreferredPaymentMode,SatisfactionScore,Complain,OrderAmountHikeFromlastYear
+ECO_GOLD_01,2,Female,Mobile Phone,12,1,2,Credit Card,2,1,18
+ECO_GOLD_02,18,Male,Computer,4,4,4,UPI,4,0,9
+ECO_GOLD_03,36,Female,Mobile Phone,7,3,3,Debit Card,5,0,12
+ECO_GOLD_04,6,Male,Computer,15,5,5,Cash on Delivery,1,1,25
+ECO_GOLD_05,24,Female,Mobile Phone,9,2,2,PhonePe,3,0,7
