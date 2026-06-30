@@ -1,6 +1,15 @@
 """
 universal_churn/sector_pipeline.py
 SectorPipeline: per-sector XGBoost model (Phase A).
+
+Routing note
+------------
+This module no longer decides which model to use. predict() computes
+CoverageResult and QualityResult inputs, calls routing.route() exactly
+once, and then executes whatever RoutingDecision says. Feature recovery
+(attempt_feature_recovery) still happens here — it is a preprocessing/
+feature-engineering concern, not a routing decision, and the router
+only ever sees the FINAL, post-recovery coverage result.
 """
 from __future__ import annotations
 from pathlib import Path
@@ -16,8 +25,13 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from xgboost import XGBClassifier
 from .config import SECTOR_CONFIG, GLOBAL_CONCEPT_MAP
 from .coverage import compute_coverage_score, attempt_feature_recovery
+from .quality_gate import run_quality_gate
+from .routing import route, ModelType
 from .explainability import write_shap_log, summarize_shap_directions
-from .preprocessing import sanitize_numerical_columns, derive_temporal_features
+from .preprocessing import (
+    sanitize_numerical_columns, derive_temporal_features,
+    normalize_target, validate_target_types,
+)
 from .reporting import attach_common_metadata
 from .utils import verify_prediction_variance
 
@@ -101,23 +115,22 @@ class SectorPipeline:
                 df = pd.get_dummies(df, columns=ohe_present, drop_first=True)
         return df
 
-    def _encode_target(self, series: pd.Series) -> pd.Series:
-        if pd.api.types.is_numeric_dtype(series):
-            return series.astype(int)
-        series = series.astype(str).str.strip().map(
-            {'Yes': 1, 'No': 0, 'yes': 1, 'no': 0, 'YES': 1, 'NO': 0})
-        if series.isna().any():
-            raise ValueError(
-                f"_encode_target: {series.isna().sum()} target value(s) "
-                "could not be mapped to 0/1.")
-        return series.astype(int)
+    # fix: _encode_target() was a second, independent implementation of
+    # label normalization living alongside preprocessing.normalize_target()
+    # — and a stricter/buggier one at that (no support for True/False or
+    # "0"/"1" string labels that normalize_target() already handles).
+    # Removed in favor of the single shared implementation so every
+    # training path (SectorPipeline, train_universal_model, and
+    # extract_universal_features) applies identical label rules.
+
+    # ── Training (unchanged — no routing decisions made during fit) ──
 
     def fit(self) -> 'SectorPipeline':
         print(f"\n{'='*50}\n  Training pipeline — {self.sector.upper()}\n{'='*50}")
         df = self._load_data()
         df = self._clean(df)
         target_col = self.config['target_col']
-        y = self._encode_target(df[target_col])
+        y = normalize_target(df[target_col])
         print("\nTarget classes:")
         print(pd.Series(y).value_counts())
         df.drop(columns=[target_col], inplace=True)
@@ -129,6 +142,12 @@ class SectorPipeline:
         if df.isna().sum().sum() > 0:
             df = df.fillna(0)
         X = df.values
+        y = y.values
+        # fix: pre-flight check immediately before stratify=y, per the
+        # shared validation contract (same check train_universal_model
+        # now runs) — catches a mixed/non-binary target here with an
+        # actionable message instead of a cryptic NumPy error.
+        validate_target_types(y, context=f"SectorPipeline.fit[{self.sector}]")
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42, stratify=y)
         smote = SMOTE(random_state=42)
@@ -176,33 +195,21 @@ class SectorPipeline:
             self.label_encoders = joblib.load(le_path)
         return self
 
-    def predict(self, input_csv: str, explain: bool = False,
-                explain_output: str | None = None,
-                _prediction_mode: str = 'Sector') -> pd.DataFrame:
-        df_raw = pd.read_csv(input_csv)
-        df_raw = sanitize_numerical_columns(df_raw)
-        df_raw = derive_temporal_features(df_raw)
-        coverage = compute_coverage_score(df_raw, self.sector, mode='sector')
-        if coverage['prediction_mode'] == 'Refused':
-            raise ValueError(
-                f"Prediction refused for sector '{self.sector}': "
-                f"weighted coverage {coverage['coverage_score']*100:.1f}% < 60%.")
-        if coverage['prediction_mode'] == 'Fallback':
-            recovered_df = attempt_feature_recovery(df_raw, self.sector)
-            if recovered_df is not None:
-                recovery_coverage = compute_coverage_score(
-                    recovered_df, self.sector, mode='sector', _suppress_print=True)
-                if recovery_coverage['prediction_mode'] == 'Full':
-                    df_raw = recovered_df
-                    coverage = recovery_coverage
-        if coverage['prediction_mode'] == 'Fallback':
-            from .universal_pipeline import predict_universal
-            results = predict_universal(
-                input_path=input_csv, force_sector=self.sector,
-                _precomputed_coverage=coverage, _prediction_mode='Fallback')
-            results.attrs['coverage'] = coverage
-            results.attrs['explain_summary'] = None
-            return results
+    # ── Internal: the actual sector-model inference, unchanged math ──
+    # Split out from predict() so predict() can call this ONLY after
+    # routing.route() has selected FULL_SECTOR_MODEL — this method
+    # itself makes no routing decisions.
+
+    def _run_sector_model(
+        self,
+        df_raw: pd.DataFrame,
+        coverage_dict: dict,
+        quality_dict: dict,
+        routing_decision,
+        explain: bool,
+        explain_output: str | None,
+        _prediction_mode: str,
+    ) -> pd.DataFrame:
         df_lower = df_raw.copy()
         df_lower.columns = (df_lower.columns.str.lower()
                             .str.replace(' ', '', regex=False)
@@ -260,6 +267,7 @@ class SectorPipeline:
         preds = self.model.predict(X)
         probas = self.model.predict_proba(X)[:, 1]
         verify_prediction_variance(probas)
+
         results = pd.DataFrame()
         results['CustomerID'] = (id_series.values if id_series is not None
                                  else [f"UNK_{i}" for i in range(len(df))])
@@ -269,9 +277,17 @@ class SectorPipeline:
             [probas >= 0.70, probas >= 0.40], ['High', 'Medium'], default='Low')
         results['Prediction_Model'] = 'Sector XGBoost'
         results['Prediction_Mode'] = _prediction_mode
-        results['Coverage_Score'] = f"{coverage['coverage_score']*100:.1f}%"
-        results['Coverage_Status'] = coverage['status']
-        results = attach_common_metadata(results, coverage, 'Sector XGBoost')
+        results['Coverage_Score'] = f"{coverage_dict['coverage_score']*100:.1f}%"
+        results['Coverage_Status'] = coverage_dict['status']
+        results = attach_common_metadata(results, coverage_dict, 'Sector XGBoost')
+
+        # Routing-decision fields, attached uniformly per the architecture
+        # spec (Selected Model, Routing Reason, Quality Score, Reliability,
+        # Concept Confidence, Warnings, etc.) — sourced entirely from the
+        # RoutingDecision object, not recomputed here.
+        for k, v in routing_decision.report_fields().items():
+            results[k] = v
+
         explain_summary = None
         if explain:
             id_col = results['CustomerID'].values
@@ -279,5 +295,87 @@ class SectorPipeline:
             write_shap_log(self.model, df, self.feature_names, id_col, log_path)
             explain_summary = summarize_shap_directions(self.model, df, self.feature_names)
         results.attrs['explain_summary'] = explain_summary
-        results.attrs['coverage'] = coverage
+        results.attrs['coverage'] = coverage_dict
+        results.attrs['quality'] = quality_dict
+        results.attrs['routing_decision'] = routing_decision
         return results
+
+    # ── Public prediction entry point ────────────────────────────
+
+    def predict(self, input_csv: str, explain: bool = False,
+                explain_output: str | None = None,
+                _prediction_mode: str = 'Sector') -> pd.DataFrame:
+        """
+        Predict churn for this sector. ALL routing decisions are made by
+        routing.route() — this method only:
+          1. Prepares the input (sanitize, derive temporal features)
+          2. Computes coverage + quality
+          3. Attempts feature recovery if coverage is Yellow (a feature-
+             engineering step, not a routing decision) and re-scores
+             coverage on the recovered frame
+          4. Calls routing.route() exactly once with the FINAL coverage
+          5. Executes whatever RoutingDecision.selected_model specifies
+        """
+        df_raw = pd.read_csv(input_csv)
+        df_raw = sanitize_numerical_columns(df_raw)
+        df_raw = derive_temporal_features(df_raw)
+
+        coverage = compute_coverage_score(df_raw, self.sector, mode='sector')
+
+        # Feature recovery is a preprocessing concern, not a routing
+        # decision — it happens here, before the router is ever called,
+        # exactly as it did before the routing refactor. The router only
+        # ever sees the final, post-recovery coverage result.
+        if coverage['prediction_mode'] == 'Fallback':
+            recovered_df = attempt_feature_recovery(df_raw, self.sector)
+            if recovered_df is not None:
+                recovery_coverage = compute_coverage_score(
+                    recovered_df, self.sector, mode='sector', _suppress_print=True)
+                if recovery_coverage['prediction_mode'] == 'Full':
+                    df_raw = recovered_df
+                    coverage = recovery_coverage
+
+        quality = run_quality_gate(df_raw, target_col=self.config['target_col'])
+
+        decision = route(
+            mode=_prediction_mode.lower() if _prediction_mode.lower() in
+                 ('sector', 'universal', 'auto') else 'sector',
+            coverage=coverage,
+            quality=quality,
+            sector=self.sector,
+        )
+
+        if decision.selected_model == ModelType.CRITICAL_UNRELIABLE:
+            raise ValueError(
+                f"Prediction refused for sector '{self.sector}': "
+                f"{decision.routing_reason}"
+            )
+
+        if decision.selected_model == ModelType.UNIVERSAL_MODEL:
+            from .universal_pipeline import predict_universal
+            results = predict_universal(
+                input_path=input_csv, force_sector=self.sector,
+                _precomputed_coverage=coverage, _prediction_mode=_prediction_mode)
+            for k, v in decision.report_fields().items():
+                results[k] = v
+            results.attrs['coverage'] = coverage
+            results.attrs['quality'] = quality
+            results.attrs['routing_decision'] = decision
+            results.attrs.setdefault('explain_summary', None)
+            return results
+
+        if decision.selected_model == ModelType.CORE_MODEL:
+            # Hook point — no CoreModelPipeline exists yet. The router can
+            # select this once core_pipeline.py is implemented; until
+            # then this branch is reachable in principle but route()
+            # never actually returns CORE_MODEL today (see routing.py).
+            raise NotImplementedError(
+                "Routing selected CORE_MODEL, but no core model pipeline "
+                "is implemented yet. This is a future-readiness hook."
+            )
+
+        # FULL_SECTOR_MODEL — the only remaining case
+        return self._run_sector_model(
+            df_raw, coverage, quality, decision,
+            explain, explain_output, _prediction_mode,
+        )

@@ -1,6 +1,23 @@
 """
 universal_churn/universal_pipeline.py
 Phase B: Universal cross-sector model training and prediction.
+
+Routing note
+------------
+predict_universal() can be reached two ways:
+  1. Directly, as the --mode universal CLI entry point — in this case
+     it computes coverage + quality itself and calls routing.route()
+     so the quality gate (leakage check) still applies even when the
+     user explicitly bypasses sector routing.
+  2. As a fallback target from SectorPipeline.predict() (auto/sector
+     modes routed to UNIVERSAL_MODEL) — in this case the caller has
+     ALREADY called routing.route() and passes the precomputed
+     coverage via _precomputed_coverage; this function does not call
+     route() a second time in that case, to avoid a duplicate/
+     conflicting routing decision for the same input.
+
+train_universal_model() is unchanged — training has no routing
+decisions to make.
 """
 from __future__ import annotations
 from pathlib import Path
@@ -26,15 +43,18 @@ from .feature_engineering import (
 )
 from .preprocessing import (
     sanitize_numerical_columns, derive_temporal_features, detect_sector,
+    normalize_target, validate_target_types,
 )
 from .reporting import attach_common_metadata
 from .utils import verify_prediction_variance
 from .coverage import compute_coverage_score
+from .quality_gate import run_quality_gate
+from .routing import route, ModelType
 from .explainability import write_shap_log, summarize_shap_directions
 
 
 def train_universal_model(tune_metric: str | None = None) -> None:
-    """Phase B: Merge all 4 sectors into universal feature space."""
+    """Phase B: Merge all 4 sectors into universal feature space. Unchanged — no routing here."""
     print("\n" + "=" * 55)
     print("  PHASE B — Training Universal Cross-Sector Model")
     print("=" * 55)
@@ -81,9 +101,28 @@ def train_universal_model(tune_metric: str | None = None) -> None:
     combined['Sector_Encoded'] = le_sector.fit_transform(combined['Sector'])
     combined.drop(columns=['Sector'], inplace=True)
     combined = combined.replace([np.inf, -np.inf], np.nan).fillna(0)
+
+    # fix: each sector's extract_universal_features() may emit Churn in
+    # a different raw representation (e.g. one sector's source CSV uses
+    # "Yes"/"No", another already uses 0/1). Concatenating across
+    # sectors before normalizing produced a mixed-type Churn column,
+    # which crashed train_test_split(..., stratify=y) deep inside NumPy
+    # with "'<' not supported between instances of 'str' and 'int'".
+    # normalize_target() is the single shared source of truth for this
+    # — same function SectorPipeline uses — so both pipelines apply
+    # identical label rules instead of duplicated/diverging logic.
+    combined['Churn'] = normalize_target(combined['Churn'])
+
     X = combined.drop(columns=['Churn'])
     y = combined['Churn'].values
     feature_names = X.columns.tolist()
+
+    # fix: pre-flight check immediately before stratify=y, per the
+    # shared validation contract — fails loudly with an actionable
+    # message if normalization above somehow left mixed types, rather
+    # than surfacing as a cryptic error inside scikit-learn/NumPy.
+    validate_target_types(y, context="train_universal_model")
+
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y)
     scaler = StandardScaler()
@@ -131,18 +170,40 @@ def predict_universal(
     _prediction_mode: str = 'Universal',
     _precomputed_coverage: dict | None = None,
 ) -> pd.DataFrame:
-    """Predict churn using the universal cross-sector model."""
+    """
+    Predict churn using the universal cross-sector model.
+
+    Routing: if _precomputed_coverage is None (this function is the
+    entry point, e.g. --mode universal), coverage + quality are
+    computed here and routing.route() is called once so the quality
+    gate (leakage detection) still applies. If _precomputed_coverage
+    is provided (this function was reached as a fallback FROM
+    SectorPipeline.predict(), which already called route()), routing
+    is not re-run — the caller's RoutingDecision already determined
+    that the universal model should be used for this input.
+    """
     df_raw = pd.read_csv(input_path)
     df_raw = sanitize_numerical_columns(df_raw)
     df_raw = derive_temporal_features(df_raw)
-    sector_for_coverage = force_sector if force_sector else detect_sector(df_raw)
-    if _precomputed_coverage is not None:
-        _coverage = _precomputed_coverage
-    else:
-        _coverage = compute_coverage_score(
-            df_input=df_raw, sector=sector_for_coverage, mode='universal')
     sector = force_sector or detect_sector(df_raw)
     print(f"  Auto-detected sector: {sector}")
+
+    routing_decision = None
+    if _precomputed_coverage is not None:
+        _coverage = _precomputed_coverage
+        _quality  = None  # already evaluated by the caller's route() call
+    else:
+        _coverage = compute_coverage_score(df_input=df_raw, sector=sector, mode='universal')
+        _quality  = run_quality_gate(df_raw, target_col=SECTOR_CONFIG[sector]['target_col'])
+        routing_decision = route(
+            mode='universal', coverage=_coverage, quality=_quality, sector=sector,
+        )
+        if routing_decision.selected_model == ModelType.CRITICAL_UNRELIABLE:
+            raise ValueError(
+                f"Prediction refused for sector '{sector}': "
+                f"{routing_decision.routing_reason}"
+            )
+
     df_lower = df_raw.copy()
     df_lower.columns = (df_lower.columns.str.lower()
                         .str.replace(' ', '', regex=False)
@@ -202,6 +263,11 @@ def predict_universal(
     results['Coverage_Score'] = f"{_coverage['coverage_score']*100:.1f}%"
     results['Coverage_Status'] = _coverage['status']
     results = attach_common_metadata(results, _coverage, 'Universal XGBoost')
+
+    if routing_decision is not None:
+        for k, v in routing_decision.report_fields().items():
+            results[k] = v
+
     explain_summary = None
     if explain:
         id_col = results['CustomerID'].values
@@ -211,4 +277,6 @@ def predict_universal(
             model, X_processed, list(X_processed.columns))
     results.attrs['explain_summary'] = explain_summary
     results.attrs['coverage'] = _coverage
+    results.attrs['quality'] = _quality
+    results.attrs['routing_decision'] = routing_decision
     return results

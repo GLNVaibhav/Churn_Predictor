@@ -1,0 +1,6 @@
+CustomerID,top1_feature,top1_shap_value,top2_feature,top2_shap_value,top3_feature,top3_shap_value
+ADV_BNK_01,tenure_normalized,-0.5774,lockin_risk,-0.4492,charge_normalized,0.2257
+ADV_BNK_02,lockin_risk,-0.5618,tenure_normalized,-0.4488,recency_score,-0.2532
+ADV_BNK_03,tenure_normalized,-0.5708,lockin_risk,-0.5512,dormant_loyalty_risk,-0.1721
+ADV_BNK_04,lockin_risk,-0.5583,tenure_normalized,-0.4535,charge_normalized,-0.2528
+ADV_BNK_05,lockin_risk,-0.6017,tenure_normalized,-0.426,charge_normalized,-0.1581

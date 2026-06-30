@@ -1,49 +1,76 @@
 """
 universal_churn/coverage.py
+────────────────────────────
 Weighted feature coverage scoring and feature recovery.
 
-Routing bands:
-  Green  ≥ 85%  →  Full sector-specific XGBoost  (Prediction_Mode = 'Full')
-  Yellow 60–85% →  Universal XGBoost fallback     (Prediction_Mode = 'Fallback')
-  Red    < 60%  →  Hard stop, no prediction       (Prediction_Mode = 'Refused')
+Routing bands
+─────────────
+Green  ≥ 85%  →  Full sector-specific XGBoost  (Prediction_Mode = 'Full')
+Yellow 60–85% →  Universal XGBoost fallback     (Prediction_Mode = 'Fallback')
+Red    < 60%  →  Hard stop, no prediction       (Prediction_Mode = 'Refused')
 """
 from __future__ import annotations
+
 import pandas as pd
+
 from .config import SECTOR_FEATURE_WEIGHTS
 
 
-# ── Feature recovery rules ────────────────────────────────────
-_DERIVATION_RULES = [
-    ('Tenure_Months', ['Policy_Start_Date'],
-     lambda df: ((pd.Timestamp.now() - pd.to_datetime(
-         df['Policy_Start_Date'], errors='coerce')).dt.days / 30.44).round(1)),
-    ('Age', ['Date_of_Birth'],
-     lambda df: ((pd.Timestamp.now() - pd.to_datetime(
-         df['Date_of_Birth'], errors='coerce')).dt.days / 365.25).round(0)),
-    ('Days_Since_Last_Visit', ['Last_Visit_Date'],
-     lambda df: ((pd.Timestamp.now() - pd.to_datetime(
-         df['Last_Visit_Date'], errors='coerce')).dt.days).round(0)),
-    ('DaySinceLastOrder', ['Last_Order_Date'],
-     lambda df: ((pd.Timestamp.now() - pd.to_datetime(
-         df['Last_Order_Date'], errors='coerce')).dt.days).round(0)),
-    ('MonthlyCharges', ['AnnualPremium'],
-     lambda df: (df['AnnualPremium'] / 12).round(2)),
-    ('Avg_Out_Of_Pocket_Cost', ['AnnualPremium'],
-     lambda df: (df['AnnualPremium'] / 12).round(2)),
-    ('Visits_Last_Year', ['Visit_History'],
-     lambda df: pd.to_numeric(df['Visit_History'], errors='coerce').fillna(0)),
+# ── Feature recovery rules ────────────────────────────────────────
+# (target_feature, [source_columns_needed], derivation_fn)
+_DERIVATION_RULES: list[tuple[str, list[str], object]] = [
+    (
+        'Tenure_Months', ['Policy_Start_Date'],
+        lambda df: (
+            (pd.Timestamp.now() - pd.to_datetime(df['Policy_Start_Date'], errors='coerce'))
+            .dt.days / 30.44
+        ).round(1),
+    ),
+    (
+        'Age', ['Date_of_Birth'],
+        lambda df: (
+            (pd.Timestamp.now() - pd.to_datetime(df['Date_of_Birth'], errors='coerce'))
+            .dt.days / 365.25
+        ).round(0),
+    ),
+    (
+        'Days_Since_Last_Visit', ['Last_Visit_Date'],
+        lambda df: (
+            (pd.Timestamp.now() - pd.to_datetime(df['Last_Visit_Date'], errors='coerce'))
+            .dt.days
+        ).round(0),
+    ),
+    (
+        'DaySinceLastOrder', ['Last_Order_Date'],
+        lambda df: (
+            (pd.Timestamp.now() - pd.to_datetime(df['Last_Order_Date'], errors='coerce'))
+            .dt.days
+        ).round(0),
+    ),
+    (
+        'MonthlyCharges', ['AnnualPremium'],
+        lambda df: (df['AnnualPremium'] / 12).round(2),
+    ),
+    (
+        'Avg_Out_Of_Pocket_Cost', ['AnnualPremium'],
+        lambda df: (df['AnnualPremium'] / 12).round(2),
+    ),
+    (
+        'Visits_Last_Year', ['Visit_History'],
+        lambda df: pd.to_numeric(df['Visit_History'], errors='coerce').fillna(0),
+    ),
 ]
 
 
-def attempt_feature_recovery(df: pd.DataFrame, sector: str) -> pd.DataFrame | None:
+def _attempt_feature_recovery(df: pd.DataFrame, sector: str) -> pd.DataFrame | None:
     """
-    Try to derive missing features from known proxy columns.
+    Try to derive missing features from known proxy columns before
+    routing to the universal model fallback.
     Returns an enriched copy of df if at least one feature was recovered,
     or None if nothing could be derived.
     """
-    # FIX: was `c.lower().replace('', '')` — does nothing. Should be `'_', ''`
     df_cols_lower = {c.lower().replace('_', ''): c for c in df.columns}
-    recovered = df.copy()
+    recovered     = df.copy()
     any_recovered = False
 
     for target_feat, sources, derive_fn in _DERIVATION_RULES:
@@ -73,6 +100,12 @@ def attempt_feature_recovery(df: pd.DataFrame, sector: str) -> pd.DataFrame | No
     return recovered if any_recovered else None
 
 
+# Public alias — sector_pipeline.py and other callers outside this module
+# import the public name; the leading-underscore name remains for any
+# internal call sites already using it.
+attempt_feature_recovery = _attempt_feature_recovery
+
+
 def compute_coverage_score(
     df_input: pd.DataFrame,
     sector: str,
@@ -83,9 +116,22 @@ def compute_coverage_score(
 ) -> dict:
     """
     Compute weighted feature coverage score for the input CSV.
+
     Coverage Score = Σ(weight_i × quality_i) / Σ(weight_i)
+
+    quality_i = 1  if column is present, <95% null, and non-constant
+    quality_i = 0  otherwise
+
+    Returns a dict with keys:
+        coverage_score      float
+        status              'Green' | 'Yellow' | 'Red'
+        prediction_mode     'Full' | 'Fallback' | 'Refused'
+        missing_critical    list  (weight ≥ 4 features that failed)
+        missing_high_impact list  (weight = 3 features that failed)
+        missing_all         list  (all features that failed)
+        detail              list[dict]  per-feature breakdown
     """
-    weights = SECTOR_FEATURE_WEIGHTS.get(sector, {c: 1 for c in df_input.columns})
+    weights      = SECTOR_FEATURE_WEIGHTS.get(sector, {c: 1 for c in df_input.columns})
     total_weight = sum(weights.values())
 
     def _strip(s: str) -> str:
@@ -93,9 +139,9 @@ def compute_coverage_score(
 
     stripped_to_original = {_strip(c): c for c in df_input.columns}
 
-    detail = []
-    earned_weight = 0.0
-    missing_all = []
+    detail           = []
+    earned_weight    = 0.0
+    missing_all      = []
     missing_critical = []
 
     for feat, weight in weights.items():
@@ -104,9 +150,9 @@ def compute_coverage_score(
         if orig_col is None:
             quality, reason = 0, 'absent'
         else:
-            col = df_input[orig_col]
+            col      = df_input[orig_col]
             pct_null = col.isna().mean()
-            numeric = pd.to_numeric(col, errors='coerce')
+            numeric  = pd.to_numeric(col, errors='coerce')
             n_unique = numeric.dropna().nunique()
 
             if pct_null >= 0.95:
@@ -145,13 +191,13 @@ def compute_coverage_score(
         )
 
     return {
-        'coverage_score': round(coverage_score, 4),
-        'status': status,
-        'prediction_mode': prediction_mode,
-        'missing_critical': missing_critical,
-        'missing_high_impact': missing_high_impact,
-        'missing_all': missing_all,
-        'detail': detail,
+        'coverage_score'      : round(coverage_score, 4),
+        'status'              : status,
+        'prediction_mode'     : prediction_mode,
+        'missing_critical'    : missing_critical,
+        'missing_high_impact' : missing_high_impact,
+        'missing_all'         : missing_all,
+        'detail'              : detail,
     }
 
 
@@ -159,7 +205,7 @@ def _print_coverage_report(
     coverage_score, status, prediction_mode, sector, mode,
     weights, detail, missing_critical, missing_high_impact, missing_all,
 ) -> None:
-    sep = '─' * 60
+    sep   = '─' * 60
     icons = {'Green': '✔', 'Yellow': '△', 'Red': '✖'}
     print(f"\n{sep}")
     print(f"  COVERAGE SCORE REPORT  [{mode.upper()} / {sector.upper()}]")
@@ -180,16 +226,29 @@ def _print_coverage_report(
             r = next(d['reason'] for d in detail if d['feature'] == f)
             print(f"    [{weights[f]}]  {f}  ({r})")
 
+    low_missing = [f for f in missing_all
+                   if f not in missing_critical and f not in missing_high_impact]
+    if low_missing:
+        print(f"\n  Lower-weight features missing or unusable:")
+        for f in low_missing:
+            r = next(d['reason'] for d in detail if d['feature'] == f)
+            print(f"    [{weights[f]}]  {f}  ({r})")
+
     if status == 'Green':
         print(f"\n  Using full sector-specific model.")
     elif status == 'Yellow':
         if mode == 'universal':
             print(f"\n  Universal mode selected. Coverage analysis completed.")
+            print(f"  Predictions may be less precise — high-impact features unavailable.")
         else:
             print(f"\n  Coverage below 85% — attempting feature recovery...")
+            print(f"  If recovery fails, routing to universal model fallback.")
     else:
         if mode == 'universal':
             print(f"\n  Universal mode selected. Coverage critically low.")
+            print(f"  Predictions are likely unreliable.")
         else:
             print(f"\n  Coverage below 60% — prediction refused.")
+            print(f"  Enrich the input CSV with the critical features listed above.")
+
     print(sep)

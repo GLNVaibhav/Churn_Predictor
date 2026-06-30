@@ -1,11 +1,16 @@
 """
 universal_churn/reporting.py
+─────────────────────────────
 Prediction quality reporting and metadata attachment.
+No ML computation here — only formatting and serialisation.
 """
 from __future__ import annotations
+
 import json
 from pathlib import Path
+
 import pandas as pd
+
 from .config import (
     PIPELINE_VERSION, SECTOR_MODEL_VERSION, UNIVERSAL_MODEL_VERSION,
     NORMALIZATION_VERSION, COVERAGE_ALGORITHM_VERSION,
@@ -18,7 +23,11 @@ def attach_common_metadata(
     coverage: dict | None,
     prediction_model_label: str,
 ) -> pd.DataFrame:
-    """Add confidence indicators and provenance columns to every prediction result."""
+    """
+    Add confidence indicators and provenance columns to every prediction
+    result, regardless of mode. Safe to call multiple times — only
+    adds/overwrites its own columns.
+    """
     results['Prediction_Confidence'] = results['Churn_Probability'].apply(
         prediction_confidence_label
     )
@@ -26,15 +35,16 @@ def attach_common_metadata(
         results['Coverage_Confidence'] = coverage_confidence_label(
             coverage['coverage_score']
         )
-    results['Prediction_Timestamp'] = _utc_timestamp()
-    results['Pipeline_Version'] = PIPELINE_VERSION
-    results['Sector_Model_Version'] = (
+
+    results['Prediction_Timestamp']       = _utc_timestamp()
+    results['Pipeline_Version']           = PIPELINE_VERSION
+    results['Sector_Model_Version']       = (
         SECTOR_MODEL_VERSION if 'Sector' in prediction_model_label else 'N/A'
     )
-    results['Universal_Model_Version'] = (
+    results['Universal_Model_Version']    = (
         UNIVERSAL_MODEL_VERSION if 'Universal' in prediction_model_label else 'N/A'
     )
-    results['Normalization_Version'] = NORMALIZATION_VERSION
+    results['Normalization_Version']      = NORMALIZATION_VERSION
     results['Coverage_Algorithm_Version'] = COVERAGE_ALGORITHM_VERSION
     return results
 
@@ -46,9 +56,13 @@ def generate_prediction_quality_report(
     explain_summary: dict | None = None,
     routing_decision: str | None = None,
 ) -> str:
-    """Build a concise human-readable inference summary."""
-    sep = "=" * 56
+    """
+    Build a concise human-readable inference summary.
+    All data comes from `results` and `coverage` — no new ML computation.
+    """
+    sep   = "=" * 56
     lines = [sep, "PREDICTION QUALITY REPORT", sep, ""]
+
     lines.append(f"Sector                  : {sector.capitalize()}")
     lines.append(f"Prediction Model        : {results['Prediction_Model'].iloc[0]}")
     lines.append(f"Prediction Mode         : {results['Prediction_Mode'].iloc[0]}")
@@ -59,7 +73,7 @@ def generate_prediction_quality_report(
         lines.append(f"Coverage Confidence     : {coverage_confidence_label(coverage['coverage_score'])}")
 
         missing_crit = coverage.get('missing_critical', [])
-        missing_hi = coverage.get('missing_high_impact', [])
+        missing_hi   = coverage.get('missing_high_impact', [])
         lines.append("")
         lines.append("Missing Critical Features:")
         lines.append("    None" if not missing_crit
@@ -76,7 +90,7 @@ def generate_prediction_quality_report(
     lines += [
         "",
         f"Rows predicted          : {n_rows}",
-        f"Predicted churners      : {n_churn} ({n_churn/n_rows*100:.1f}%)" if n_rows > 0 else "Predicted churners      : 0",
+        f"Predicted churners      : {n_churn} ({n_churn/n_rows*100:.1f}%)",
     ]
 
     if 'Risk_Level' in results.columns:
@@ -131,20 +145,23 @@ def _maybe_emit_report(
     routing_decision: str | None,
     args,
 ) -> None:
-    """Shared report-emission helper called from cli.py."""
+    """
+    Shared report-emission helper for the sector/universal/auto CLI
+    branches. Reads coverage/explain_summary from the DataFrame's
+    .attrs (set inside predict()/predict_universal()), so calling this
+    requires no change to either function's return signature.
+    Only prints/saves when --report or --report-output was passed.
+    """
     if not (getattr(args, 'report', False) or getattr(args, 'report_output', None)):
         return
-
-    coverage = results.attrs.get('coverage')
+    coverage        = results.attrs.get('coverage')
     explain_summary = results.attrs.get('explain_summary')
-
     report_text = generate_prediction_quality_report(
         results, coverage, sector,
         explain_summary=explain_summary,
         routing_decision=routing_decision,
     )
     print("\n" + report_text)
-
-    if getattr(args, 'report_output', None):
+    if args.report_output:
         fmt = 'json' if args.report_output.lower().endswith('.json') else 'txt'
         save_prediction_report(report_text, args.report_output, fmt=fmt)
