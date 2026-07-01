@@ -78,6 +78,11 @@ def check_imports() -> tuple[bool, str]:
         "universal_churn.explainability", "universal_churn.utils",
         "universal_churn.drift_monitoring", "universal_churn.feature_transforms",
         "universal_churn.validation",
+        "universal_churn.pipeline_stages",          
+        "universal_churn.model_registry",           
+        "universal_churn.core_model_interface",     
+        "universal_churn.sparse_model_interface",   
+
     ]
     code = (
         "import importlib, sys\n"

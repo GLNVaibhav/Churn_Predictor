@@ -319,3 +319,60 @@ def resolution_summary(resolutions: list[ColumnResolution]) -> dict:
 #   - extend ColumnResolution.method to also accept 'fuzzy'
 # Every downstream consumer (concepts.py, coverage.py) already reads
 # `confidence` generically, so they require zero changes.
+
+# ══════════════════════════════════════════════════════════════════
+# SEMANTIC EXTENSION HOOKS (Version 6, Chunk 5, Part 3) — NOT WIRED IN
+# ══════════════════════════════════════════════════════════════════
+# Pure extension seams for Version 7. Nothing below is called from
+# resolve_schema() today. Enabling this later means:
+#   1. Fill in the bodies below.
+#   2. Add ONE new strategy block inside resolve_schema(), after the
+#      regex block and before "unresolved", calling
+#      resolve_semantic_alias(). Exactly the plan already described in
+#      the "NOTE on fuzzy matching" above.
+# No other module needs to change — concepts.py, coverage.py,
+# concept_confidence.py, and canonical_fields.py already read
+# ColumnResolution.confidence generically, regardless of which
+# strategy produced it.
+
+def resolve_semantic_alias(
+    raw_column: str,
+    candidate_fields: list[CanonicalField] | None = None,
+) -> "ColumnResolution | None":
+    """
+    Extension point for Version 7 semantic column matching.
+
+    Currently a no-op — always returns None ("no semantic match
+    attempted"), so resolve_schema()'s exact -> regex -> unresolved
+    behavior is unaffected whether or not this is ever called.
+
+    A real implementation would try, in order:
+        1. future_embedding_match() — vector-similarity matching
+        2. future_llm_resolution()  — LLM-assisted matching, last resort
+    and return a ColumnResolution with method='semantic' at a
+    confidence strictly below the regex tier (< 0.8), so a semantic
+    match can never outrank a deterministic exact/regex hit.
+    """
+    return None
+
+
+def future_embedding_match(
+    raw_column: str,
+    candidate_fields: list[CanonicalField],
+) -> "ColumnResolution | None":
+    """Placeholder — embedding-based column matching. Not implemented in V6."""
+    raise NotImplementedError(
+        "future_embedding_match is a Version 7 architecture placeholder. "
+        "Not implemented in Version 6 — see resolve_semantic_alias()."
+    )
+
+
+def future_llm_resolution(
+    raw_column: str,
+    context: dict,
+) -> "ColumnResolution | None":
+    """Placeholder — LLM-assisted column matching. Not implemented in V6."""
+    raise NotImplementedError(
+        "future_llm_resolution is a Version 7 architecture placeholder. "
+        "Not implemented in Version 6 — see resolve_semantic_alias()."
+    )
