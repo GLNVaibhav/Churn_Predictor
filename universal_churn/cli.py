@@ -23,6 +23,7 @@ from .quality_gate import run_quality_gate
 from .routing import route, ModelType
 from .sector_pipeline import SectorPipeline
 from .universal_pipeline import train_universal_model, predict_universal
+from .feature_engineering import build_canonical_dataframe
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -137,8 +138,9 @@ def main(argv: list[str] | None = None) -> None:
         sector = args.sector or detect_sector(probe_df)
         print(f"  Auto mode — detected sector: {sector.upper()}")
 
+        canonical_df, _resolutions, _manifest = build_canonical_dataframe(probe_df)
         coverage = compute_coverage_score(
-            df_input=probe_df, sector=sector, mode='auto')
+            df_input=canonical_df, sector=sector, mode='auto', raw_df=probe_df)
         quality = run_quality_gate(
             probe_df, target_col=SECTOR_CONFIG[sector]['target_col'])
 

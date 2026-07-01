@@ -1,0 +1,5 @@
+cust_id,sex,senior,months_active,phone,isp,security,backup,device_guard,support,tv_stream,stream_movies,plan,e_billing,billing_method,monthly_fee,total_billed
+T001,Female,0,2,Yes,Fiber optic,No,Yes,No,No,No,Yes,Month-to-month,Yes,Electronic check,89.5,179.0
+T002,Male,1,24,Yes,DSL,Yes,Yes,Yes,Yes,Yes,No,One year,No,Bank transfer (automatic),55.2,1324.8
+T003,Female,0,1,No,No,No,No,No,No,No,No,Month-to-month,Yes,Mailed check,20.0,20.0
+T004,Male,0,48,Yes,Fiber optic,Yes,Yes,Yes,Yes,Yes,Yes,Two year,No,Credit card (automatic),110.4,5299.2

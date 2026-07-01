@@ -40,6 +40,7 @@ from .config import (
 )
 from .feature_engineering import (
     extract_universal_features, transform_features_by_sector, compute_norm_stats,
+    build_canonical_dataframe,
 )
 from .preprocessing import (
     sanitize_numerical_columns, derive_temporal_features, detect_sector,
@@ -189,11 +190,14 @@ def predict_universal(
     print(f"  Auto-detected sector: {sector}")
 
     routing_decision = None
+    canonical_manifest = None
     if _precomputed_coverage is not None:
         _coverage = _precomputed_coverage
         _quality  = None  # already evaluated by the caller's route() call
     else:
-        _coverage = compute_coverage_score(df_input=df_raw, sector=sector, mode='universal')
+        canonical_df, _resolutions, canonical_manifest = build_canonical_dataframe(df_raw)
+        _coverage = compute_coverage_score(
+            df_input=canonical_df, sector=sector, mode='universal', raw_df=df_raw)
         _quality  = run_quality_gate(df_raw, target_col=SECTOR_CONFIG[sector]['target_col'])
         routing_decision = route(
             mode='universal', coverage=_coverage, quality=_quality, sector=sector,
@@ -276,6 +280,7 @@ def predict_universal(
         explain_summary = summarize_shap_directions(
             model, X_processed, list(X_processed.columns))
     results.attrs['explain_summary'] = explain_summary
+    results.attrs['canonical_manifest'] = canonical_manifest
     results.attrs['coverage'] = _coverage
     results.attrs['quality'] = _quality
     results.attrs['routing_decision'] = routing_decision

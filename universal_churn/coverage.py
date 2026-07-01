@@ -30,6 +30,8 @@ import pandas as pd
 
 from .config import SECTOR_FEATURE_WEIGHTS
 from .concept_confidence import compute_concept_confidence, print_concept_confidence_report
+from .canonical_fields import CANONICAL_REGISTRY
+from .schema_resolution import resolve_schema
 
 
 # ── Feature recovery rules ────────────────────────────────────────
@@ -130,6 +132,7 @@ def compute_coverage_score(
     yellow_threshold: float = 0.60,
     _suppress_print: bool = False,
     recovered_features: list[str] | None = None,
+    raw_df: pd.DataFrame | None = None,
 ) -> dict:
     """
     Compute weighted feature coverage score for the input CSV.
@@ -150,6 +153,10 @@ def compute_coverage_score(
         reconstructed rather than natively present. Defaults to an empty
         list when not supplied (fully backward compatible — omitting this
         argument changes nothing about existing behaviour).
+    raw_df : pd.DataFrame, optional
+        The genuinely raw dataframe, used only for concept confidence.
+        When omitted, df_input is used for both coverage and concept
+        confidence so existing callers remain backward compatible.
 
     Returns a dict with keys:
         coverage_score      float   — the measurement itself
@@ -182,15 +189,44 @@ def compute_coverage_score(
     def _strip(s: str) -> str:
         return s.lower().replace('_', '').replace(' ', '')
 
+    known_canonical_names = set(CANONICAL_REGISTRY.names())
+
+    def _resolved_canonical_map(df: pd.DataFrame) -> dict[str, list[str]]:
+        canonical_to_cols: dict[str, list[str]] = {}
+        for col in df.columns:
+            if col in known_canonical_names:
+                canonical_to_cols.setdefault(col, []).append(col)
+        _, resolutions = resolve_schema(df)
+        for resolution in resolutions:
+            if resolution.canonical_field:
+                canonical_to_cols.setdefault(resolution.canonical_field, []).append(
+                    resolution.raw_column
+                )
+        return canonical_to_cols
+
+    def _weight_key_canonical_field(feat: str) -> str | None:
+        name, _method, _confidence = CANONICAL_REGISTRY.match_column(feat)
+        return name
+
     stripped_to_original = {_strip(c): c for c in df_input.columns}
+    canonical_map = _resolved_canonical_map(df_input)
 
     detail           = []
     earned_weight    = 0.0
     missing_all      = []
     missing_critical = []
+    semantic_matches  = []
 
     for feat, weight in weights.items():
         orig_col = stripped_to_original.get(_strip(feat))
+        semantically_recovered = False
+
+        if orig_col is None:
+            target_canonical = _weight_key_canonical_field(feat)
+            candidates = canonical_map.get(target_canonical) if target_canonical else None
+            if candidates:
+                orig_col = candidates[0]
+                semantically_recovered = True
 
         if orig_col is None:
             quality, reason = 0, 'absent'
@@ -206,10 +242,14 @@ def compute_coverage_score(
                 quality, reason = 0, 'constant (no variance)'
             else:
                 quality, reason = 1, 'OK'
+                if semantically_recovered:
+                    reason = f"OK — semantic match ('{feat}' <- '{orig_col}')"
+                    semantic_matches.append(feat)
 
         earned_weight += weight * quality
         detail.append({'feature': feat, 'weight': weight,
-                       'quality': quality, 'reason': reason})
+                       'quality': quality, 'reason': reason,
+                       'semantically_recovered': semantically_recovered})
         if quality == 0:
             missing_all.append(feat)
             if weight >= 4:
@@ -239,7 +279,8 @@ def compute_coverage_score(
     # and falls back to None if it's ever missing (e.g. older cached
     # coverage dicts), so this is fully backward compatible.
     try:
-        concept_confidence_report = compute_concept_confidence(df_input, sector)
+        concept_source_df = raw_df if raw_df is not None else df_input
+        concept_confidence_report = compute_concept_confidence(concept_source_df, sector)
         concept_confidence = concept_confidence_report.to_dict()
     except Exception as exc:
         # Never let a concept-confidence failure block coverage scoring
@@ -255,7 +296,7 @@ def compute_coverage_score(
         _print_coverage_report(
             coverage_score, status, prediction_mode, sector, mode,
             weights, detail, missing_critical, missing_high_impact, missing_all,
-            concept_confidence, recovered_features,
+            concept_confidence, recovered_features, semantic_matches,
         )
         print_concept_confidence_report(concept_confidence)
 
@@ -268,6 +309,7 @@ def compute_coverage_score(
         'missing_high_impact' : missing_high_impact,
         'missing_all'         : missing_all,
         'recovered_features'  : list(recovered_features) if recovered_features else [],
+        'semantic_matches'    : semantic_matches,
         'detail'              : detail,
         'concept_confidence'  : concept_confidence,
     }
@@ -276,7 +318,7 @@ def compute_coverage_score(
 def _print_coverage_report(
     coverage_score, status, prediction_mode, sector, mode,
     weights, detail, missing_critical, missing_high_impact, missing_all,
-    concept_confidence=None, recovered_features=None,
+    concept_confidence=None, recovered_features=None, semantic_matches=None,
 ) -> None:
     sep   = '─' * 60
     icons = {'Green': '✔', 'Yellow': '△', 'Red': '✖'}
@@ -313,6 +355,11 @@ def _print_coverage_report(
         print(f"\n  Recovered features (derived from proxy columns upstream):")
         for f in recovered_features:
             print(f"    ~ {f}")
+
+    if semantic_matches:
+        print(f"\n  Semantically recovered features (matched via canonical field, not literal column name):")
+        for f in semantic_matches:
+            print(f"    ≈ {f}")
 
     # ── Phase 4/5 (v5.2): informational only, no decisions here ────
     # coverage.py measures FEATURE availability and stops there. It

@@ -28,6 +28,7 @@ from .coverage import compute_coverage_score, attempt_feature_recovery
 from .quality_gate import run_quality_gate
 from .routing import route, ModelType
 from .explainability import write_shap_log, summarize_shap_directions
+from .feature_engineering import build_canonical_dataframe
 from .preprocessing import (
     sanitize_numerical_columns, derive_temporal_features,
     normalize_target, validate_target_types,
@@ -320,7 +321,9 @@ class SectorPipeline:
         df_raw = sanitize_numerical_columns(df_raw)
         df_raw = derive_temporal_features(df_raw)
 
-        coverage = compute_coverage_score(df_raw, self.sector, mode='sector')
+        canonical_df, _resolutions, _canonical_manifest = build_canonical_dataframe(df_raw)
+        coverage = compute_coverage_score(
+            canonical_df, self.sector, mode='sector', raw_df=df_raw)
 
         # Feature recovery is a preprocessing concern, not a routing
         # decision — it happens here, before the router is ever called,
@@ -329,8 +332,10 @@ class SectorPipeline:
         if coverage['prediction_mode'] == 'Fallback':
             recovered_df = attempt_feature_recovery(df_raw, self.sector)
             if recovered_df is not None:
+                recovered_canonical_df, _r2, _m2 = build_canonical_dataframe(recovered_df)
                 recovery_coverage = compute_coverage_score(
-                    recovered_df, self.sector, mode='sector', _suppress_print=True)
+                    recovered_canonical_df, self.sector, mode='sector',
+                    _suppress_print=True, raw_df=recovered_df)
                 if recovery_coverage['prediction_mode'] == 'Full':
                     df_raw = recovered_df
                     coverage = recovery_coverage
