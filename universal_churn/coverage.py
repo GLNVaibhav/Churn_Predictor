@@ -3,17 +3,33 @@ universal_churn/coverage.py
 ────────────────────────────
 Weighted feature coverage scoring and feature recovery.
 
-Routing bands
-─────────────
-Green  ≥ 85%  →  Full sector-specific XGBoost  (Prediction_Mode = 'Full')
-Yellow 60–85% →  Universal XGBoost fallback     (Prediction_Mode = 'Fallback')
-Red    < 60%  →  Hard stop, no prediction       (Prediction_Mode = 'Refused')
+Phase 5 note — coverage.py is a pure MEASUREMENT engine
+--------------------------------------------------------
+This module answers exactly one question: "how much of the expected
+feature schema is actually present, populated, and usable in this
+input?" It never decides whether a prediction is accepted, refused,
+or which model runs — that is routing.py's job, and routing.py's
+alone (see routing.route()). coverage.py does not import routing.py
+and has no notion of ModelType/RoutingDecision.
+
+Coverage bands (measurement only — NOT a routing decision)
+────────────────────────────────────────────────────────────
+Green  ≥ 85%  →  feature schema is well-populated
+Yellow 60–85% →  feature schema is partially populated
+Red    < 60%  →  feature schema is sparse
+
+What a band like 'Red' MEANS for prediction (full sector model vs.
+universal fallback vs. refusal) is entirely determined downstream by
+routing.route(), which also weighs Concept Confidence and the Quality
+Gate before deciding. A 'Red' coverage score on its own no longer
+implies refusal — see routing.py's _red_coverage_decision().
 """
 from __future__ import annotations
 
 import pandas as pd
 
 from .config import SECTOR_FEATURE_WEIGHTS
+from .concept_confidence import compute_concept_confidence, print_concept_confidence_report
 
 
 # ── Feature recovery rules ────────────────────────────────────────
@@ -113,6 +129,7 @@ def compute_coverage_score(
     green_threshold: float = 0.85,
     yellow_threshold: float = 0.60,
     _suppress_print: bool = False,
+    recovered_features: list[str] | None = None,
 ) -> dict:
     """
     Compute weighted feature coverage score for the input CSV.
@@ -122,14 +139,42 @@ def compute_coverage_score(
     quality_i = 1  if column is present, <95% null, and non-constant
     quality_i = 0  otherwise
 
+    Parameters
+    ----------
+    recovered_features : list[str], optional
+        Names of features that an upstream caller (e.g. sector_pipeline.py,
+        via attempt_feature_recovery()) derived from proxy columns BEFORE
+        this coverage score was computed. Purely informational — passing
+        this does not change the score, it is only echoed back in the
+        return dict so callers/reports can show which features were
+        reconstructed rather than natively present. Defaults to an empty
+        list when not supplied (fully backward compatible — omitting this
+        argument changes nothing about existing behaviour).
+
     Returns a dict with keys:
-        coverage_score      float
-        status              'Green' | 'Yellow' | 'Red'
-        prediction_mode     'Full' | 'Fallback' | 'Refused'
-        missing_critical    list  (weight ≥ 4 features that failed)
-        missing_high_impact list  (weight = 3 features that failed)
-        missing_all         list  (all features that failed)
-        detail              list[dict]  per-feature breakdown
+        coverage_score      float   — the measurement itself
+        status               'Green' | 'Yellow' | 'Red'   — coverage BAND
+                              (a measurement label, not a routing decision)
+        coverage_band        same value as `status`, exposed under the
+                              forward-looking name used by routing.py /
+                              reporting.py's diagnostics (item 5 of the
+                              Phase 5 spec). Prefer this key in new code.
+        prediction_mode      DEPRECATED — 'Full' | 'Fallback' | 'Refused'.
+                              This is a decision-shaped label left over
+                              from before Phase 5 and is retained ONLY so
+                              older callers reading this exact key don't
+                              break. coverage.py does not act on it and
+                              routing.py does not read it — routing.route()
+                              derives its own decision from `status`,
+                              Concept Confidence, and the Quality Gate.
+                              Do not add new reads of this key; use
+                              `coverage_band` and let routing.py decide.
+        missing_critical     list  (weight ≥ 4 features that failed)
+        missing_high_impact  list  (weight = 3 features that failed)
+        missing_all          list  (all features that failed)
+        recovered_features   list  (echoed back from the `recovered_features`
+                              argument — measurement context only)
+        detail               list[dict]  per-feature breakdown
     """
     weights      = SECTOR_FEATURE_WEIGHTS.get(sector, {c: 1 for c in df_input.columns})
     total_weight = sum(weights.values())
@@ -184,26 +229,54 @@ def compute_coverage_score(
         if f not in missing_critical and weights.get(f, 0) >= 3
     ]
 
+    # ── Concept Confidence (Phase 4, additive) ──────────────────────
+    # Runs independently of the feature-weight scoring above and does
+    # NOT change coverage_score/status/prediction_mode in any way — it
+    # is attached to the return dict alongside them, per the Schema
+    # Intelligence Layer spec ("Add concept confidence alongside it.
+    # Do not replace existing coverage logic."). routing.py's
+    # CoverageResult.from_coverage_dict() reads this key when present
+    # and falls back to None if it's ever missing (e.g. older cached
+    # coverage dicts), so this is fully backward compatible.
+    try:
+        concept_confidence_report = compute_concept_confidence(df_input, sector)
+        concept_confidence = concept_confidence_report.to_dict()
+    except Exception as exc:
+        # Never let a concept-confidence failure block coverage scoring
+        # or prediction — degrade to "unknown" instead.
+        concept_confidence = {
+            'sector': sector, 'per_concept': {}, 'overall_confidence': 0.0,
+            'reconstructable_concepts': 0, 'total_concepts': 0,
+            'concepts_reconstructable': False,
+            'error': f"concept confidence computation failed: {exc}",
+        }
+
     if not _suppress_print:
         _print_coverage_report(
             coverage_score, status, prediction_mode, sector, mode,
             weights, detail, missing_critical, missing_high_impact, missing_all,
+            concept_confidence, recovered_features,
         )
+        print_concept_confidence_report(concept_confidence)
 
     return {
         'coverage_score'      : round(coverage_score, 4),
         'status'              : status,
-        'prediction_mode'     : prediction_mode,
+        'coverage_band'       : status,                 # forward-looking alias — see docstring
+        'prediction_mode'     : prediction_mode,         # DEPRECATED — measurement only, not a decision
         'missing_critical'    : missing_critical,
         'missing_high_impact' : missing_high_impact,
         'missing_all'         : missing_all,
+        'recovered_features'  : list(recovered_features) if recovered_features else [],
         'detail'              : detail,
+        'concept_confidence'  : concept_confidence,
     }
 
 
 def _print_coverage_report(
     coverage_score, status, prediction_mode, sector, mode,
     weights, detail, missing_critical, missing_high_impact, missing_all,
+    concept_confidence=None, recovered_features=None,
 ) -> None:
     sep   = '─' * 60
     icons = {'Green': '✔', 'Yellow': '△', 'Red': '✖'}
@@ -211,8 +284,10 @@ def _print_coverage_report(
     print(f"  COVERAGE SCORE REPORT  [{mode.upper()} / {sector.upper()}]")
     print(sep)
     print(f"  Weighted coverage score : {coverage_score*100:.1f}%")
-    print(f"  Status                  : {icons[status]} {status}")
-    print(f"  Prediction mode         : {prediction_mode}")
+    print(f"  Coverage band           : {icons[status]} {status}  (measurement only — "
+          f"no routing decision is made here)")
+    print(f"  Legacy band label       : {prediction_mode}  (deprecated, decision-shaped "
+          f"field kept only for backward compatibility — ignored by routing.py)")
 
     if missing_critical:
         print(f"\n  Missing critical features (weight ≥ 4):")
@@ -234,21 +309,31 @@ def _print_coverage_report(
             r = next(d['reason'] for d in detail if d['feature'] == f)
             print(f"    [{weights[f]}]  {f}  ({r})")
 
-    if status == 'Green':
-        print(f"\n  Using full sector-specific model.")
-    elif status == 'Yellow':
-        if mode == 'universal':
-            print(f"\n  Universal mode selected. Coverage analysis completed.")
-            print(f"  Predictions may be less precise — high-impact features unavailable.")
-        else:
-            print(f"\n  Coverage below 85% — attempting feature recovery...")
-            print(f"  If recovery fails, routing to universal model fallback.")
-    else:
-        if mode == 'universal':
-            print(f"\n  Universal mode selected. Coverage critically low.")
-            print(f"  Predictions are likely unreliable.")
-        else:
-            print(f"\n  Coverage below 60% — prediction refused.")
-            print(f"  Enrich the input CSV with the critical features listed above.")
+    if recovered_features:
+        print(f"\n  Recovered features (derived from proxy columns upstream):")
+        for f in recovered_features:
+            print(f"    ~ {f}")
+
+    # ── Phase 4/5 (v5.2): informational only, no decisions here ────
+    # coverage.py measures FEATURE availability and stops there. It
+    # does not decide which model runs or whether a prediction is
+    # refused — that is routing.py's job (routing.py combines this
+    # coverage_score with Concept Confidence and the Quality Gate).
+    # This module cross-references reconstructed concepts for context
+    # only; it does not merge the two metrics into one number.
+    print(f"\n  This score measures FEATURE availability only. It does not, by "
+          f"itself, determine which model runs or whether a prediction is "
+          f"made — see the Concept Confidence report below and the "
+          f"Routing Decision for that.")
+    if concept_confidence and concept_confidence.get('per_concept'):
+        reconstructed = [
+            name for name, e in concept_confidence['per_concept'].items()
+            if e.get('reconstructable')
+        ]
+        print(
+            f"  Cross-reference — business concepts reconstructed for this "
+            f"input regardless of feature coverage: "
+            f"{reconstructed if reconstructed else 'None'}"
+        )
 
     print(sep)

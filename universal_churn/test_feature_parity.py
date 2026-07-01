@@ -1,7 +1,7 @@
---- tests/test_feature_parity.py (原始)
+-- tests/test_feature_parity.py 
 
 
-+++ tests/test_feature_parity.py (修改后)
+
 """
 tests/test_feature_parity.py
 ══════════════════════════════════════════════════════════════════════

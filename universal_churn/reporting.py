@@ -3,6 +3,22 @@ universal_churn/reporting.py
 ─────────────────────────────
 Prediction quality reporting and metadata attachment.
 No ML computation here — only formatting and serialisation.
+
+Phase 5 role — reporting.py EXPLAINS, it does not decide
+------------------------------------------------------------
+    coverage.py    reports MEASUREMENTS  (is the feature there? is it usable?)
+    routing.py     makes the DECISION    (which model runs, accept/reject)
+    reporting.py   EXPLAINS the decision (renders both, plus the verdict,
+                   for a human on the terminal and for machine-readable
+                   diagnostics in saved CSV/JSON output)
+
+reporting.py never computes a coverage score, a quality band, or a
+routing decision itself — it only formats and attaches values that
+coverage.py / quality_gate.py / concept_confidence.py / routing.py
+already produced. print_full_diagnostic_report() below is the single
+place that assembles the full terminal narrative, in this order:
+Coverage Report -> Concept Confidence Report -> Quality Report ->
+Routing Decision -> Prediction Reliability -> Prediction Output.
 """
 from __future__ import annotations
 
@@ -16,6 +32,8 @@ from .config import (
     NORMALIZATION_VERSION, COVERAGE_ALGORITHM_VERSION,
 )
 from .utils import _utc_timestamp, prediction_confidence_label, coverage_confidence_label
+from .quality_gate import print_quality_report
+from .routing import RoutingDecision, print_routing_decision
 
 
 def attach_common_metadata(
@@ -49,12 +67,31 @@ def attach_common_metadata(
     return results
 
 
+def attach_routing_diagnostics(
+    results: pd.DataFrame,
+    decision: RoutingDecision,
+) -> pd.DataFrame:
+    """
+    Write the routing decision's machine-readable fields onto every row
+    of `results`, so they persist into saved CSV/JSON output (Phase 5,
+    item 5): Selected_Model, Routing_Reason, Coverage_Score,
+    Coverage_Band, Quality_Score, Quality_Status, Prediction_Reliability,
+    Concept_Confidence, Routing_Warnings, Model_Artifact, and version/
+    timestamp columns. Safe to call multiple times — only adds/overwrites
+    its own columns, and does not touch Prediction_Confidence or the
+    per-sector model-version columns owned by attach_common_metadata().
+    """
+    for k, v in decision.report_fields().items():
+        results[k] = v
+    return results
+
+
 def generate_prediction_quality_report(
     results: pd.DataFrame,
     coverage: dict | None,
     sector: str,
     explain_summary: dict | None = None,
-    routing_decision: str | None = None,
+    routing_decision: "str | RoutingDecision | None" = None,
 ) -> str:
     """
     Build a concise human-readable inference summary.
@@ -82,7 +119,42 @@ def generate_prediction_quality_report(
         lines.append("    None" if not missing_hi
                      else "\n".join(f"    - {f}" for f in missing_hi))
 
-    if routing_decision:
+        # Phase 6 diagnostics — Concept Confidence (concept_confidence.py,
+        # attached to the coverage dict by coverage.py). Optional key:
+        # older/cached coverage dicts without it are simply skipped.
+        concept_conf = coverage.get('concept_confidence')
+        if concept_conf:
+            lines.append("")
+            lines.append(f"Concept Confidence (overall) : {concept_conf['overall_confidence']*100:.1f}%")
+            lines.append(
+                f"Reconstructable Concepts     : "
+                f"{concept_conf['reconstructable_concepts']}/{concept_conf['total_concepts']}"
+            )
+            for name, entry in concept_conf.get('per_concept', {}).items():
+                mark = '✔' if entry['reconstructable'] else '✖'
+                field = f" <- {entry['canonical_field']}" if entry.get('canonical_field') else ""
+                lines.append(f"    {mark} {name:<22} {entry['confidence']*100:5.1f}%{field}")
+
+    if isinstance(routing_decision, RoutingDecision):
+        d = routing_decision
+        lines += [
+            "",
+            "Routing Decision:",
+            f"    Verdict            : {d.acceptance_banner}",
+            f"    Selected model     : {d.selected_model.value}",
+            f"    Model artifact     : {d.model_artifact}",
+            f"    Coverage band      : {d.coverage_band}",
+            f"    Quality status     : {d.quality_status}",
+            f"    Reason             : {d.routing_reason}",
+        ]
+        if d.warnings:
+            lines.append("    Warnings           : " + "; ".join(d.warnings))
+        lines += [
+            "",
+            "Prediction Reliability:",
+            f"    {d.reliability.value}",
+        ]
+    elif routing_decision:
         lines += ["", "Routing Decision:", f"    {routing_decision}"]
 
     n_rows = len(results)
@@ -117,6 +189,38 @@ def generate_prediction_quality_report(
     ]
 
     return "\n".join(lines)
+
+
+def print_full_diagnostic_report(
+    quality: dict | None,
+    decision: RoutingDecision | None,
+) -> None:
+    """
+    Terminal narrative for one prediction run, sections clearly
+    separated per Phase 5 item 4:
+
+        Coverage Report            -- printed by coverage.py itself
+        Concept Confidence Report  -- printed by coverage.py itself
+                                       (both already happen inside
+                                       compute_coverage_score() unless
+                                       _suppress_print=True was passed —
+                                       reporting.py does not re-print
+                                       them, to avoid duplicated output)
+        Quality Report             -- printed here, via quality_gate.py
+        Routing Decision           -- printed here, via routing.py
+        Prediction Reliability     -- part of the Routing Decision
+                                       section above (routing.py owns
+                                       both, since reliability is
+                                       derived alongside the decision)
+
+    Either argument may be None (e.g. quality wasn't run, or routing
+    wasn't reached because of an earlier hard failure) — sections are
+    skipped rather than erroring.
+    """
+    if quality is not None:
+        print_quality_report(quality)
+    if decision is not None:
+        print_routing_decision(decision)
 
 
 def save_prediction_report(
@@ -155,13 +259,32 @@ def _maybe_emit_report(
     if not (getattr(args, 'report', False) or getattr(args, 'report_output', None)):
         return
     coverage        = results.attrs.get('coverage')
+    quality         = results.attrs.get('quality')
     explain_summary = results.attrs.get('explain_summary')
+
+    # Prefer the typed RoutingDecision stashed in .attrs (set by the
+    # auto-mode routing path) over the plain routing_reason string
+    # callers pass positionally — the object carries reliability,
+    # coverage/quality bands, and warnings that the string alone can't.
+    decision_obj = results.attrs.get('routing_decision')
+    routing_decision_for_report = decision_obj if decision_obj is not None else routing_decision
+
+    # Quality/Routing sections (Coverage + Concept Confidence were
+    # already printed by coverage.py at scoring time).
+    print_full_diagnostic_report(quality, decision_obj)
+
     report_text = generate_prediction_quality_report(
         results, coverage, sector,
         explain_summary=explain_summary,
-        routing_decision=routing_decision,
+        routing_decision=routing_decision_for_report,
     )
     print("\n" + report_text)
     if args.report_output:
         fmt = 'json' if args.report_output.lower().endswith('.json') else 'txt'
-        save_prediction_report(report_text, args.report_output, fmt=fmt)
+        extra_json_fields = (
+            {'diagnostics': decision_obj.to_diagnostics_dict()} if decision_obj is not None else None
+        )
+        save_prediction_report(
+            report_text, args.report_output, fmt=fmt,
+            extra_json_fields=extra_json_fields,
+        )
