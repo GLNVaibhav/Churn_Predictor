@@ -33,7 +33,42 @@ from .config import (
 )
 from .utils import _utc_timestamp, prediction_confidence_label, coverage_confidence_label
 from .quality_gate import print_quality_report
-from .routing import RoutingDecision, print_routing_decision
+from .routing import RoutingDecision
+
+
+def print_routing_decision(decision: RoutingDecision) -> None:
+    """
+    Human-readable Routing Decision report, in the same visual style
+    as coverage.py / quality_gate.py / concept_confidence.py's report
+    printers. This is the dedicated "Routing Decision" + "Prediction
+    Reliability" section of the full diagnostic report (see
+    print_full_diagnostic_report() below).
+
+    Relocated here from routing.py per Phase 5 item 3: routing.py
+    produces structured RoutingDecision objects only; reporting.py
+    owns every terminal-facing explanation, including this one.
+    """
+    sep = '─' * 60
+    print(f"\n{sep}")
+    print(f"  ROUTING DECISION")
+    print(sep)
+    print(f"  Verdict                 : {decision.acceptance_banner}")
+    print(f"  Selected model          : {decision.selected_model.value}")
+    print(f"  Model artifact          : {decision.model_artifact}")
+    print(f"  Coverage band           : {decision.coverage_band}  "
+          f"({decision.coverage_score*100:.1f}%)")
+    print(f"  Quality status          : {decision.quality_status}  "
+          f"({decision.quality_score*100:.1f}%)")
+    print(f"  Concept confidence      : "
+          f"{f'{decision.concept_confidence*100:.1f}%' if decision.concept_confidence is not None else 'N/A'}")
+    print(f"  Prediction reliability  : {decision.reliability.value}")
+    print(f"\n  Reason:")
+    print(f"    {decision.routing_reason}")
+    if decision.warnings:
+        print(f"\n  Warnings:")
+        for w in decision.warnings:
+            print(f"    ⚠ {w}")
+    print(sep)
 
 
 def attach_common_metadata(
