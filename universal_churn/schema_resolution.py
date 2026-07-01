@@ -203,13 +203,43 @@ class ColumnResolution:
     """One row of the resolution report — what a raw column became."""
     raw_column: str
     canonical_field: str | None
-    method: str          # 'exact' | 'regex' | 'unresolved'
-    confidence: float    # 1.0 / 0.8 / 0.0
+    method: str          # 'exact' | 'regex' | 'semantic' | 'unresolved'
+    confidence: float    # 1.0 / 0.8 / <0.8 / 0.0
+    # ── Version 7 additions (optional — existing callers unaffected) ──
+    # Populated only for method='semantic'. Every other strategy leaves
+    # these at their default of None, so nothing that already reads
+    # raw_column/canonical_field/method/confidence needs to change.
+    semantic_score: float | None = None   # raw similarity score, pre-cap
+    explanation: str | None = None        # human-readable "why it matched"
 
 
-def resolve_schema(df: pd.DataFrame) -> tuple[pd.DataFrame, list[ColumnResolution]]:
+def resolve_schema(
+    df: pd.DataFrame,
+    enable_semantic: bool = False,
+    semantic_resolver=None,
+) -> tuple[pd.DataFrame, list[ColumnResolution]]:
     """
     Resolve every column in df to a canonical field name where possible.
+
+    Parameters
+    ----------
+    enable_semantic : bool, default False
+        When False (the default), behavior is byte-for-byte identical
+        to Version 6 — only exact and regex strategies run, and the
+        semantic layer is never imported or invoked. This preserves
+        "Behavior of Version 6 must remain unchanged unless semantic
+        resolution is explicitly enabled."
+        When True, columns that exact+regex leave unresolved get one
+        more attempt via the semantic_schema module (Version 7,
+        Chunk 1) before finally falling back to 'unresolved'. A
+        semantic match can never override, or outrank the confidence
+        of, an exact or regex match — it is only ever tried on columns
+        the deterministic strategies already gave up on.
+    semantic_resolver : semantic_schema.SemanticSchemaResolver | None
+        Optional pre-built resolver (e.g. reused across many calls to
+        avoid re-embedding the canonical corpus each time, or built
+        with a specific SemanticConfig/backend). If None, a
+        lazily-constructed process-wide default resolver is used.
 
     Returns
     -------
@@ -230,7 +260,12 @@ def resolve_schema(df: pd.DataFrame) -> tuple[pd.DataFrame, list[ColumnResolutio
     for raw_col in df.columns:
         normalized = _normalize(raw_col)
 
-        # ── Strategy 1: exact match ─────────────────────────────
+        # ── Strategy 1: exact match (incl. normalized string match) ──
+        # _normalize() already collapses case/space/underscore variants
+        # before the alias lookup, so "exact match" and "normalized
+        # string match" from the priority spec are one combined step
+        # here — this is unchanged Version 6 behavior, documented for
+        # Version 7 clarity, not re-architected.
         if normalized in _EXACT_INDEX:
             canonical = _EXACT_INDEX[normalized]
             rename_map[raw_col] = canonical.name
@@ -259,6 +294,14 @@ def resolve_schema(df: pd.DataFrame) -> tuple[pd.DataFrame, list[ColumnResolutio
             if matched:
                 break
 
+        # ── Strategy 3 (Version 7, opt-in): semantic similarity ──
+        if not matched and enable_semantic:
+            semantic_hit = resolve_semantic_alias(raw_col, resolver=semantic_resolver)
+            if semantic_hit is not None:
+                rename_map[raw_col] = semantic_hit.canonical_field
+                resolutions.append(semantic_hit)
+                matched = True
+
         if not matched:
             resolutions.append(ColumnResolution(
                 raw_column=raw_col,
@@ -277,7 +320,7 @@ def resolution_summary(resolutions: list[ColumnResolution]) -> dict:
     and the CLI report want: counts per method, and the canonical
     fields that were never matched at all.
     """
-    by_method = {'exact': 0, 'regex': 0, 'unresolved': 0}
+    by_method = {'exact': 0, 'regex': 0, 'semantic': 0, 'unresolved': 0}
     matched_fields = set()
     for r in resolutions:
         by_method[r.method] += 1
@@ -290,6 +333,7 @@ def resolution_summary(resolutions: list[ColumnResolution]) -> dict:
     return {
         'exact_matches'     : by_method['exact'],
         'regex_matches'     : by_method['regex'],
+        'semantic_matches'  : by_method['semantic'],
         'unresolved_columns': by_method['unresolved'],
         'matched_fields'    : sorted(matched_fields),
         'unmatched_fields'  : unmatched_fields,
@@ -321,58 +365,95 @@ def resolution_summary(resolutions: list[ColumnResolution]) -> dict:
 # `confidence` generically, so they require zero changes.
 
 # ══════════════════════════════════════════════════════════════════
-# SEMANTIC EXTENSION HOOKS (Version 6, Chunk 5, Part 3) — NOT WIRED IN
+# SEMANTIC EXTENSION HOOKS (Version 7, Chunk 1) — WIRED IN, OPT-IN
 # ══════════════════════════════════════════════════════════════════
-# Pure extension seams for Version 7. Nothing below is called from
-# resolve_schema() today. Enabling this later means:
-#   1. Fill in the bodies below.
-#   2. Add ONE new strategy block inside resolve_schema(), after the
-#      regex block and before "unresolved", calling
-#      resolve_semantic_alias(). Exactly the plan already described in
-#      the "NOTE on fuzzy matching" above.
-# No other module needs to change — concepts.py, coverage.py,
-# concept_confidence.py, and canonical_fields.py already read
-# ColumnResolution.confidence generically, regardless of which
-# strategy produced it.
+# The actual embedding/similarity machinery lives in semantic_schema.py
+# and is imported lazily (only when this function is actually called,
+# which itself only happens when resolve_schema(..., enable_semantic=
+# True) is used). This keeps semantic_schema.py's dependencies
+# (sentence-transformers / Ollama / scikit-learn TF-IDF fallback)
+# entirely optional at import time for every other module — importing
+# schema_resolution.py, or calling resolve_schema() with its default
+# arguments, never touches semantic_schema.py at all.
 
 def resolve_semantic_alias(
     raw_column: str,
     candidate_fields: list[CanonicalField] | None = None,
+    resolver=None,
 ) -> "ColumnResolution | None":
     """
-    Extension point for Version 7 semantic column matching.
+    Version 7 semantic column matching, tried only for columns that
+    exact and regex matching have already given up on (see
+    resolve_schema()'s Strategy 3 block).
 
-    Currently a no-op — always returns None ("no semantic match
-    attempted"), so resolve_schema()'s exact -> regex -> unresolved
-    behavior is unaffected whether or not this is ever called.
+    Delegates to semantic_schema.SemanticSchemaResolver, which:
+      - embeds `raw_column` with a local embedding backend
+        (sentence-transformers, Ollama, or a zero-dependency TF-IDF
+        char-n-gram fallback that is always available),
+      - scores it against every canonical field's name/aliases/
+        description,
+      - accepts the top candidate only if its similarity clears
+        semantic_schema.SemanticConfig.confidence_threshold.
 
-    A real implementation would try, in order:
-        1. future_embedding_match() — vector-similarity matching
-        2. future_llm_resolution()  — LLM-assisted matching, last resort
-    and return a ColumnResolution with method='semantic' at a
-    confidence strictly below the regex tier (< 0.8), so a semantic
-    match can never outrank a deterministic exact/regex hit.
+    Returns None ("no semantic match") if semantic_schema is
+    unavailable for any reason (missing optional dependency, no
+    candidate cleared the threshold, etc.) — resolve_schema() then
+    simply falls through to 'unresolved', identical to Version 6.
+
+    The returned ColumnResolution.confidence is capped strictly below
+    the regex tier (0.8) by semantic_schema itself
+    (SemanticConfig.max_accepted_confidence), so a semantic match can
+    never outrank a deterministic exact/regex hit even if a caller
+    inspects confidence values directly instead of the method field.
     """
-    return None
+    try:
+        from . import semantic_schema
+    except ImportError:
+        # Optional layer entirely missing from this build — behave
+        # exactly like Version 6.
+        return None
+
+    fields = candidate_fields if candidate_fields is not None else CANONICAL_FIELDS
+    active_resolver = resolver or semantic_schema.get_default_resolver()
+    report = active_resolver.resolve(raw_column, candidate_fields=fields)
+
+    if not report.accepted or report.canonical_field is None:
+        return None
+
+    top_score = report.top_candidates[0].score if report.top_candidates else report.confidence
+    return ColumnResolution(
+        raw_column=raw_column,
+        canonical_field=report.canonical_field,
+        method='semantic',
+        confidence=report.confidence,   # already capped < 0.8 by semantic_schema
+        semantic_score=top_score,
+        explanation=report.explanation,
+    )
 
 
 def future_embedding_match(
     raw_column: str,
     candidate_fields: list[CanonicalField],
 ) -> "ColumnResolution | None":
-    """Placeholder — embedding-based column matching. Not implemented in V6."""
-    raise NotImplementedError(
-        "future_embedding_match is a Version 7 architecture placeholder. "
-        "Not implemented in Version 6 — see resolve_semantic_alias()."
-    )
+    """
+    Superseded by semantic_schema.SemanticSchemaResolver, which is now
+    the real embedding-match implementation used by
+    resolve_semantic_alias(). Kept as a thin, deprecated alias so any
+    external code that imported this placeholder by name during
+    Version 6 does not break.
+    """
+    return resolve_semantic_alias(raw_column, candidate_fields=candidate_fields)
 
 
 def future_llm_resolution(
     raw_column: str,
     context: dict,
 ) -> "ColumnResolution | None":
-    """Placeholder — LLM-assisted column matching. Not implemented in V6."""
+    """Placeholder — LLM-assisted column matching. Out of scope for
+    Version 7, Chunk 1 (semantic *embedding* similarity only — no LLM
+    calls, no OpenAI dependency, per the chunk objective)."""
     raise NotImplementedError(
-        "future_llm_resolution is a Version 7 architecture placeholder. "
-        "Not implemented in Version 6 — see resolve_semantic_alias()."
+        "future_llm_resolution remains a placeholder beyond Version 7 "
+        "Chunk 1 — see resolve_semantic_alias() for the embedding-based "
+        "semantic resolver that IS implemented."
     )
