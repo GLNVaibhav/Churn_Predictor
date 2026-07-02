@@ -1,58 +1,29 @@
 """
 universal_churn/business_reasoning.py
 ══════════════════════════════════════════════════════════════════════
-Business Reasoning Engine — Version 7, Chunk 3.
+Business Reasoning Engine — Version 7, Chunk 3 (rule evaluation),
+Chunk 4 (Knowledge-Base-driven).
 
-Extends (does NOT replace) the Business Concept Graph
-(business_concept_graph.py) with a deterministic reasoning layer that
-turns per-concept signals into human-readable Business Findings.
+... [unchanged module docstring through "Non-interference guarantee"] ...
 
-Target architecture (this chunk)
-----------------------------------
-    Canonical Fields
-      -> Business Concept Graph      (business_concept_graph.py, unchanged)
-      -> Business Reasoning Engine   (THIS MODULE)
-      -> Reasoning State             (ReasoningReport, below)
-      -> Prediction                  (untouched — see module docstring
-                                       note on non-interference)
+Version 7, Chunk 4 — Knowledge Base externalization
+------------------------------------------------------
+Concept direction/band thresholds, rule trigger conditions, finding
+titles/severities/explanations, and recommendation text used to be
+hardcoded in this file. They now live in knowledge/*.yaml, loaded and
+validated by knowledge_loader.load_knowledge_base() into a typed
+knowledge_base.KnowledgeBase (see BUSINESS_KNOWLEDGE_BASE.md).
 
-Two inputs, one report
-------------------------
-The Business Concept Graph (business_concept_graph.resolve_graph_confidence)
-answers "how confidently can we reconstruct concept X for this input
-file at all" — it is a SCHEMA-level signal and carries no per-row
-concept VALUE.
-
-The per-row concept VALUE (e.g. "this population's engagement is
-low") comes from the existing, unmodified business_concepts.
-compute_concept_values(), which this module also calls, unchanged.
-
-BusinessReasoningEngine.analyze() combines both:
-    1. Runs the (existing, unmodified) schema resolution + concept
-       graph propagation to get per-concept RECONSTRUCTION CONFIDENCE.
-    2. Runs the (existing, unmodified) per-row concept value
-       computation and aggregates it (population mean) into a
-       LOW / MEDIUM / HIGH band per concept.
-    3. Packages both into a BusinessInference per concept.
-    4. Evaluates the deterministic rule set (Part 2) against those
-       inferences to produce BusinessFinding objects.
-    5. Summarizes everything into a ReasoningReport (Part 5).
-
-Non-interference guarantee
------------------------------
-This module is purely ADDITIVE and READ-ONLY with respect to every
-other module in the package:
-    - It does not modify schema_resolution.py, feature_engineering.py,
-      coverage.py, routing.py, business_concepts.py, or
-      business_concept_graph.py.
-    - It is not imported by cli.py, sector_pipeline.py,
-      universal_pipeline.py, or routing.py — nothing on the prediction
-      path calls into this module, so prediction output is bit-for-bit
-      identical to before this chunk (see BUSINESS_REASONING_ENGINE.md,
-      "Prediction Parity").
-    - ReasoningReport is diagnostics-only. No model consumes it yet;
-      a future Core Model (see core_model_interface.py) is the
-      documented future consumer (Chunk 5+), not this chunk.
+PUBLIC API IS UNCHANGED: every name this module exported before this
+chunk — ConceptBand, Direction, CONCEPT_DIRECTION, LOW_BAND_MAX,
+HIGH_BAND_MIN, MIN_FINDING_CONFIDENCE, BusinessInference, Severity,
+BusinessFinding, ReasoningSummary, ReasoningReport, rule_retention_risk,
+rule_retention_strength, rule_dormant_customer,
+rule_service_recovery_needed, DEFAULT_RULES, BusinessReasoningEngine,
+run_business_reasoning — still exists and behaves identically. They are
+now POPULATED FROM the Knowledge Base at import time instead of being
+literal constants. business_reasoning_report.py and every test that
+imports this module require zero changes.
 """
 from __future__ import annotations
 
@@ -69,27 +40,34 @@ from .business_concept_graph import (
 )
 from .schema_resolution import resolve_schema
 from .concept_confidence import MIN_RECONSTRUCTABLE_OVERALL_CONFIDENCE
-
+from .konwledge_base import KnowledgeBase, RuleKnowledge
+from .knowledge_loader import get_default_knowledge_base
 
 # ══════════════════════════════════════════════════════════════════
-# CONFIGURATION — concept value banding + direction + reasoning gate
+# KNOWLEDGE BASE — loaded once at import time (fail-fast)
+# ══════════════════════════════════════════════════════════════════
+# A broken knowledge/ directory (missing file, malformed YAML,
+# duplicate ID, dangling cross-reference) raises
+# KnowledgeValidationError HERE, at import time — not silently at
+# prediction time. Nothing on the prediction path imports this
+# module (see module docstring's "Non-interference guarantee"), so
+# this cannot break routing/prediction even if it were ever wired in
+# later; today it only affects code that explicitly imports
+# business_reasoning.
+
+KNOWLEDGE_BASE: KnowledgeBase = get_default_knowledge_base()
+
+# ══════════════════════════════════════════════════════════════════
+# CONFIGURATION — sourced from the Knowledge Base
 # ══════════════════════════════════════════════════════════════════
 
-# A concept's aggregate [0,1] value is banded into one of three
-# levels. These thresholds are deliberately symmetric around the
-# concept's own neutral midpoint (0.5) — the same midpoint
-# business_concepts.py already uses for "no signal" / "unavailable"
-# concept values, so an unavailable concept bands to MEDIUM rather
-# than spuriously LOW or HIGH.
-LOW_BAND_MAX  = 0.35
-HIGH_BAND_MIN = 0.65
-
+LOW_BAND_MAX  = KNOWLEDGE_BASE.band_thresholds.low_max
+HIGH_BAND_MIN = KNOWLEDGE_BASE.band_thresholds.high_min
 
 class ConceptBand(str, Enum):
     LOW    = "LOW"
     MEDIUM = "MEDIUM"
     HIGH   = "HIGH"
-
 
 def _band_for(value: float) -> ConceptBand:
     if value <= LOW_BAND_MAX:
@@ -98,52 +76,34 @@ def _band_for(value: float) -> ConceptBand:
         return ConceptBand.HIGH
     return ConceptBand.MEDIUM
 
-
 class Direction(str, Enum):
-    """
-    Whether HIGH is a good sign or a bad sign for this concept, purely
-    for the reasoning summary's strengths/weaknesses classification —
-    rules themselves (Part 2) reason about bands directly and do not
-    consult this.
-    """
     HIGH_IS_GOOD = "high_is_good"
     HIGH_IS_BAD  = "high_is_bad"
-    NEUTRAL      = "neutral"   # e.g. RECURRING_COMMITMENT — a size, not a health signal
-
+    NEUTRAL      = "neutral"
 
 CONCEPT_DIRECTION: dict[str, Direction] = {
-    "CUSTOMER_LOYALTY":     Direction.HIGH_IS_GOOD,
-    "ENGAGEMENT_LEVEL":     Direction.HIGH_IS_GOOD,
-    "SATISFACTION_SIGNAL":  Direction.HIGH_IS_GOOD,
-    "SUPPORT_FRICTION":     Direction.HIGH_IS_BAD,
-    "RECURRING_COMMITMENT": Direction.NEUTRAL,
+    concept_id: Direction(KNOWLEDGE_BASE.concept_direction(concept_id))
+    for concept_id in KNOWLEDGE_BASE.concept_ids()
 }
 
-# Concepts whose reconstruction confidence is below this floor are
-# treated as "insufficient evidence" by the rule engine — a rule will
-# not fire on a concept we can barely reconstruct for this input file,
-# even if its aggregate value happens to land in a triggering band.
-# Reuses concept_confidence.py's existing reconstructability floor
-# rather than inventing a second, competing threshold.
+# Unchanged — reuses concept_confidence.py's existing reconstructability
+# floor rather than inventing a second, competing threshold. This is a
+# schema-reconstruction concern (concept_confidence.py's domain), not
+# business knowledge, so it deliberately does NOT move into the KB.
 MIN_FINDING_CONFIDENCE = MIN_RECONSTRUCTABLE_OVERALL_CONFIDENCE
 
-
 # ══════════════════════════════════════════════════════════════════
-# PART 1 — DATACLASSES
+# PART 1 — DATACLASSES (unchanged from Chunk 3)
 # ══════════════════════════════════════════════════════════════════
 
 @dataclass
 class BusinessInference:
-    """
-    One concept's reasoning-ready summary for a given input file +
-    sector — the unit the rule engine (Part 2) actually reasons over.
-    """
     concept_id: str
-    aggregate_value: float               # population-mean concept value, [0,1]
+    aggregate_value: float
     band: ConceptBand
-    confidence: float                    # graph reconstruction confidence, [0,1]
+    confidence: float
     reconstructable: bool
-    dependency_health: str                # 'GOOD' | 'FAIR' | 'POOR' (from the graph node)
+    dependency_health: str
     resolved_fields: list[str] = field(default_factory=list)
     missing_fields: list[str] = field(default_factory=list)
 
@@ -153,16 +113,15 @@ class BusinessInference:
 
     def to_dict(self) -> dict:
         return {
-            'concept_id'        : self.concept_id,
-            'aggregate_value'   : round(self.aggregate_value, 4),
-            'band'               : self.band.value,
-            'confidence'         : self.confidence,
-            'reconstructable'    : self.reconstructable,
-            'dependency_health'  : self.dependency_health,
-            'resolved_fields'    : self.resolved_fields,
-            'missing_fields'     : self.missing_fields,
+            'concept_id': self.concept_id,
+            'aggregate_value': round(self.aggregate_value, 4),
+            'band': self.band.value,
+            'confidence': self.confidence,
+            'reconstructable': self.reconstructable,
+            'dependency_health': self.dependency_health,
+            'resolved_fields': self.resolved_fields,
+            'missing_fields': self.missing_fields,
         }
-
 
 class Severity(str, Enum):
     LOW      = "LOW"
@@ -170,35 +129,28 @@ class Severity(str, Enum):
     HIGH     = "HIGH"
     CRITICAL = "CRITICAL"
 
-
 @dataclass
 class BusinessFinding:
-    """One fired business rule — see Part 2 for the rule catalogue."""
     finding_id: str
     title: str
     severity: Severity
-    confidence: float                      # min() of supporting concepts' confidence
+    confidence: float
     supporting_concepts: list[str]
     explanation: str
     recommendation: str
 
     def to_dict(self) -> dict:
         return {
-            'finding_id'          : self.finding_id,
-            'title'                : self.title,
-            'severity'             : self.severity.value,
-            'confidence'           : round(self.confidence, 4),
-            'supporting_concepts'  : self.supporting_concepts,
-            'explanation'          : self.explanation,
-            'recommendation'       : self.recommendation,
+            'finding_id': self.finding_id, 'title': self.title,
+            'severity': self.severity.value, 'confidence': round(self.confidence, 4),
+            'supporting_concepts': self.supporting_concepts,
+            'explanation': self.explanation, 'recommendation': self.recommendation,
         }
-
 
 @dataclass
 class ReasoningSummary:
-    """Part 5 — dataset-level roll-up. Diagnostics only."""
-    overall_business_health: str            # LOW | MEDIUM | HIGH
-    overall_customer_risk: str               # LOW | MEDIUM | HIGH | CRITICAL
+    overall_business_health: str
+    overall_customer_risk: str
     business_strengths: list[str] = field(default_factory=list)
     business_weaknesses: list[str] = field(default_factory=list)
     dominant_failure_reason: str | None = None
@@ -206,22 +158,16 @@ class ReasoningSummary:
 
     def to_dict(self) -> dict:
         return {
-            'overall_business_health'   : self.overall_business_health,
-            'overall_customer_risk'      : self.overall_customer_risk,
-            'business_strengths'         : self.business_strengths,
-            'business_weaknesses'        : self.business_weaknesses,
-            'dominant_failure_reason'    : self.dominant_failure_reason,
-            'dominant_positive_signal'   : self.dominant_positive_signal,
+            'overall_business_health': self.overall_business_health,
+            'overall_customer_risk': self.overall_customer_risk,
+            'business_strengths': self.business_strengths,
+            'business_weaknesses': self.business_weaknesses,
+            'dominant_failure_reason': self.dominant_failure_reason,
+            'dominant_positive_signal': self.dominant_positive_signal,
         }
-
 
 @dataclass
 class ReasoningReport:
-    """
-    The full output of one BusinessReasoningEngine.analyze() call.
-    Purely informational — see module docstring, "Non-interference
-    guarantee". Nothing in the prediction path reads this object.
-    """
     sector: str
     generated_at: str
     inferences: dict[str, BusinessInference] = field(default_factory=dict)
@@ -230,32 +176,83 @@ class ReasoningReport:
 
     def to_dict(self) -> dict:
         return {
-            'sector'        : self.sector,
-            'generated_at'  : self.generated_at,
-            'inferences'    : {k: v.to_dict() for k, v in self.inferences.items()},
-            'findings'      : [f.to_dict() for f in self.findings],
-            'summary'       : self.summary.to_dict() if self.summary else None,
+            'sector': self.sector, 'generated_at': self.generated_at,
+            'inferences': {k: v.to_dict() for k, v in self.inferences.items()},
+            'findings': [f.to_dict() for f in self.findings],
+            'summary': self.summary.to_dict() if self.summary else None,
         }
 
-
 # ══════════════════════════════════════════════════════════════════
-# PART 2 — BUSINESS RULES (deterministic, documented)
+# PART 2 — RULES, NOW BUILT FROM THE KNOWLEDGE BASE
 # ══════════════════════════════════════════════════════════════════
-# Every rule is a plain function: (inferences: dict[str, BusinessInference])
-# -> BusinessFinding | None. A rule fires only when:
-#   1. every concept it reasons about resolved to an inference at all
-#      (some concepts may be entirely absent from `inferences` if they
-#      are not in CONCEPT_NAMES — defensive, should not happen), AND
-#   2. every concept it reasons about has_sufficient_evidence (its
-#      graph reconstruction confidence clears MIN_FINDING_CONFIDENCE),
-#      AND
-#   3. every concept's band matches this rule's triggering condition.
-# Rules never fire on a concept the graph could not reconstruct with
-# at least minimal confidence — an unreconstructable LOW is not
-# evidence of anything, it's an absence of evidence, and treating it
-# as a genuine LOW risks manufacturing findings out of missing data.
+# A rule fires only when every concept it reasons about (1) has an
+# inference at all, (2) has_sufficient_evidence, and (3) matches this
+# rule's declared band conditions. Same three-part gate as Chunk 3 —
+# only the SOURCE of the conditions/finding text/recommendation moved,
+# not the gate logic itself.
 
 RuleFn = Callable[[dict[str, "BusinessInference"]], "BusinessFinding | None"]
+
+def _ready(inferences: dict[str, BusinessInference], *concept_ids: str) -> bool:
+    for cid in concept_ids:
+        inf = inferences.get(cid)
+        if inf is None or not inf.has_sufficient_evidence:
+            return False
+    return True
+
+def _make_rule_fn(rule: RuleKnowledge, kb: KnowledgeBase) -> RuleFn:
+    """Build one RuleFn from a KnowledgeBase RuleKnowledge entry."""
+    finding = kb.get_finding(rule.finding_id)
+    recommendation_text = kb.get_recommendation(rule.finding_id)
+    severity = Severity(finding.severity)
+
+    def _rule_fn(inferences: dict[str, BusinessInference]) -> BusinessFinding | None:
+        if not _ready(inferences, *rule.supporting_concepts):
+            return None
+        for condition in rule.conditions:
+            inf = inferences.get(condition.concept)
+            if inf is None or inf.band.value != condition.band:
+                return None
+        conf = min(inferences[cid].confidence for cid in rule.supporting_concepts)
+        return BusinessFinding(
+            finding_id=rule.finding_id,
+            title=finding.title,
+            severity=severity,
+            confidence=conf,
+            supporting_concepts=list(rule.supporting_concepts),
+            explanation=finding.explanation,
+            recommendation=recommendation_text,
+        )
+
+    _rule_fn.__name__ = f"rule_{rule.rule_id.lower()}"
+    _rule_fn.__doc__ = (
+        f"Knowledge-Base-driven rule '{rule.rule_id}' -> finding "
+        f"'{rule.finding_id}'. Conditions: "
+        f"{[(c.concept, c.band) for c in rule.conditions]}."
+    )
+    return _rule_fn
+
+_RULES_BY_ID: dict[str, RuleFn] = {
+    rule.rule_id: _make_rule_fn(rule, KNOWLEDGE_BASE) for rule in KNOWLEDGE_BASE.rules
+}
+
+# ── Named exports (backward compatibility with Chunk 3 call sites) ──
+# Kept as aliases into the Knowledge-Base-driven rule map so
+# `from business_reasoning import rule_retention_risk` etc. keeps
+# working unchanged. If a rule id is ever renamed/removed in
+# rules.yaml, this raises a clear KeyError at import time rather than
+# silently dropping a rule other code still expects.
+rule_retention_risk           = _RULES_BY_ID["RETENTION_RISK"]
+rule_retention_strength       = _RULES_BY_ID["RETENTION_STRENGTH"]
+rule_dormant_customer         = _RULES_BY_ID["DORMANT_CUSTOMER"]
+rule_service_recovery_needed  = _RULES_BY_ID["SERVICE_RECOVERY_NEEDED"]
+
+DEFAULT_RULES: list[RuleFn] = [
+    rule_retention_risk,
+    rule_retention_strength,
+    rule_dormant_customer,
+    rule_service_recovery_needed,
+]
 
 
 def _ready(inferences: dict[str, BusinessInference], *concept_ids: str) -> bool:

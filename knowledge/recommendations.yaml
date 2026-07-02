@@ -1,0 +1,16 @@
+recommendations:
+  - finding_id: RETENTION_RISK
+    text: Launch a targeted retention campaign for the affected segment.
+
+  - finding_id: RETENTION_STRENGTH
+    text: >-
+      Protect this segment's experience; consider it a reference
+      base for loyalty programs.
+
+  - finding_id: DORMANT_CUSTOMER
+    text: Enroll the segment in a re-engagement program before the next renewal cycle.
+
+  - finding_id: SERVICE_RECOVERY_NEEDED
+    text: >-
+      Trigger a service-recovery workflow (proactive outreach,
+      issue audit) for the affected segment.

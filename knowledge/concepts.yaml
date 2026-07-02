@@ -1,0 +1,19 @@
+# Business Knowledge Base — concept metadata.
+# direction: high_is_good | high_is_bad | neutral
+#   Used only by ReasoningSummary's strengths/weaknesses roll-up —
+#   individual rules reason about bands directly, not direction.
+band_thresholds:
+  low_max: 0.35
+  high_min: 0.65
+
+concepts:
+  - id: RECURRING_COMMITMENT
+    direction: neutral
+  - id: CUSTOMER_LOYALTY
+    direction: high_is_good
+  - id: ENGAGEMENT_LEVEL
+    direction: high_is_good
+  - id: SATISFACTION_SIGNAL
+    direction: high_is_good
+  - id: SUPPORT_FRICTION
+    direction: high_is_bad

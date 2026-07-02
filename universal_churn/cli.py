@@ -18,6 +18,9 @@ import pandas as pd
 from .config import SECTOR_CONFIG
 from .preprocessing import detect_sector
 from .reporting import _maybe_emit_report
+from .prediction_explanation_report import (
+    build_and_attach_explanations, print_prediction_explanation_report,
+)
 from .coverage import compute_coverage_score
 from .quality_gate import run_quality_gate
 from .routing import route, ModelType
@@ -89,6 +92,11 @@ def main(argv: list[str] | None = None) -> None:
         results = pipeline.predict(
             args.input, explain=args.explain,
             explain_output=args.explain_output, _prediction_mode='Sector')
+        # Prediction Explanation Layer (Version 7, Chunk 5) — additive,
+        # best-effort, never blocks prediction. See prediction_explanation.py
+        # for the non-interference guarantee.
+        probe_for_explanation = pd.read_csv(args.input)
+        results = build_and_attach_explanations(results, probe_for_explanation, sector)
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
         results.to_csv(args.output, index=False)
         print(f"\nResults saved to: {args.output}")
@@ -101,6 +109,10 @@ def main(argv: list[str] | None = None) -> None:
             results, sector,
             routing_decision=routing_decision_text,
             args=args)
+        if getattr(args, 'report', False):
+            explanation_report = results.attrs.get('prediction_explanation')
+            if explanation_report is not None:
+                print_prediction_explanation_report(explanation_report)
 
     elif args.mode == 'universal':
         # Routing decision (quality gate / leakage check) is made
@@ -114,6 +126,12 @@ def main(argv: list[str] | None = None) -> None:
             args.input, force_sector=args.sector,
             explain=args.explain, explain_output=args.explain_output,
             _prediction_mode='Universal')
+        # Prediction Explanation Layer (Version 7, Chunk 5) — additive,
+        # best-effort, never blocks prediction. See prediction_explanation.py
+        # for the non-interference guarantee.
+        probe_for_explanation = pd.read_csv(args.input)
+        results = build_and_attach_explanations(
+            results, probe_for_explanation, sector_for_report)
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
         results.to_csv(args.output, index=False)
         print(f"\nResults saved to: {args.output}")
@@ -126,6 +144,10 @@ def main(argv: list[str] | None = None) -> None:
             results, sector_for_report,
             routing_decision=routing_decision_text,
             args=args)
+        if getattr(args, 'report', False):
+            explanation_report = results.attrs.get('prediction_explanation')
+            if explanation_report is not None:
+                print_prediction_explanation_report(explanation_report)
 
     elif args.mode == 'auto':
         # Centralized routing: compute coverage + quality, call
@@ -185,11 +207,21 @@ def main(argv: list[str] | None = None) -> None:
                 f"Unhandled RoutingDecision.selected_model: {decision.selected_model}"
             )
 
+        # Prediction Explanation Layer (Version 7, Chunk 5) — additive,
+        # best-effort, never blocks prediction. See prediction_explanation.py
+        # for the non-interference guarantee.
+        probe_for_explanation = pd.read_csv(args.input)
+        results = build_and_attach_explanations(results, probe_for_explanation, sector)
+
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
         results.to_csv(args.output, index=False)
         print(f"\nResults saved to: {args.output}")
         _maybe_emit_report(results, sector,
                            routing_decision=decision.routing_reason, args=args)
+        if getattr(args, 'report', False):
+            explanation_report = results.attrs.get('prediction_explanation')
+            if explanation_report is not None:
+                print_prediction_explanation_report(explanation_report)
 
     elif args.mode == 'list_heads':
         print("\nMulti-head model architecture:")

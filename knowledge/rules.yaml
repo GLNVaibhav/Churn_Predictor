@@ -1,0 +1,40 @@
+# Every concept in `conditions` must also appear in `supporting_concepts`
+# (enforced by knowledge_loader.py) — supporting_concepts is the set a
+# rule's confidence and evidence-sufficiency check spans; conditions is
+# the subset of that set with a specific band requirement.
+rules:
+  - id: RETENTION_RISK
+    finding_id: RETENTION_RISK
+    supporting_concepts: [RECURRING_COMMITMENT, SUPPORT_FRICTION]
+    conditions:
+      - concept: RECURRING_COMMITMENT
+        band: LOW
+      - concept: SUPPORT_FRICTION
+        band: HIGH
+
+  - id: RETENTION_STRENGTH
+    finding_id: RETENTION_STRENGTH
+    supporting_concepts: [CUSTOMER_LOYALTY, ENGAGEMENT_LEVEL]
+    conditions:
+      - concept: CUSTOMER_LOYALTY
+        band: HIGH
+      - concept: ENGAGEMENT_LEVEL
+        band: HIGH
+
+  - id: DORMANT_CUSTOMER
+    finding_id: DORMANT_CUSTOMER
+    supporting_concepts: [RECURRING_COMMITMENT, ENGAGEMENT_LEVEL]
+    conditions:
+      - concept: RECURRING_COMMITMENT
+        band: HIGH
+      - concept: ENGAGEMENT_LEVEL
+        band: LOW
+
+  - id: SERVICE_RECOVERY_NEEDED
+    finding_id: SERVICE_RECOVERY_NEEDED
+    supporting_concepts: [SUPPORT_FRICTION, SATISFACTION_SIGNAL]
+    conditions:
+      - concept: SUPPORT_FRICTION
+        band: HIGH
+      - concept: SATISFACTION_SIGNAL
+        band: LOW
