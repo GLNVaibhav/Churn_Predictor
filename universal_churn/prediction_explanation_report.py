@@ -84,6 +84,77 @@ def print_prediction_explanation_report(report: PredictionExplanationReport) -> 
 
 
 # ══════════════════════════════════════════════════════════════════
+# EXECUTION SUMMARY — one screen, cross-referencing the reports that
+# already printed (coverage.py / concept_confidence.py / quality_gate.py
+# / routing.py), rather than repeating their content. This is the
+# "--report" diagnostics summary requested for the Version 7 polish
+# pass: it reads values those modules already computed and attached to
+# `results.attrs` / the explanation report — it computes nothing new.
+# ══════════════════════════════════════════════════════════════════
+
+def generate_execution_summary(
+    report: PredictionExplanationReport,
+    coverage: dict | None,
+) -> str:
+    """
+    One concise block answering "what did the pipeline actually do for
+    this run" — resolved fields, semantic recoveries, reconstructed
+    concepts, triggered findings, routing outcome, reliability, and
+    business health. Every value here is read from `coverage` (already
+    produced by coverage.py) and `report` (already produced by the
+    Prediction Explanation Layer) — see those modules' own printers
+    for the full detail behind each line.
+    """
+    sep = "─" * 60
+    lines = [sep, "  EXECUTION SUMMARY", sep]
+
+    if coverage is not None:
+        resolved = [d['feature'] for d in coverage.get('detail', []) if d.get('quality') == 1]
+        semantic = coverage.get('semantic_matches', [])
+        lines.append(f"  Resolved fields              : {len(resolved)}")
+        lines.append(
+            f"  Semantically recovered fields : "
+            f"{', '.join(semantic) if semantic else 'None'}"
+        )
+        concept_conf = coverage.get('concept_confidence') or {}
+        lines.append(
+            f"  Concepts reconstructed        : "
+            f"{concept_conf.get('reconstructable_concepts', 0)}/"
+            f"{concept_conf.get('total_concepts', 0)}"
+        )
+    else:
+        lines.append("  Coverage data unavailable for this run.")
+
+    findings = report.reasoning_report.findings
+    lines.append(
+        f"  Triggered findings            : "
+        f"{', '.join(f.title for f in findings) if findings else 'None'}"
+    )
+
+    evidence = report.row_explanations[0].evidence if report.row_explanations else None
+    if evidence is not None:
+        lines.append(f"  Routing outcome                : {evidence.routing_selected_model}")
+        lines.append(
+            f"  Prediction reliability         : "
+            f"{report.row_explanations[0].reliability.level}"
+        )
+
+    summary = report.dataset_explanation
+    lines.append(f"  Business health                : {summary.overall_business_health}")
+    lines.append(f"  Customer risk                  : {summary.overall_customer_risk}")
+
+    lines.append(sep)
+    return "\n".join(lines)
+
+
+def print_execution_summary(
+    report: PredictionExplanationReport,
+    coverage: dict | None,
+) -> None:
+    print("\n" + generate_execution_summary(report, coverage))
+
+
+# ══════════════════════════════════════════════════════════════════
 # CSV ENRICHMENT (Part 7)
 # ══════════════════════════════════════════════════════════════════
 

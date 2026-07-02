@@ -20,6 +20,7 @@ from .preprocessing import detect_sector
 from .reporting import _maybe_emit_report
 from .prediction_explanation_report import (
     build_and_attach_explanations, print_prediction_explanation_report,
+    print_execution_summary,
 )
 from .coverage import compute_coverage_score
 from .quality_gate import run_quality_gate
@@ -113,6 +114,7 @@ def main(argv: list[str] | None = None) -> None:
             explanation_report = results.attrs.get('prediction_explanation')
             if explanation_report is not None:
                 print_prediction_explanation_report(explanation_report)
+                print_execution_summary(explanation_report, results.attrs.get('coverage'))
 
     elif args.mode == 'universal':
         # Routing decision (quality gate / leakage check) is made
@@ -148,6 +150,7 @@ def main(argv: list[str] | None = None) -> None:
             explanation_report = results.attrs.get('prediction_explanation')
             if explanation_report is not None:
                 print_prediction_explanation_report(explanation_report)
+                print_execution_summary(explanation_report, results.attrs.get('coverage'))
 
     elif args.mode == 'auto':
         # Centralized routing: compute coverage + quality, call
@@ -222,6 +225,7 @@ def main(argv: list[str] | None = None) -> None:
             explanation_report = results.attrs.get('prediction_explanation')
             if explanation_report is not None:
                 print_prediction_explanation_report(explanation_report)
+                print_execution_summary(explanation_report, results.attrs.get('coverage'))
 
     elif args.mode == 'list_heads':
         print("\nMulti-head model architecture:")

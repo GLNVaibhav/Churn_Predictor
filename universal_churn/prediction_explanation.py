@@ -255,15 +255,91 @@ def _findings_text(findings: list[BusinessFinding]) -> str:
     return " ".join(parts)
 
 
-def _reason_text(findings: list[BusinessFinding], reasoning: ReasoningReport) -> str:
+def _no_finding_reason_text(
+    reasoning: ReasoningReport,
+    coverage: dict | None,
+    routing_decision: RoutingDecision | None,
+) -> str:
+    """
+    Build an informative explanation for the case where no Knowledge
+    Base rule fired — Part 3 of the Version 7 polish pass.
+
+    This never invents a finding. It only narrates values that other,
+    already-computed objects produced: BusinessInference.confidence
+    (business_concept_graph.py's graph propagation, surfaced via
+    business_reasoning.py), the coverage dict (coverage.py), and the
+    RoutingDecision (routing.py). If a caller wants to know WHY no
+    finding fired, the honest answer is "here is what we actually
+    know about this input" — strongest signal, weakest/least-evidenced
+    signal, how complete the schema was, and which model served the
+    prediction and why.
+    """
+    parts: list[str] = [
+        "No single business rule crossed its trigger threshold for this input."
+    ]
+
+    inferences = list(reasoning.inferences.values())
+    evidenced = [i for i in inferences if i.has_sufficient_evidence]
+
+    if evidenced:
+        strongest = max(evidenced, key=lambda i: i.confidence)
+        parts.append(
+            f"Strongest evidenced signal: {strongest.concept_id} "
+            f"({strongest.band.value}, {strongest.confidence*100:.0f}% concept confidence)."
+        )
+        if len(evidenced) > 1:
+            weakest = min(evidenced, key=lambda i: i.confidence)
+            if weakest.concept_id != strongest.concept_id:
+                parts.append(
+                    f"Weakest evidenced signal: {weakest.concept_id} "
+                    f"({weakest.band.value}, {weakest.confidence*100:.0f}% concept confidence)."
+                )
+    else:
+        parts.append(
+            "No business concept reached sufficient reconstruction confidence "
+            "to support a finding."
+        )
+
+    unresolved = [i.concept_id for i in inferences if not i.has_sufficient_evidence]
+    if unresolved:
+        parts.append(f"Insufficient evidence to reason about: {', '.join(unresolved)}.")
+
+    if coverage is not None:
+        parts.append(
+            f"Feature coverage was {coverage.get('status', 'Unknown')} "
+            f"({coverage.get('coverage_score', 0.0)*100:.1f}%)."
+        )
+        concept_conf = coverage.get('concept_confidence')
+        if concept_conf:
+            parts.append(
+                f"Overall concept confidence was "
+                f"{concept_conf.get('overall_confidence', 0.0)*100:.1f}% "
+                f"({concept_conf.get('reconstructable_concepts', 0)}/"
+                f"{concept_conf.get('total_concepts', 0)} concepts reconstructed)."
+            )
+
+    if routing_decision is not None:
+        parts.append(
+            f"{routing_decision.selected_model.value} was selected "
+            f"(reliability: {routing_decision.reliability.value}) — "
+            f"{routing_decision.routing_reason}"
+        )
+
+    return " ".join(parts)
+
+
+def _reason_text(
+    findings: list[BusinessFinding],
+    reasoning: ReasoningReport,
+    coverage: dict | None = None,
+    routing_decision: RoutingDecision | None = None,
+) -> str:
     if findings:
         top = max(findings, key=lambda f: {
             'LOW': 0, 'MEDIUM': 1, 'HIGH': 2, 'CRITICAL': 3,
         }[f.severity.value])
         return top.explanation
-    if reasoning.summary and reasoning.summary.dominant_failure_reason:
-        return reasoning.summary.dominant_failure_reason
-    return "No specific business driver was strong enough to explain this prediction."
+    return _no_finding_reason_text(reasoning, coverage, routing_decision)
 
 
 def _recommendation_for(
@@ -315,9 +391,10 @@ def _build_narrative(
     concepts_reconstructable: bool | None,
     quality_status: str,
     routing_decision: RoutingDecision | None,
+    coverage: dict | None = None,
 ) -> PredictionNarrative:
     headline = _headline_for(predicted_label)
-    reason = _reason_text(findings, reasoning)
+    reason = _reason_text(findings, reasoning, coverage, routing_decision)
     findings_text = _findings_text(findings)
     acceptance = _acceptance_text(
         coverage_band, concepts_reconstructable, quality_status, routing_decision,
@@ -523,6 +600,7 @@ class PredictionExplanationBuilder:
             coverage_band=evidence.coverage_band,
             concepts_reconstructable=concepts_reconstructable,
             quality_status=quality_status, routing_decision=routing_decision,
+            coverage=coverage,
         )
 
         dataset_explanation = self._build_dataset_explanation(
@@ -615,6 +693,7 @@ class PredictionExplanationBuilder:
             recommendation=recommendation, coverage_band=evidence.coverage_band,
             concepts_reconstructable=concepts_reconstructable,
             quality_status=quality_status, routing_decision=routing_decision,
+            coverage=coverage,
         )
         return PredictionExplanation(
             summary=summary, evidence=evidence, recommendation=recommendation,
