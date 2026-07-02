@@ -23,23 +23,40 @@ does NOT change schema_resolution.py or concepts.py — it is a pure
 read-only consumer of both, per "every module has a single
 responsibility."
 
-Derivation
-----------
+Derivation (Version 7, Chunk 2 update)
+----------------------------------------
+Internally, per-concept confidence is now computed by
+business_concept_graph.py's BusinessConceptGraph instead of an
+isolated per-concept calculation — see that module's docstring for the
+full graph-propagation policy. The PUBLIC interface below
+(compute_concept_confidence, ConceptConfidenceReport,
+ConceptConfidenceEntry, print_concept_confidence_report,
+MIN_RECONSTRUCTABLE_OVERALL_CONFIDENCE) is UNCHANGED — coverage.py and
+routing.py require zero changes, per "No API changes."
+
 For every BusinessConcept in concepts.BUSINESS_CONCEPTS:
 
     1. Does `sector` have a documented ConceptSource for this concept?
-       (concept.sources.get(sector))  -- if not: confidence 0.0,
-       reconstructable = False, reason = "no documented source".
+       (concept.sources.get(sector))  -- if not: the graph now checks
+       whether any OTHER canonical field this concept graph-depends on
+       (possibly documented for a different sector) resolved anyway in
+       this file, and gives partial credit if so; otherwise confidence
+       0.0, reconstructable = False, reason = "no documented source"
+       (identical to the pre-graph result whenever nothing else in the
+       graph resolves either).
 
     2. Did the canonical field that source depends on
        (source.canonical_field) actually resolve from THIS file's raw
        columns?  Determined via schema_resolution.resolve_schema(),
        which reports HOW each raw column resolved (exact / regex /
        unresolved) and at what confidence (1.0 / 0.8 / 0.0).
-       If it never resolved: confidence 0.0, reconstructable = False,
-       reason = "canonical field not present in input".
+       If it never resolved: the graph again attempts partial recovery
+       via the concept's other documented fields before falling back
+       to confidence 0.0 (identical to pre-graph behaviour if nothing
+       else resolves).
 
-    3. Otherwise:
+    3. Otherwise (primary field resolved normally — the common case,
+       UNCHANGED from before the graph):
            concept_confidence = source.confidence * resolution.confidence
        i.e. how good a proxy the sector's mapping is (source.confidence)
        combined with how sure we are the raw column really IS that
@@ -58,6 +75,7 @@ import pandas as pd
 
 from .concepts import BUSINESS_CONCEPTS, CONCEPT_NAMES
 from .schema_resolution import resolve_schema
+from .business_concept_graph import resolve_graph_confidence
 
 
 # Below this overall confidence (with zero reconstructable concepts
@@ -121,6 +139,12 @@ def compute_concept_confidence(df_input: pd.DataFrame, sector: str) -> ConceptCo
 
     Read-only: does not mutate df_input, does not touch coverage.py,
     does not touch concepts.py or schema_resolution.py.
+
+    Internally delegates to business_concept_graph.resolve_graph_confidence()
+    for the actual per-concept number (Version 7, Chunk 2) — this
+    function's job is now just to translate the graph's per-node result
+    into the same ConceptConfidenceReport/ConceptConfidenceEntry shape
+    every existing caller (coverage.py, tests) already expects.
     """
     _, resolutions = resolve_schema(df_input)
 
@@ -134,22 +158,53 @@ def compute_concept_confidence(df_input: pd.DataFrame, sector: str) -> ConceptCo
         prev = best_resolution_confidence.get(r.canonical_field, 0.0)
         best_resolution_confidence[r.canonical_field] = max(prev, r.confidence)
 
+    graph = resolve_graph_confidence(df_input, sector)
+
     per_concept: dict[str, ConceptConfidenceEntry] = {}
 
     for concept_name in CONCEPT_NAMES:
         concept = BUSINESS_CONCEPTS[concept_name]
         source = concept.sources.get(sector)
+        graph_node = graph.get_node(concept_name)
 
         if source is None:
-            per_concept[concept_name] = ConceptConfidenceEntry(
-                concept=concept_name, confidence=0.0, reconstructable=False,
-                reason=f"No documented business-concept source for sector '{sector}'.",
-            )
+            if graph_node is not None and graph_node.confidence > 0.0:
+                # Graph partial recovery (Part 3): some OTHER
+                # canonical field this concept depends on (documented
+                # for a different sector) resolved anyway in this file.
+                per_concept[concept_name] = ConceptConfidenceEntry(
+                    concept=concept_name, confidence=graph_node.confidence,
+                    reconstructable=True,
+                    reason=(
+                        f"No documented business-concept source for sector "
+                        f"'{sector}', but partially reconstructed via graph "
+                        f"fallback field(s): {graph_node.resolved_fields}."
+                    ),
+                )
+            else:
+                per_concept[concept_name] = ConceptConfidenceEntry(
+                    concept=concept_name, confidence=0.0, reconstructable=False,
+                    reason=f"No documented business-concept source for sector '{sector}'.",
+                )
             continue
 
         resolution_confidence = best_resolution_confidence.get(source.canonical_field, 0.0)
 
         if resolution_confidence == 0.0:
+            if graph_node is not None and graph_node.confidence > 0.0:
+                per_concept[concept_name] = ConceptConfidenceEntry(
+                    concept=concept_name, confidence=graph_node.confidence,
+                    reconstructable=True,
+                    reason=(
+                        f"Canonical field '{source.canonical_field}' did not "
+                        f"resolve, but partially reconstructed via graph "
+                        f"fallback field(s): {graph_node.resolved_fields}."
+                    ),
+                    canonical_field=source.canonical_field,
+                    source_confidence=source.confidence,
+                    resolution_confidence=0.0,
+                )
+                continue
             per_concept[concept_name] = ConceptConfidenceEntry(
                 concept=concept_name, confidence=0.0, reconstructable=False,
                 reason=(
