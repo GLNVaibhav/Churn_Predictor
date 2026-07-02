@@ -1,16 +1,24 @@
 recommendations:
   - finding_id: RETENTION_RISK
-    text: Launch a targeted retention campaign for the affected segment.
+    text: Launch a targeted retention campaign.
+    priority: HIGH
+    business_impact: Reduce customer churn and improve retention.
+    expected_outcome: Higher customer retention among high-risk customers.
 
   - finding_id: RETENTION_STRENGTH
-    text: >-
-      Protect this segment's experience; consider it a reference
-      base for loyalty programs.
+    text: Protect the customer experience and reward loyal customers.
+    priority: LOW
+    business_impact: Preserve long-term customer value.
+    expected_outcome: Maintain customer loyalty and reduce future churn risk.
 
   - finding_id: DORMANT_CUSTOMER
-    text: Enroll the segment in a re-engagement program before the next renewal cycle.
+    text: Launch a targeted re-engagement campaign.
+    priority: MEDIUM
+    business_impact: Increase customer activity and engagement.
+    expected_outcome: Reactivate dormant customers before they churn.
 
   - finding_id: SERVICE_RECOVERY_NEEDED
-    text: >-
-      Trigger a service-recovery workflow (proactive outreach,
-      issue audit) for the affected segment.
+    text: Escalate unresolved support issues immediately.
+    priority: HIGH
+    business_impact: Improve customer satisfaction and reduce service-related churn.
+    expected_outcome: Restore customer trust and improve service experience.

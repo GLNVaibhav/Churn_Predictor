@@ -2,6 +2,7 @@ findings:
   - id: RETENTION_RISK
     title: Retention Risk
     severity: HIGH
+    category: Retention
     explanation: >-
       Recurring commitment is weak while support friction is high —
       customers have little financial tie to the business and an
@@ -10,6 +11,7 @@ findings:
   - id: RETENTION_STRENGTH
     title: Retention Strength
     severity: LOW
+    category: Retention
     explanation: >-
       Customer loyalty and engagement are both high — the
       relationship is entrenched, not merely long-standing.
@@ -17,6 +19,7 @@ findings:
   - id: DORMANT_CUSTOMER
     title: Customer Dormancy
     severity: MEDIUM
+    category: Engagement
     explanation: >-
       Recurring commitment remains high but engagement has dropped —
       the relationship is financially intact but has gone quiet.
@@ -24,6 +27,7 @@ findings:
   - id: SERVICE_RECOVERY_NEEDED
     title: Service Recovery Needed
     severity: HIGH
+    category: Customer Experience
     explanation: >-
       Support friction is high and satisfaction is low at the same
       time — the service experience itself is the likely churn

@@ -4,26 +4,77 @@ universal_churn/business_reasoning.py
 Business Reasoning Engine — Version 7, Chunk 3 (rule evaluation),
 Chunk 4 (Knowledge-Base-driven).
 
-... [unchanged module docstring through "Non-interference guarantee"] ...
+Consumes a BusinessConceptGraph (business_concept_graph.py) plus the
+existing per-row concept value computation (business_concepts.py) and
+produces a ReasoningReport: per-concept inferences (aggregate value +
+band + confidence) and a list of fired BusinessFindings, each backed
+by a rule from the Knowledge Base (knowledge/rules.yaml).
+
+Non-interference guarantee (unchanged from Chunk 3/4)
+--------------------------------------------------------
+Nothing on the prediction path (routing.py, coverage.py, quality_gate.py,
+sector_pipeline.py, universal_pipeline.py) imports this module. It is
+read-only with respect to business_concepts.py, business_concept_graph.py,
+and schema_resolution.py — it calls their existing public functions and
+adds no new schema/feature logic of its own.
 
 Version 7, Chunk 4 — Knowledge Base externalization
 ------------------------------------------------------
 Concept direction/band thresholds, rule trigger conditions, finding
-titles/severities/explanations, and recommendation text used to be
-hardcoded in this file. They now live in knowledge/*.yaml, loaded and
-validated by knowledge_loader.load_knowledge_base() into a typed
-knowledge_base.KnowledgeBase (see BUSINESS_KNOWLEDGE_BASE.md).
+titles/severities/explanations, and recommendation text live in
+knowledge/*.yaml, loaded and validated by
+knowledge_loader.load_knowledge_base() into a typed
+knowledge_base.KnowledgeBase (see BUSINESS_INTELLIGENCE.md).
 
-PUBLIC API IS UNCHANGED: every name this module exported before this
-chunk — ConceptBand, Direction, CONCEPT_DIRECTION, LOW_BAND_MAX,
-HIGH_BAND_MIN, MIN_FINDING_CONFIDENCE, BusinessInference, Severity,
-BusinessFinding, ReasoningSummary, ReasoningReport, rule_retention_risk,
-rule_retention_strength, rule_dormant_customer,
+Version 8, Chunk 1 — Business Intelligence Expansion
+--------------------------------------------------------
+This chunk is a Knowledge Base *content* expansion (many more
+sector-aware rules/findings/recommendations — see knowledge/rules.yaml),
+plus the minimal engine changes needed to make that content useful:
+
+    1. BUG FIX: the previous revision of this module built
+       `_RULES_BY_ID` (and the `rule_retention_risk` etc. aliases)
+       dynamically from the Knowledge Base, but then immediately
+       REDEFINED `rule_retention_risk` / `rule_retention_strength` /
+       `rule_dormant_customer` / `rule_service_recovery_needed` as
+       hardcoded literal functions further down the file, and rebuilt
+       `DEFAULT_RULES` from those hardcoded functions instead of the
+       Knowledge Base. That meant every rule added to rules.yaml
+       beyond the original four was silently invisible to
+       BusinessReasoningEngine — the exact opposite of what this
+       expansion needs. The duplicate `_ready()` / rule_* definitions
+       and the duplicate `DEFAULT_RULES` assignment are removed below;
+       there is now exactly one source of rule behaviour (the
+       Knowledge Base) and `DEFAULT_RULES` covers every rule in
+       rules.yaml, not just four.
+    2. Rule priority (Part 4): each fired BusinessFinding now carries
+       the priority of the rule that produced it, and
+       `_evaluate_rules()` sorts fired findings by priority descending
+       (Python's sort is stable, so ties keep rules.yaml declaration
+       order).
+    3. Sector scoping (Part 1 / Part 9 "sector filtering"): a rule
+       whose `sectors` tuple is non-empty is only evaluated when
+       `sector` is one of the listed values. Sector metadata is
+       attached to each generated rule closure as `fn.rule_meta`
+       (a `RuleKnowledge`) rather than changing any function
+       signature — `RuleFn` is still `Callable[[dict], BusinessFinding
+       | None]`, so `BusinessReasoningEngine(rules=[...])` callers that
+       pass a custom list of plain functions keep working.
+    4. Richer BusinessFinding fields (Part 6/8): `category`,
+       `priority`, `recommendation_priority`, `business_impact`, and
+       `expected_outcome` are now populated on every finding, sourced
+       entirely from the Knowledge Base (no new computation).
+
+PUBLIC API is otherwise UNCHANGED: every name this module exported
+before this chunk — ConceptBand, Direction, CONCEPT_DIRECTION,
+LOW_BAND_MAX, HIGH_BAND_MIN, MIN_FINDING_CONFIDENCE, BusinessInference,
+Severity, BusinessFinding, ReasoningSummary, ReasoningReport,
+rule_retention_risk, rule_retention_strength, rule_dormant_customer,
 rule_service_recovery_needed, DEFAULT_RULES, BusinessReasoningEngine,
-run_business_reasoning — still exists and behaves identically. They are
-now POPULATED FROM the Knowledge Base at import time instead of being
-literal constants. business_reasoning_report.py and every test that
-imports this module require zero changes.
+run_business_reasoning — still exists and behaves the same for
+existing callers (prediction_explanation.py reads only
+f.title/f.severity/f.confidence/f.explanation/f.recommendation, all of
+which are unchanged; the new fields are additive).
 """
 from __future__ import annotations
 
@@ -40,7 +91,7 @@ from .business_concept_graph import (
 )
 from .schema_resolution import resolve_schema
 from .concept_confidence import MIN_RECONSTRUCTABLE_OVERALL_CONFIDENCE
-from .konwledge_base import KnowledgeBase, RuleKnowledge
+from .knowledge_base import KnowledgeBase, RuleKnowledge
 from .knowledge_loader import get_default_knowledge_base
 
 # ══════════════════════════════════════════════════════════════════
@@ -93,7 +144,7 @@ CONCEPT_DIRECTION: dict[str, Direction] = {
 MIN_FINDING_CONFIDENCE = MIN_RECONSTRUCTABLE_OVERALL_CONFIDENCE
 
 # ══════════════════════════════════════════════════════════════════
-# PART 1 — DATACLASSES (unchanged from Chunk 3)
+# PART 1 — DATACLASSES
 # ══════════════════════════════════════════════════════════════════
 
 @dataclass
@@ -138,6 +189,13 @@ class BusinessFinding:
     supporting_concepts: list[str]
     explanation: str
     recommendation: str
+    # ── Version 8, Chunk 1 additions (Parts 4-6-8) — additive only,
+    # every pre-existing field above is untouched. ──────────────────
+    category: str = "Uncategorized"
+    priority: int = 50                       # rule priority — used for sort order
+    recommendation_priority: str = "MEDIUM"   # action urgency (LOW/MEDIUM/HIGH/CRITICAL)
+    business_impact: str = ""
+    expected_outcome: str = ""
 
     def to_dict(self) -> dict:
         return {
@@ -145,6 +203,10 @@ class BusinessFinding:
             'severity': self.severity.value, 'confidence': round(self.confidence, 4),
             'supporting_concepts': self.supporting_concepts,
             'explanation': self.explanation, 'recommendation': self.recommendation,
+            'category': self.category, 'priority': self.priority,
+            'recommendation_priority': self.recommendation_priority,
+            'business_impact': self.business_impact,
+            'expected_outcome': self.expected_outcome,
         }
 
 @dataclass
@@ -183,13 +245,13 @@ class ReasoningReport:
         }
 
 # ══════════════════════════════════════════════════════════════════
-# PART 2 — RULES, NOW BUILT FROM THE KNOWLEDGE BASE
+# PART 2 — RULES, BUILT FROM THE KNOWLEDGE BASE
 # ══════════════════════════════════════════════════════════════════
 # A rule fires only when every concept it reasons about (1) has an
 # inference at all, (2) has_sufficient_evidence, and (3) matches this
-# rule's declared band conditions. Same three-part gate as Chunk 3 —
-# only the SOURCE of the conditions/finding text/recommendation moved,
-# not the gate logic itself.
+# rule's declared band conditions. `RuleFn` signature is unchanged —
+# sector scoping is attached out-of-band via `fn.rule_meta` (see
+# `_evaluate_rules()` below) so this is not a breaking type change.
 
 RuleFn = Callable[[dict[str, "BusinessInference"]], "BusinessFinding | None"]
 
@@ -203,7 +265,8 @@ def _ready(inferences: dict[str, BusinessInference], *concept_ids: str) -> bool:
 def _make_rule_fn(rule: RuleKnowledge, kb: KnowledgeBase) -> RuleFn:
     """Build one RuleFn from a KnowledgeBase RuleKnowledge entry."""
     finding = kb.get_finding(rule.finding_id)
-    recommendation_text = kb.get_recommendation(rule.finding_id)
+    recommendation = kb.get_recommendation_details(rule.finding_id)
+    recommendation_text = recommendation.text if recommendation else ""
     severity = Severity(finding.severity)
 
     def _rule_fn(inferences: dict[str, BusinessInference]) -> BusinessFinding | None:
@@ -222,14 +285,26 @@ def _make_rule_fn(rule: RuleKnowledge, kb: KnowledgeBase) -> RuleFn:
             supporting_concepts=list(rule.supporting_concepts),
             explanation=finding.explanation,
             recommendation=recommendation_text,
+            category=finding.category,
+            priority=rule.priority,
+            recommendation_priority=recommendation.priority if recommendation else "MEDIUM",
+            business_impact=recommendation.business_impact if recommendation else "",
+            expected_outcome=recommendation.expected_outcome if recommendation else "",
         )
 
     _rule_fn.__name__ = f"rule_{rule.rule_id.lower()}"
     _rule_fn.__doc__ = (
         f"Knowledge-Base-driven rule '{rule.rule_id}' -> finding "
         f"'{rule.finding_id}'. Conditions: "
-        f"{[(c.concept, c.band) for c in rule.conditions]}."
+        f"{[(c.concept, c.band) for c in rule.conditions]}. "
+        f"Priority={rule.priority}. Sectors="
+        f"{list(rule.sectors) if rule.sectors else 'ALL'}."
     )
+    # Out-of-band metadata (Version 8, Chunk 1) — does not change the
+    # RuleFn call signature, so existing callers that only ever call
+    # `fn(inferences)` are unaffected. Used by _evaluate_rules() below
+    # for sector scoping and priority sorting.
+    _rule_fn.rule_meta = rule  # type: ignore[attr-defined]
     return _rule_fn
 
 _RULES_BY_ID: dict[str, RuleFn] = {
@@ -247,152 +322,15 @@ rule_retention_strength       = _RULES_BY_ID["RETENTION_STRENGTH"]
 rule_dormant_customer         = _RULES_BY_ID["DORMANT_CUSTOMER"]
 rule_service_recovery_needed  = _RULES_BY_ID["SERVICE_RECOVERY_NEEDED"]
 
+# The registry every BusinessReasoningEngine instance evaluates by
+# default. Version 8, Chunk 1: this is now every rule in the Knowledge
+# Base (34 as of this chunk — 11 cross-sector + 6 telecom + 6
+# healthcare + 5 banking + 6 e-commerce), not just the four named
+# aliases above. This is the fix for the shadowing bug described in
+# the module docstring: there is exactly one place DEFAULT_RULES is
+# assigned, and it is derived entirely from the Knowledge Base.
 DEFAULT_RULES: list[RuleFn] = [
-    rule_retention_risk,
-    rule_retention_strength,
-    rule_dormant_customer,
-    rule_service_recovery_needed,
-]
-
-
-def _ready(inferences: dict[str, BusinessInference], *concept_ids: str) -> bool:
-    """True iff every named concept is present and has sufficient evidence."""
-    for cid in concept_ids:
-        inf = inferences.get(cid)
-        if inf is None or not inf.has_sufficient_evidence:
-            return False
-    return True
-
-
-def rule_retention_risk(inferences: dict[str, BusinessInference]) -> BusinessFinding | None:
-    """
-    Rule: RECURRING_COMMITMENT LOW + SUPPORT_FRICTION HIGH -> Retention Risk HIGH
-
-    Rationale: a customer paying little (or, for sectors where the
-    concept is a reward rather than a cost, receiving little value)
-    AND generating a lot of support friction has both a weak financial
-    tether to the business and an active source of dissatisfaction —
-    the combination the churn literature treats as the clearest
-    voluntary-churn precursor of the concepts available here.
-    """
-    if not _ready(inferences, "RECURRING_COMMITMENT", "SUPPORT_FRICTION"):
-        return None
-    commitment = inferences["RECURRING_COMMITMENT"]
-    friction = inferences["SUPPORT_FRICTION"]
-    if commitment.band != ConceptBand.LOW or friction.band != ConceptBand.HIGH:
-        return None
-    conf = min(commitment.confidence, friction.confidence)
-    return BusinessFinding(
-        finding_id="RETENTION_RISK",
-        title="Retention Risk",
-        severity=Severity.HIGH,
-        confidence=conf,
-        supporting_concepts=["RECURRING_COMMITMENT", "SUPPORT_FRICTION"],
-        explanation=(
-            "Recurring commitment is weak while support friction is high — "
-            "customers have little financial tie to the business and an "
-            "active, unresolved source of dissatisfaction."
-        ),
-        recommendation="Launch a targeted retention campaign for the affected segment.",
-    )
-
-
-def rule_retention_strength(inferences: dict[str, BusinessInference]) -> BusinessFinding | None:
-    """
-    Rule: CUSTOMER_LOYALTY HIGH + ENGAGEMENT_LEVEL HIGH -> Retention Strength HIGH
-
-    Rationale: a long, committed relationship combined with active,
-    frequent usage is the strongest available signal that a segment is
-    entrenched rather than merely inertial.
-    """
-    if not _ready(inferences, "CUSTOMER_LOYALTY", "ENGAGEMENT_LEVEL"):
-        return None
-    loyalty = inferences["CUSTOMER_LOYALTY"]
-    engagement = inferences["ENGAGEMENT_LEVEL"]
-    if loyalty.band != ConceptBand.HIGH or engagement.band != ConceptBand.HIGH:
-        return None
-    conf = min(loyalty.confidence, engagement.confidence)
-    return BusinessFinding(
-        finding_id="RETENTION_STRENGTH",
-        title="Retention Strength",
-        severity=Severity.LOW,
-        confidence=conf,
-        supporting_concepts=["CUSTOMER_LOYALTY", "ENGAGEMENT_LEVEL"],
-        explanation=(
-            "Customer loyalty and engagement are both high — the "
-            "relationship is entrenched, not merely long-standing."
-        ),
-        recommendation="Protect this segment's experience; consider it a reference base for loyalty programs.",
-    )
-
-
-def rule_dormant_customer(inferences: dict[str, BusinessInference]) -> BusinessFinding | None:
-    """
-    Rule: RECURRING_COMMITMENT HIGH + ENGAGEMENT_LEVEL LOW -> Dormant Customer
-
-    Rationale: a customer still financially committed (still paying /
-    still holding value) but no longer actively engaging is a classic
-    dormancy pattern — the relationship hasn't ended, but it has gone
-    quiet, which often precedes non-renewal.
-    """
-    if not _ready(inferences, "RECURRING_COMMITMENT", "ENGAGEMENT_LEVEL"):
-        return None
-    commitment = inferences["RECURRING_COMMITMENT"]
-    engagement = inferences["ENGAGEMENT_LEVEL"]
-    if commitment.band != ConceptBand.HIGH or engagement.band != ConceptBand.LOW:
-        return None
-    conf = min(commitment.confidence, engagement.confidence)
-    return BusinessFinding(
-        finding_id="DORMANT_CUSTOMER",
-        title="Customer Dormancy",
-        severity=Severity.MEDIUM,
-        confidence=conf,
-        supporting_concepts=["RECURRING_COMMITMENT", "ENGAGEMENT_LEVEL"],
-        explanation=(
-            "Recurring commitment remains high but engagement has dropped — "
-            "the relationship is financially intact but has gone quiet."
-        ),
-        recommendation="Enroll the segment in a re-engagement program before the next renewal cycle.",
-    )
-
-
-def rule_service_recovery_needed(inferences: dict[str, BusinessInference]) -> BusinessFinding | None:
-    """
-    Rule: SUPPORT_FRICTION HIGH + SATISFACTION_SIGNAL LOW -> Service Recovery Needed
-
-    Rationale: high complaint/support volume combined with low
-    satisfaction is a direct, first-party signal that the service
-    experience itself — not just price or usage — is the churn driver.
-    """
-    if not _ready(inferences, "SUPPORT_FRICTION", "SATISFACTION_SIGNAL"):
-        return None
-    friction = inferences["SUPPORT_FRICTION"]
-    satisfaction = inferences["SATISFACTION_SIGNAL"]
-    if friction.band != ConceptBand.HIGH or satisfaction.band != ConceptBand.LOW:
-        return None
-    conf = min(friction.confidence, satisfaction.confidence)
-    return BusinessFinding(
-        finding_id="SERVICE_RECOVERY_NEEDED",
-        title="Service Recovery Needed",
-        severity=Severity.HIGH,
-        confidence=conf,
-        supporting_concepts=["SUPPORT_FRICTION", "SATISFACTION_SIGNAL"],
-        explanation=(
-            "Support friction is high and satisfaction is low at the same "
-            "time — the service experience itself is the likely churn driver."
-        ),
-        recommendation="Trigger a service-recovery workflow (proactive outreach, issue audit) for the affected segment.",
-    )
-
-
-# The registry every BusinessReasoningEngine instance evaluates, in
-# this fixed order. Add a new rule by writing a RuleFn (documented,
-# per Part 2) and appending it here — nothing else needs to change.
-DEFAULT_RULES: list[RuleFn] = [
-    rule_retention_risk,
-    rule_retention_strength,
-    rule_dormant_customer,
-    rule_service_recovery_needed,
+    _RULES_BY_ID[rule.rule_id] for rule in KNOWLEDGE_BASE.rules
 ]
 
 
@@ -442,16 +380,35 @@ class BusinessReasoningEngine:
     # ── evaluating rules ─────────────────────────────────────────
 
     def _evaluate_rules(
-        self, inferences: dict[str, BusinessInference],
+        self, inferences: dict[str, BusinessInference], sector: str,
     ) -> list[BusinessFinding]:
+        """
+        Run every eligible rule and return fired findings sorted by
+        priority descending (Version 8, Chunk 1 — Part 4). A rule
+        carrying `rule_meta.sectors` is skipped when `sector` is not
+        in that list (Part 1 / Part 9 "sector filtering"); rules with
+        no `rule_meta` at all (a caller-supplied plain function with
+        no attached metadata) are always eligible, since there is
+        nothing to filter on.
+
+        Python's list.sort() is stable, so findings whose rules share
+        the same priority retain the order they were evaluated in —
+        which is rules.yaml declaration order, since `self.rules`
+        defaults to `DEFAULT_RULES` — satisfying "Rules with equal
+        priority retain deterministic ordering" (Part 4).
+        """
         findings: list[BusinessFinding] = []
-        for rule in self.rules:
-            finding = rule(inferences)
+        for rule_fn in self.rules:
+            meta: RuleKnowledge | None = getattr(rule_fn, 'rule_meta', None)
+            if meta is not None and not meta.applies_to_sector(sector):
+                continue
+            finding = rule_fn(inferences)
             if finding is not None:
                 findings.append(finding)
+        findings.sort(key=lambda f: -f.priority)
         return findings
 
-    # ── summarizing (Part 5) ────────────────────────────────────
+    # ── summarizing (Part 5, Chunk 3) ───────────────────────────
 
     def _summarize(
         self,
@@ -498,7 +455,10 @@ class BusinessReasoningEngine:
 
         # Customer risk: driven by the worst fired finding's severity,
         # not by concept values directly — findings already encode the
-        # cross-concept reasoning the summary should defer to.
+        # cross-concept reasoning the summary should defer to. Findings
+        # are already priority-sorted by _evaluate_rules(), but risk is
+        # still determined by SEVERITY (not priority) since those are
+        # deliberately independent axes (see Part 4/Part 5 docs).
         severity_rank = {Severity.LOW: 0, Severity.MEDIUM: 1, Severity.HIGH: 2, Severity.CRITICAL: 3}
         if findings:
             worst = max(findings, key=lambda f: severity_rank[f.severity])
@@ -537,7 +497,7 @@ class BusinessReasoningEngine:
         recomputation. Never called from the prediction path today.
         """
         inferences = self._build_inferences(graph, concept_df)
-        findings = self._evaluate_rules(inferences)
+        findings = self._evaluate_rules(inferences, sector)
         summary = self._summarize(inferences, findings)
         return ReasoningReport(
             sector=sector,

@@ -2,6 +2,9 @@
 universal_churn/business_reasoning_report.py
 ══════════════════════════════════════════════════════════════════════
 Business Reasoning Report — Version 7, Chunk 3, Part 4.
+Extended in Version 8, Chunk 1, Part 8 to surface the richer finding
+fields (category, priority, business impact, expected outcome) that
+business_reasoning.py's BusinessFinding now carries.
 
 Human-readable formatting over a ReasoningReport (the output of
 business_reasoning.BusinessReasoningEngine.analyze()), in the same
@@ -10,8 +13,9 @@ concept_graph_report.py's existing reports.
 
 This module does NOT compute anything new — it only formats
 ReasoningReport / BusinessFinding / ReasoningSummary data that already
-exists. Exactly like concept_graph_report.py's relationship to
-business_concept_graph.py.
+exists (report.findings already arrives priority-sorted from
+business_reasoning.py's _evaluate_rules(), so this module does not
+re-sort).
 """
 from __future__ import annotations
 
@@ -27,29 +31,39 @@ def generate_business_reasoning_report(report: ReasoningReport) -> str:
         Business Findings
 
         1. Retention Risk
-           HIGH
+           HIGH             Category: Retention     Priority: 85
            Confidence   88%
            Reason       Recurring Commitment weak
                         Support Friction high
-           Recommendation
-                        Retention campaign
+           Business Impact    Segment is financially loose and ...
+           Recommendation      Retention campaign
+           Recommendation Priority  HIGH
+           Expected Outcome    Reduce churn caused by ...
     """
     sep = '─' * 60
     lines = [sep, f"  BUSINESS REASONING REPORT  [{report.sector.upper()}]", sep]
     lines.append(f"  Generated : {report.generated_at}")
 
     lines.append("")
-    lines.append("  Business Findings")
+    lines.append("  Business Findings  (sorted by rule priority, highest first)")
     if not report.findings:
         lines.append("    None — no rule in the registry fired for this input.")
     for idx, finding in enumerate(report.findings, start=1):
         lines.append("")
         lines.append(f"  {idx}. {finding.title}")
-        lines.append(f"     {finding.severity.value}")
-        lines.append(f"     Confidence      {finding.confidence*100:.0f}%")
-        lines.append(f"     Reason          {finding.explanation}")
-        lines.append(f"     Supporting      {', '.join(finding.supporting_concepts)}")
-        lines.append(f"     Recommendation  {finding.recommendation}")
+        lines.append(
+            f"     {finding.severity.value:<10} "
+            f"Category: {finding.category:<20} Priority: {finding.priority}"
+        )
+        lines.append(f"     Confidence          {finding.confidence*100:.0f}%")
+        lines.append(f"     Reason              {finding.explanation}")
+        lines.append(f"     Supporting          {', '.join(finding.supporting_concepts)}")
+        if finding.business_impact:
+            lines.append(f"     Business Impact     {finding.business_impact}")
+        lines.append(f"     Recommendation      {finding.recommendation}")
+        lines.append(f"     Recommendation Priority  {finding.recommendation_priority}")
+        if finding.expected_outcome:
+            lines.append(f"     Expected Outcome    {finding.expected_outcome}")
         if idx != len(report.findings):
             lines.append("     " + "-" * 30)
 
@@ -64,6 +78,17 @@ def generate_business_reasoning_report(report: ReasoningReport) -> str:
             f"value={inf.aggregate_value*100:5.1f}%  "
             f"confidence={inf.confidence*100:5.1f}%  {evidence_flag}"
         )
+
+    if report.findings:
+        lines.append("")
+        lines.append(sep)
+        lines.append("  FINDINGS BY CATEGORY")
+        lines.append(sep)
+        by_category: dict[str, list[str]] = {}
+        for f in report.findings:
+            by_category.setdefault(f.category, []).append(f.title)
+        for category, titles in by_category.items():
+            lines.append(f"    {category:<22} {', '.join(titles)}")
 
     if report.summary is not None:
         s = report.summary

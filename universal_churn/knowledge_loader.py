@@ -2,6 +2,17 @@
 universal_churn/knowledge_loader.py
 ══════════════════════════════════════════════════════════════════════
 Business Knowledge Base loader — Version 7, Chunk 4.
+Extended in Version 8, Chunk 1 (Business Intelligence Expansion) to
+parse/validate the new fields added to knowledge_base.py:
+
+    findings.yaml        -> FindingKnowledge.category        (required)
+    rules.yaml             -> RuleKnowledge.priority            (optional,
+                              default DEFAULT_RULE_PRIORITY)
+    rules.yaml             -> RuleKnowledge.sectors              (optional,
+                              default () = all sectors)
+    recommendations.yaml  -> RecommendationKnowledge.priority /
+                              .business_impact / .expected_outcome
+                              (all required, per Part 6)
 
 The ONLY place YAML is parsed for business knowledge. Loads
 knowledge/*.yaml, validates schema + cross-references, and returns a
@@ -34,6 +45,8 @@ from .knowledge_base import (
     KnowledgeBase, BandThresholds, ConceptKnowledge, RuleKnowledge,
     RuleCondition, FindingKnowledge, RecommendationKnowledge,
     VALID_DIRECTIONS, VALID_BANDS, VALID_SEVERITIES,
+    VALID_CATEGORIES, VALID_RECOMMENDATION_PRIORITIES,
+    DEFAULT_RULE_PRIORITY, DEFAULT_RECOMMENDATION_PRIORITY,
 )
 
 DEFAULT_KNOWLEDGE_DIR = Path(__file__).resolve().parent.parent / "knowledge"
@@ -131,9 +144,10 @@ def _parse_findings(raw: dict, path: Path) -> dict[str, FindingKnowledge]:
         if not isinstance(entry, dict):
             raise KnowledgeValidationError(f"{path}: findings[{idx}] must be a mapping.")
         _require_keys(
-            entry, ['id', 'title', 'severity', 'explanation'], f"{path}: findings[{idx}]"
+            entry, ['id', 'title', 'severity', 'explanation', 'category'],
+            f"{path}: findings[{idx}]",
         )
-        finding_id, severity = entry['id'], entry['severity']
+        finding_id, severity, category = entry['id'], entry['severity'], entry['category']
         if finding_id in findings:
             raise KnowledgeValidationError(f"{path}: duplicate finding id '{finding_id}'.")
         if severity not in VALID_SEVERITIES:
@@ -141,9 +155,15 @@ def _parse_findings(raw: dict, path: Path) -> dict[str, FindingKnowledge]:
                 f"{path}: finding '{finding_id}' has invalid severity '{severity}' "
                 f"(expected one of {sorted(VALID_SEVERITIES)})."
             )
+        if category not in VALID_CATEGORIES:
+            raise KnowledgeValidationError(
+                f"{path}: finding '{finding_id}' has invalid category '{category}' "
+                f"(expected one of {sorted(VALID_CATEGORIES)})."
+            )
         findings[finding_id] = FindingKnowledge(
             finding_id=finding_id, title=entry['title'],
             severity=severity, explanation=entry['explanation'],
+            category=category,
         )
     return findings
 
@@ -162,14 +182,27 @@ def _parse_recommendations(raw: dict, path: Path) -> dict[str, RecommendationKno
     for idx, entry in enumerate(rec_list):
         if not isinstance(entry, dict):
             raise KnowledgeValidationError(f"{path}: recommendations[{idx}] must be a mapping.")
-        _require_keys(entry, ['finding_id', 'text'], f"{path}: recommendations[{idx}]")
+        _require_keys(
+            entry,
+            ['finding_id', 'text', 'priority', 'business_impact', 'expected_outcome'],
+            f"{path}: recommendations[{idx}]",
+        )
         finding_id = entry['finding_id']
+        priority = entry['priority']
         if finding_id in recommendations:
             raise KnowledgeValidationError(
                 f"{path}: duplicate recommendation for finding_id '{finding_id}'."
             )
+        if priority not in VALID_RECOMMENDATION_PRIORITIES:
+            raise KnowledgeValidationError(
+                f"{path}: recommendation for '{finding_id}' has invalid priority "
+                f"'{priority}' (expected one of {sorted(VALID_RECOMMENDATION_PRIORITIES)})."
+            )
         recommendations[finding_id] = RecommendationKnowledge(
             finding_id=finding_id, text=entry['text'],
+            priority=priority,
+            business_impact=entry['business_impact'],
+            expected_outcome=entry['expected_outcome'],
         )
     return recommendations
 
@@ -226,9 +259,24 @@ def _parse_rules(raw: dict, path: Path) -> list[RuleKnowledge]:
                 )
             conditions.append(RuleCondition(concept=cond['concept'], band=band))
 
+        # ── Version 8, Chunk 1: optional priority / sectors ─────────
+        priority = entry.get('priority', DEFAULT_RULE_PRIORITY)
+        if not isinstance(priority, int) or isinstance(priority, bool):
+            raise KnowledgeValidationError(
+                f"{path}: rule '{rule_id}' priority must be an integer, "
+                f"got {type(priority).__name__}."
+            )
+
+        sectors_raw = entry.get('sectors', [])
+        if not isinstance(sectors_raw, list) or not all(isinstance(s, str) for s in sectors_raw):
+            raise KnowledgeValidationError(
+                f"{path}: rule '{rule_id}' sectors must be a list of strings."
+            )
+
         rules.append(RuleKnowledge(
             rule_id=rule_id, finding_id=entry['finding_id'],
             supporting_concepts=tuple(supporting), conditions=tuple(conditions),
+            priority=priority, sectors=tuple(sectors_raw),
         ))
     return rules
 
