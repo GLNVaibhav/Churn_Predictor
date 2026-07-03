@@ -22,6 +22,9 @@ from .prediction_explanation_report import (
     build_and_attach_explanations, print_prediction_explanation_report,
     print_execution_summary,
 )
+from .decision_report import (
+    build_and_attach_decision_intelligence, print_decision_report,
+)
 from .coverage import compute_coverage_score
 from .quality_gate import run_quality_gate
 from .routing import route, ModelType
@@ -98,6 +101,15 @@ def main(argv: list[str] | None = None) -> None:
         # for the non-interference guarantee.
         probe_for_explanation = pd.read_csv(args.input)
         results = build_and_attach_explanations(results, probe_for_explanation, sector)
+        prediction_explanation = results.attrs.get("prediction_explanation")
+        reasoning_report = None
+        if prediction_explanation is not None:
+            reasoning_report = prediction_explanation.reasoning_report
+        results = build_and_attach_decision_intelligence(
+            results=results,
+            sector=sector,
+            reasoning_report=reasoning_report,
+        )
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
         results.to_csv(args.output, index=False)
         print(f"\nResults saved to: {args.output}")
@@ -115,6 +127,9 @@ def main(argv: list[str] | None = None) -> None:
             if explanation_report is not None:
                 print_prediction_explanation_report(explanation_report)
                 print_execution_summary(explanation_report, results.attrs.get('coverage'))
+            assessment = results.attrs.get('decision_assessment')
+            if assessment is not None:
+                print_decision_report(assessment)
 
     elif args.mode == 'universal':
         # Routing decision (quality gate / leakage check) is made
@@ -134,6 +149,15 @@ def main(argv: list[str] | None = None) -> None:
         probe_for_explanation = pd.read_csv(args.input)
         results = build_and_attach_explanations(
             results, probe_for_explanation, sector_for_report)
+        prediction_explanation = results.attrs.get("prediction_explanation")
+        reasoning_report = None
+        if prediction_explanation is not None:
+            reasoning_report = prediction_explanation.reasoning_report
+        results = build_and_attach_decision_intelligence(
+            results=results,
+            sector=sector_for_report,
+            reasoning_report=reasoning_report,
+        )
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
         results.to_csv(args.output, index=False)
         print(f"\nResults saved to: {args.output}")
@@ -151,6 +175,9 @@ def main(argv: list[str] | None = None) -> None:
             if explanation_report is not None:
                 print_prediction_explanation_report(explanation_report)
                 print_execution_summary(explanation_report, results.attrs.get('coverage'))
+            assessment = results.attrs.get('decision_assessment')
+            if assessment is not None:
+                print_decision_report(assessment)
 
     elif args.mode == 'auto':
         # Centralized routing: compute coverage + quality, call
@@ -215,6 +242,15 @@ def main(argv: list[str] | None = None) -> None:
         # for the non-interference guarantee.
         probe_for_explanation = pd.read_csv(args.input)
         results = build_and_attach_explanations(results, probe_for_explanation, sector)
+        prediction_explanation = results.attrs.get("prediction_explanation")
+        reasoning_report = None
+        if prediction_explanation is not None:
+            reasoning_report = prediction_explanation.reasoning_report
+        results = build_and_attach_decision_intelligence(
+            results=results,
+            sector=sector,
+            reasoning_report=reasoning_report,
+        )
 
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
         results.to_csv(args.output, index=False)
@@ -226,6 +262,9 @@ def main(argv: list[str] | None = None) -> None:
             if explanation_report is not None:
                 print_prediction_explanation_report(explanation_report)
                 print_execution_summary(explanation_report, results.attrs.get('coverage'))
+            assessment = results.attrs.get('decision_assessment')
+            if assessment is not None:
+                print_decision_report(assessment)
 
     elif args.mode == 'list_heads':
         print("\nMulti-head model architecture:")
