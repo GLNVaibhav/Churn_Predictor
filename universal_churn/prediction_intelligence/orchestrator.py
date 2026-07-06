@@ -1,185 +1,303 @@
 """
 universal_churn/prediction_intelligence/orchestrator.py
 ══════════════════════════════════════════════════════════════════════
-PredictionIntelligenceOrchestrator — the ONE public entry point.
+PredictionIntelligenceOrchestrator — the ONE public entry point for
+the Prediction Intelligence Engine (PIE), per the Version 8.2
+architecture contract's "expose only one public entry point" rule.
 
-Per the architecture's future-extensibility requirement, everything
-external ever needs to touch is this class. Internally it sequences
-the six engines in the fixed order the architecture specifies:
+Responsibilities
+----------------
+    1. build_context()  — adapt whatever shape the caller has on hand
+       (typed framework objects OR the raw dicts coverage.py /
+       quality_gate.py already produce) into one frozen
+       PredictionIntelligenceContext, recording every degraded/missing
+       input along the way.
+    2. analyze()          — run every registered engine, in sequence,
+       against that context, and assemble a PredictionIntelligenceReport.
 
-    Prediction Layer
-          │
-          ▼
-    Prediction Intelligence Layer
-          │
-     ┌────┼────┐
-     ▼    ▼    ▼
-  Confidence  Evidence  Signal          (Modules 1, 2, 3 — independent)
-     └────┼────┘
-          ▼
-    Stability Engine                    (Module 4 — reads 1 & 2, adjusted by 3)
-          │
-          ▼
-    Consistency Engine                  (Module 5 — reads 1, 2, 3, 4)
-          │
-          ▼
-    Intelligence Score Engine           (Module 6 — reads everything)
-          │
-          ▼
-    Prediction Intelligence Report
+Sequencing note
+-----------------
+The full target pipeline is:
+
+    Prediction Assurance -> (future) Evidence Engine
+                          -> (future) Robustness Engine
+                          -> (future) Prediction Intelligence Score Engine
+
+Today the orchestrator executes exactly one engine by default
+(`PredictionConfidenceEngine`, kept as the default for backward
+compatibility with every existing caller of this class — see
+`self.engines`'s docstring below). `PredictionAssuranceEngine` — the
+differently-named, differently-scoped successor concept described in
+engines/prediction_assurance.py — is fully implemented and available,
+but is opt-in via the `engines=` constructor argument rather than
+silently replacing the default, so no existing caller's report shape
+changes underneath it:
+
+    PredictionIntelligenceOrchestrator(engines=[PredictionAssuranceEngine()])
+
+`_assemble_report()` reads BOTH `prediction_confidence` and
+`prediction_assurance` out of `prior_results` via `.get()` — whichever
+engines actually ran populate their corresponding
+`PredictionIntelligenceReport` field; whichever didn't, stay `None`.
+This is the general pattern every future engine (Evidence, Robustness,
+Score, and beyond) follows: `_assemble_report()` grows one more
+`.get("engine_name")` line per new engine, and `PredictionIntelligenceReport`
+(models.py) grows one more optional field — `analyze()` and
+`build_context()` themselves never change, satisfying "the public API
+must never change when future engines are added."
+
+Evidence Strength and Signal Intelligence (once implemented) are
+logically independent of each other's OUTPUT (both would read the same
+concept-level inputs, not each other) — the orchestrator sequences
+engines for report assembly, but does not force an artificial data
+dependency between them. Engines that legitimately need an earlier
+engine's result read it from `prior_results` (passed by name); engines
+that don't, ignore `**prior_results` entirely.
 
 Non-interference guarantee
 -----------------------------
-Nothing on the live prediction path (cli.py, sector_pipeline.py,
-universal_pipeline.py, routing.py, reporting.py) imports this package.
-It is opt-in, additive tooling — exactly the pattern already
-established by business_reasoning.py's `run_business_reasoning()` and
-decision_intelligence.py's `run_decision_intelligence()` before either
-was (optionally) wired into a caller. `analyze()` never mutates its
-input context and returns a brand-new, frozen
-PredictionIntelligenceReport every call.
-
-Future extensibility
-------------------------
-A future engine (Counterfactual, Drift, Uncertainty, Calibration,
-Temporal Stability — per the architecture's stated roadmap) plugs in
-by:
-    1. Adding one new engine module under `engines/`, implementing
-       `PredictionIntelligenceEngine` with an explicit `requires`
-       tuple.
-    2. Adding one line to `_ENGINE_SEQUENCE` below, in dependency
-       order.
-    3. Optionally adding its result to `PredictionIntelligenceReport`
-       (report.py) if it should appear in the final deliverable.
-No existing engine, no existing report field, and no caller of
-`PredictionIntelligenceOrchestrator.analyze()` needs to change for
-this to work — every engine only ever reads what it explicitly
-`requires` from `prior_results`, never the whole registry.
+This orchestrator never mutates results DataFrames, `.attrs`, or any
+framework object it's handed — it only reads them to build a context,
+exactly as decision_intelligence.DecisionIntelligenceEngine does.
+Nothing on the prediction path calls this today; a future integration
+point (a `--pie` CLI flag, or prediction_explanation.py) can opt in.
 """
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
-from .interfaces import PredictionIntelligenceContext
-from .context import build_context, build_contexts_for_results
-from .report import PredictionIntelligenceReport, build_report
-
+from .constants import (
+    DEGRADED_NO_ROUTING_DECISION,
+    DEGRADED_NO_QUALITY_RESULT,
+    DEGRADED_NO_CONCEPT_CONFIDENCE,
+    DEGRADED_NO_REASONING_REPORT,
+    DEGRADED_NO_PREDICTION_EXPLANATION,
+)
 from .engines.prediction_confidence import PredictionConfidenceEngine
-from .engines.evidence_engine import EvidenceEngine
-from .engines.signal_intelligence import SignalIntelligenceEngine
-from .engines.stability_engine import StabilityEngine
-from .engines.consistency_engine import ConsistencyEngine
-from .engines.intelligence_score_engine import IntelligenceScoreEngine
+from .engines.prediction_assurance import PredictionAssuranceEngine
+from .interfaces import PredictionIntelligenceEngine
+from .models import PredictionIntelligenceContext, PredictionIntelligenceReport
+
+
+def _adapt_coverage(coverage: Any) -> Any:
+    """
+    Accept either a routing.CoverageResult already, or the raw dict
+    compute_coverage_score() returns — adapt the latter via routing.py's
+    own from_coverage_dict(), exactly as routing.route() already does
+    for caller convenience. Imported lazily so this module has no
+    import-time dependency on routing.py (keeps PIE constructible/
+    testable in isolation, per the "framework contracts only" rule —
+    routing.py itself has zero ML dependency, so this import is safe
+    at call time, just deferred to avoid a hard package-load coupling).
+    """
+    if coverage is None or isinstance(coverage, dict):
+        from ..routing import CoverageResult
+        if coverage is None:
+            return None
+        return CoverageResult.from_coverage_dict(coverage)
+    return coverage
+
+
+def _adapt_quality(quality: Any) -> Any:
+    if quality is None:
+        return None
+    if isinstance(quality, dict):
+        from ..routing import QualityResult
+        return QualityResult.from_quality_dict(quality)
+    return quality
 
 
 class PredictionIntelligenceOrchestrator:
     """
-    Stateless aside from its engine instances (each engine is itself
-    stateless — safe to reuse across many `analyze()` calls, same as
-    business_reasoning.BusinessReasoningEngine).
+    The single public entry point for Prediction Intelligence.
+
+    `engines`, if omitted, defaults to `[PredictionConfidenceEngine()]`
+    — preserved exactly as-is for backward compatibility with every
+    existing caller. To run Prediction Assurance instead (or as well),
+    pass it explicitly:
+
+        PredictionIntelligenceOrchestrator(engines=[PredictionAssuranceEngine()])
+        PredictionIntelligenceOrchestrator(
+            engines=[PredictionConfidenceEngine(), PredictionAssuranceEngine()]
+        )
+
+    Every engine's result is stored in `prior_results` keyed by its
+    `name` and made available to later engines in the same run; the
+    report fields each engine feeds are read out of `prior_results` via
+    `.get()` in `_assemble_report()`, so an engine that did not run
+    simply leaves its corresponding report field at its default `None`.
     """
 
-    def __init__(self) -> None:
-        self._prediction_confidence = PredictionConfidenceEngine()
-        self._evidence = EvidenceEngine()
-        self._signal = SignalIntelligenceEngine()
-        self._stability = StabilityEngine()
-        self._consistency = ConsistencyEngine()
-        self._intelligence_score = IntelligenceScoreEngine()
+    def __init__(self, engines: list[PredictionIntelligenceEngine] | None = None) -> None:
+        self.engines: list[PredictionIntelligenceEngine] = (
+            list(engines) if engines is not None else [PredictionConfidenceEngine()]
+        )
+
+    # ── context construction ────────────────────────────────────
+
+    @staticmethod
+    def build_context(
+        sector: str,
+        predicted_churn: str,
+        churn_probability: float,
+        risk_level: str,
+        coverage: Any,
+        routing_decision: Any = None,
+        quality: Any = None,
+        concept_confidence: dict | None = None,
+        customer_id: str | None = None,
+        reasoning_report: Any = None,
+        prediction_explanation: Any = None,
+    ) -> PredictionIntelligenceContext:
+        """
+        Build one PredictionIntelligenceContext for a single prediction
+        row. `coverage` / `quality` may be passed as either the typed
+        routing.py adapter objects OR the raw dicts coverage.py /
+        quality_gate.py produce — both are accepted, mirroring
+        routing.route()'s own dict-or-adapter convenience.
+
+        `concept_confidence`, when not supplied explicitly, is read
+        from `coverage`'s embedded 'concept_confidence' dict if the raw
+        coverage dict form was passed (coverage.py always embeds it
+        there — see coverage.py's compute_coverage_score() docstring).
+        """
+        degraded: list[str] = []
+
+        coverage_dict_form = coverage if isinstance(coverage, dict) else None
+        adapted_coverage = _adapt_coverage(coverage)
+        adapted_quality = _adapt_quality(quality)
+
+        if concept_confidence is None and coverage_dict_form is not None:
+            concept_confidence = coverage_dict_form.get("concept_confidence")
+        if not concept_confidence:
+            degraded.append(DEGRADED_NO_CONCEPT_CONFIDENCE)
+
+        if routing_decision is None:
+            degraded.append(DEGRADED_NO_ROUTING_DECISION)
+
+        if adapted_quality is None:
+            degraded.append(DEGRADED_NO_QUALITY_RESULT)
+
+        if reasoning_report is None:
+            degraded.append(DEGRADED_NO_REASONING_REPORT)
+
+        if prediction_explanation is None:
+            degraded.append(DEGRADED_NO_PREDICTION_EXPLANATION)
+
+        return PredictionIntelligenceContext(
+            sector=sector,
+            customer_id=customer_id,
+            predicted_churn=predicted_churn,
+            churn_probability=churn_probability,
+            risk_level=risk_level,
+            coverage=adapted_coverage,
+            concept_confidence=concept_confidence,
+            routing_decision=routing_decision,
+            quality=adapted_quality,
+            reasoning_report=reasoning_report,
+            prediction_explanation=prediction_explanation,
+            degraded_inputs=tuple(degraded),
+        )
+
+    # ── execution ────────────────────────────────────────────────
 
     def analyze(self, context: PredictionIntelligenceContext) -> PredictionIntelligenceReport:
         """
-        Run every engine, in the architecture's fixed order, and return
-        one PredictionIntelligenceReport. Never raises on a missing
-        optional input (concept_confidence / routing_decision / quality
-        / reasoning_report / prediction_explanation) — every engine
-        degrades gracefully on its own, per interfaces.py's contract.
+        Run every registered engine against `context` and assemble the
+        PredictionIntelligenceReport. Engines run in `self.engines`
+        order; each engine's result is made available to subsequent
+        engines via `prior_results` (keyed by `engine.name`), though no
+        current engine (Module 1 only) actually depends on another.
         """
-        prediction_confidence = self._prediction_confidence.analyze(context)
-        evidence = self._evidence.analyze(context)
-        signal = self._signal.analyze(context)
+        prior_results: dict[str, Any] = {}
+        for engine in self.engines:
+            prior_results[engine.name] = engine.analyze(context, **prior_results)
 
-        stability = self._stability.analyze(
-            context,
-            prediction_confidence=prediction_confidence,
-            evidence=evidence,
-            signal=signal,
+        return self._assemble_report(context, prior_results)
+
+    def analyze_prediction(
+        self,
+        sector: str,
+        predicted_churn: str,
+        churn_probability: float,
+        risk_level: str,
+        coverage: Any,
+        routing_decision: Any = None,
+        quality: Any = None,
+        concept_confidence: dict | None = None,
+        customer_id: str | None = None,
+        reasoning_report: Any = None,
+        prediction_explanation: Any = None,
+    ) -> PredictionIntelligenceReport:
+        """One-call convenience: build_context() + analyze() together."""
+        context = self.build_context(
+            sector=sector,
+            predicted_churn=predicted_churn,
+            churn_probability=churn_probability,
+            risk_level=risk_level,
+            coverage=coverage,
+            routing_decision=routing_decision,
+            quality=quality,
+            concept_confidence=concept_confidence,
+            customer_id=customer_id,
+            reasoning_report=reasoning_report,
+            prediction_explanation=prediction_explanation,
+        )
+        return self.analyze(context)
+
+    # ── report assembly ─────────────────────────────────────────
+
+    def _assemble_report(
+        self,
+        context: PredictionIntelligenceContext,
+        prior_results: dict[str, Any],
+    ) -> PredictionIntelligenceReport:
+        return PredictionIntelligenceReport(
+            sector=context.sector,
+            customer_id=context.customer_id,
+            predicted_churn=context.predicted_churn,
+            churn_probability=context.churn_probability,
+            generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+            prediction_confidence=prior_results.get("prediction_confidence"),
+            prediction_assurance=prior_results.get("prediction_assurance"),
+            evidence_strength=prior_results.get("evidence_strength"),
+            signal_intelligence=prior_results.get("signal_intelligence"),
+            stability=prior_results.get("stability"),
+            consistency=prior_results.get("consistency"),
+            intelligence_score=prior_results.get("intelligence_score"),
+            degraded_inputs=context.degraded_inputs,
         )
 
-        consistency = self._consistency.analyze(
-            context,
-            prediction_confidence=prediction_confidence,
-            evidence=evidence,
-            signal=signal,
-            stability=stability,
-        )
 
-        intelligence_score = self._intelligence_score.analyze(
-            context,
-            prediction_confidence=prediction_confidence,
-            evidence=evidence,
-            signal=signal,
-            stability=stability,
-            consistency=consistency,
-        )
-
-        return build_report(
-            context=context,
-            prediction_confidence=prediction_confidence,
-            evidence=evidence,
-            signal=signal,
-            stability=stability,
-            consistency=consistency,
-            intelligence_score=intelligence_score,
-        )
-
-    def analyze_many(
-        self, contexts: list[PredictionIntelligenceContext],
-    ) -> list[PredictionIntelligenceReport]:
-        """Convenience: analyze a batch of contexts (e.g. every row of
-        one prediction run) in one call."""
-        return [self.analyze(c) for c in contexts]
-
-
-# ══════════════════════════════════════════════════════════════════
-# ONE-SHOT CONVENIENCE FUNCTIONS
-# ══════════════════════════════════════════════════════════════════
-# Mirror business_reasoning.run_business_reasoning() /
-# decision_intelligence.run_decision_intelligence()'s module-level
-# wrapper convention — a caller that doesn't want to instantiate the
-# orchestrator itself doesn't have to.
-
-def evaluate_prediction(
-    row: Any,
-    attrs: dict,
+def run_prediction_intelligence(
     sector: str,
-    reasoning_report: Any | None = None,
-    prediction_explanation: Any | None = None,
+    predicted_churn: str,
+    churn_probability: float,
+    risk_level: str,
+    coverage: Any,
+    routing_decision: Any = None,
+    quality: Any = None,
+    concept_confidence: dict | None = None,
+    customer_id: str | None = None,
+    reasoning_report: Any = None,
+    prediction_explanation: Any = None,
 ) -> PredictionIntelligenceReport:
-    """One row -> one PredictionIntelligenceReport, in a single call."""
-    context = build_context(
-        row=row, attrs=attrs, sector=sector,
+    """
+    Module-level convenience wrapper around a default-configured
+    orchestrator — mirrors business_reasoning.run_business_reasoning()
+    and decision_intelligence.run_decision_intelligence()'s shape.
+    """
+    return PredictionIntelligenceOrchestrator().analyze_prediction(
+        sector=sector,
+        predicted_churn=predicted_churn,
+        churn_probability=churn_probability,
+        risk_level=risk_level,
+        coverage=coverage,
+        routing_decision=routing_decision,
+        quality=quality,
+        concept_confidence=concept_confidence,
+        customer_id=customer_id,
         reasoning_report=reasoning_report,
         prediction_explanation=prediction_explanation,
     )
-    return PredictionIntelligenceOrchestrator().analyze(context)
-
-
-def evaluate_predictions_for_results(
-    results: Any,
-    sector: str,
-    reasoning_report: Any | None = None,
-    prediction_explanation: Any | None = None,
-) -> list[PredictionIntelligenceReport]:
-    """
-    Every row of an already-produced `results` DataFrame -> one
-    PredictionIntelligenceReport each, sharing the same file-level
-    coverage/quality/routing context (see context.py's docstring on
-    why that sharing is architecturally correct, not a shortcut).
-    """
-    contexts = build_contexts_for_results(
-        results=results, sector=sector,
-        reasoning_report=reasoning_report,
-        prediction_explanation=prediction_explanation,
-    )
-    return PredictionIntelligenceOrchestrator().analyze_many(contexts)
