@@ -1,0 +1,6 @@
+CustomerId,CreditScore,Geography,Gender,Age,Balance,NumOfProducts,IsActiveMember,EstimatedSalary,Exited
+ADV_BNK_01,420,France,Female,52,250000.00,4,0,120000.00,1
+ADV_BNK_02,850,Spain,Male,28,15.50,1,1,45000.00,0
+ADV_BNK_03,610,Germany,Female,34,180000.00,3,0,195000.00,1
+ADV_BNK_04,720,France,Male,65,0.00,2,1,15000.00,0
+ADV_BNK_05,500,Germany,Male,61,98000.00,1,0,85000.00,1

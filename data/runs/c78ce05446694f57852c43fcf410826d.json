@@ -1,0 +1,97 @@
+{
+  "upload_id": "c78ce05446694f57852c43fcf410826d",
+  "filename": "banking_test.csv",
+  "rows": 5,
+  "columns": 10,
+  "null_counts": {
+    "CustomerId": 0,
+    "CreditScore": 0,
+    "Geography": 0,
+    "Gender": 0,
+    "Age": 0,
+    "Balance": 0,
+    "NumOfProducts": 0,
+    "IsActiveMember": 0,
+    "EstimatedSalary": 0,
+    "Exited": 0
+  },
+  "dtypes": {
+    "CustomerId": "str",
+    "CreditScore": "int64",
+    "Geography": "str",
+    "Gender": "str",
+    "Age": "int64",
+    "Balance": "float64",
+    "NumOfProducts": "int64",
+    "IsActiveMember": "int64",
+    "EstimatedSalary": "float64",
+    "Exited": "int64"
+  },
+  "preview_rows": [
+    {
+      "CustomerId": "ADV_BNK_01",
+      "CreditScore": 420,
+      "Geography": "France",
+      "Gender": "Female",
+      "Age": 52,
+      "Balance": 250000.0,
+      "NumOfProducts": 4,
+      "IsActiveMember": 0,
+      "EstimatedSalary": 120000.0,
+      "Exited": 1
+    },
+    {
+      "CustomerId": "ADV_BNK_02",
+      "CreditScore": 850,
+      "Geography": "Spain",
+      "Gender": "Male",
+      "Age": 28,
+      "Balance": 15.5,
+      "NumOfProducts": 1,
+      "IsActiveMember": 1,
+      "EstimatedSalary": 45000.0,
+      "Exited": 0
+    },
+    {
+      "CustomerId": "ADV_BNK_03",
+      "CreditScore": 610,
+      "Geography": "Germany",
+      "Gender": "Female",
+      "Age": 34,
+      "Balance": 180000.0,
+      "NumOfProducts": 3,
+      "IsActiveMember": 0,
+      "EstimatedSalary": 195000.0,
+      "Exited": 1
+    },
+    {
+      "CustomerId": "ADV_BNK_04",
+      "CreditScore": 720,
+      "Geography": "France",
+      "Gender": "Male",
+      "Age": 65,
+      "Balance": 0.0,
+      "NumOfProducts": 2,
+      "IsActiveMember": 1,
+      "EstimatedSalary": 15000.0,
+      "Exited": 0
+    },
+    {
+      "CustomerId": "ADV_BNK_05",
+      "CreditScore": 500,
+      "Geography": "Germany",
+      "Gender": "Male",
+      "Age": 61,
+      "Balance": 98000.0,
+      "NumOfProducts": 1,
+      "IsActiveMember": 0,
+      "EstimatedSalary": 85000.0,
+      "Exited": 1
+    }
+  ],
+  "sector": "banking",
+  "coverage_score": null,
+  "concept_confidence": null,
+  "warnings": [],
+  "created_at": "2026-07-07T14:25:11.640356Z"
+}

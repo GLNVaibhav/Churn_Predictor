@@ -15,7 +15,6 @@ import { Separator } from "@/components/ui/separator";
 import { Download, FileText, Gauge, Network, ShieldCheck, Sparkles } from "lucide-react";
 import type { ReportCategory, ReportItem, ReportViewerContent } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { api } from "@/lib/api/client";
 
 const sectorLabel: Record<string, string> = {
   telecom: "Telecom",
@@ -49,9 +48,11 @@ interface ReportCategoryMeta {
 export function ReportExplorer({
   categories,
   reports,
+  getContent,
 }: {
   categories: ReportCategoryMeta[];
   reports: ReportItem[];
+  getContent: (category: ReportCategory) => ReportViewerContent;
 }) {
   const [activeContent, setActiveContent] = useState<ReportViewerContent | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -59,7 +60,7 @@ export function ReportExplorer({
 
   async function openCategory(category: ReportCategory) {
     setLoadingCategory(category);
-    const content = await api.reports.getViewerContent(category);
+    const content = getContent(category);
     setActiveContent(content);
     setDialogOpen(true);
     setLoadingCategory(null);

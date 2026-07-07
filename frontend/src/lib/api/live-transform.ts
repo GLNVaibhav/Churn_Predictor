@@ -19,7 +19,42 @@ import type {
   SelectedModel,
   UploadedDatasetPreview,
 } from "@/lib/types";
-import { pipelineStages as mockPipelineStages } from "@/lib/mock-data/pipeline";
+
+const stageTemplate = (
+  id: string,
+  order: number,
+  name: string,
+  shortLabel: string,
+  backendModule: string,
+): PipelineStage => ({
+  id,
+  order,
+  name,
+  shortLabel,
+  description: `${name} output from the live backend execution contract.`,
+  status: "pending",
+  durationMs: 0,
+  metrics: [],
+  detail: `${name} is owned by the backend UCIF pipeline and rendered here from execution state.`,
+  backendModule,
+  inputSample: "Live execution context",
+  outputSample: "Backend contract section",
+  futureEndpoint: "/api/v1/analysis/{execution_id}",
+  notes: "Frontend does not infer or recompute this stage.",
+});
+
+const PIPELINE_STAGE_TEMPLATES: PipelineStage[] = [
+  stageTemplate("upload-dataset", 1, "Upload Dataset", "Upload", "backend.services.upload_service"),
+  stageTemplate("schema-intelligence", 2, "Schema Intelligence", "Schema", "universal_churn.schema_resolution"),
+  stageTemplate("canonical-field-resolution", 3, "Canonical Field Resolution", "Canonical", "universal_churn.canonical_fields"),
+  stageTemplate("coverage-intelligence", 4, "Coverage Intelligence", "Coverage", "universal_churn.coverage"),
+  stageTemplate("concept-confidence", 5, "Concept Confidence", "Concepts", "universal_churn.concept_confidence"),
+  stageTemplate("quality-gate", 6, "Quality Gate", "Quality", "universal_churn.quality_gate"),
+  stageTemplate("adaptive-routing", 7, "Adaptive Routing", "Routing", "universal_churn.routing"),
+  stageTemplate("prediction", 8, "Prediction", "Prediction", "universal_churn.sector_pipeline"),
+  stageTemplate("prediction-explanation", 9, "Prediction Explanation", "Explain", "universal_churn.prediction_explanation"),
+  stageTemplate("decision-intelligence", 10, "Decision Intelligence", "Decision", "universal_churn.decision_intelligence"),
+];
 
 export interface BackendStage {
   id: string;
@@ -45,11 +80,16 @@ export interface PipelineStatusResponse {
 
 export interface UploadResponse {
   upload_id: string;
+  status?: string;
   filename: string;
   rows: number;
-  columns: string[];
-  detected_sector: string;
-  column_profiles: {
+  columns: string[] | number;
+  detected_sector?: string;
+  sector?: string | null;
+  null_counts?: Record<string, number>;
+  dtypes?: Record<string, string>;
+  preview_rows?: Record<string, unknown>[];
+  column_profiles?: {
     name: string;
     inferredType: "numeric" | "categorical" | "boolean" | "text" | "date";
     nullPercentage: number;
@@ -138,21 +178,51 @@ export function mapPipelineStages(backendStages: BackendStage[]): PipelineStage[
     if (!frontendId) continue;
     durationByFrontendId.set(frontendId, (durationByFrontendId.get(frontendId) || 0) + stage.durationMs);
   }
-  return mockPipelineStages.map((stage) => ({
+  return PIPELINE_STAGE_TEMPLATES.map((stage) => ({
     ...stage,
-    status: "complete",
+    status: backendStages.length ? "complete" : "pending",
     durationMs: durationByFrontendId.get(stage.id) ?? stage.durationMs,
   }));
 }
 
+export function mapCanonicalPipeline(payload: Record<string, unknown> | null | undefined, executionStatus?: string | null): PipelineStage[] {
+  const stages = ((payload?.stages || payload?.steps) as BackendStage[] | undefined) || [];
+  if (stages.length) return mapPipelineStages(stages);
+  if (executionStatus === "SUCCEEDED" || executionStatus === "SUCCESS") {
+    return PIPELINE_STAGE_TEMPLATES.map((stage) => ({ ...stage, status: "complete" }));
+  }
+  if (executionStatus === "FAILED" || executionStatus === "CANCELLED") {
+    return PIPELINE_STAGE_TEMPLATES.map((stage, idx) => ({ ...stage, status: idx === 0 ? "failed" : "pending" }));
+  }
+  if (executionStatus === "RUNNING" || executionStatus === "PENDING") {
+    return PIPELINE_STAGE_TEMPLATES.map((stage, idx) => ({ ...stage, status: idx === 0 ? "running" : "pending" }));
+  }
+  return PIPELINE_STAGE_TEMPLATES;
+}
+
 export function mapUploadPreview(upload: UploadResponse): UploadedDatasetPreview {
+  const previewRows = upload.preview_rows || [];
+  const dtypes = upload.dtypes || {};
+  const columns = upload.column_profiles || (Array.isArray(upload.columns)
+    ? upload.columns.map((name) => ({
+        name,
+        inferredType: "text" as const,
+        nullPercentage: 0,
+        sampleValues: previewRows.map((row) => String(row[name] ?? "")).filter(Boolean).slice(0, 3),
+      }))
+    : Object.keys(dtypes).map((name) => ({
+        name,
+        inferredType: String(dtypes[name]).includes("int") || String(dtypes[name]).includes("float") ? "numeric" as const : "categorical" as const,
+        nullPercentage: upload.null_counts?.[name] || 0,
+        sampleValues: previewRows.map((row) => String(row[name] ?? "")).filter(Boolean).slice(0, 3),
+      })));
   return {
     fileName: upload.filename,
     rowCount: upload.rows,
-    columnCount: upload.columns.length,
-    detectedSector: toSector(upload.detected_sector),
+    columnCount: Array.isArray(upload.columns) ? upload.columns.length : upload.columns,
+    detectedSector: toSector(upload.detected_sector || upload.sector),
     detectionConfidence: 100,
-    columns: upload.column_profiles,
+    columns,
   };
 }
 

@@ -8,7 +8,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from backend.config import settings
 from . import dependencies
-from .routers import health, framework, upload, analysis
+from .routers import health, framework, upload, analysis, executions
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +47,7 @@ def create_app() -> FastAPI:
     app.include_router(framework.router, prefix="/api/v1")
     app.include_router(upload.router, prefix="/api/v1")
     app.include_router(analysis.router, prefix="/api/v1")
+    app.include_router(executions.router, prefix="/api/v1")
 
     # Exception handlers
     @app.exception_handler(RequestValidationError)

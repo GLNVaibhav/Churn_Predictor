@@ -55,6 +55,6 @@ const columns: DataTableColumn<RecentRun>[] = [
   },
 ];
 
-export function RecentRunsTable({ data }: { data: RecentRun[] }) {
-  return <DataTable columns={columns} data={data} rowKey={(row) => row.id} />;
+export function RecentRunsTable({ data, onRestore }: { data: RecentRun[]; onRestore?: (row: RecentRun) => void }) {
+  return <DataTable columns={columns} data={data} rowKey={(row) => row.id} onRowClick={onRestore} />;
 }

@@ -1,0 +1,217 @@
+{
+  "execution_id": "dfc02bffd369485b977b34eba128c6da",
+  "status": "SUCCEEDED",
+  "started_at": "2026-07-07 15:18:20 UTC",
+  "completed_at": "2026-07-07 15:18:25 UTC",
+  "execution_time_ms": null,
+  "framework_version": null,
+  "execution": {
+    "execution_id": "dfc02bffd369485b977b34eba128c6da",
+    "status": "SUCCEEDED",
+    "started_at": "2026-07-07 15:18:20 UTC",
+    "completed_at": "2026-07-07 15:18:25 UTC",
+    "execution_time_ms": 4943.74,
+    "framework_version": "1.0.0"
+  },
+  "dataset": {
+    "filename": "C:\\Users\\DELL\\OneDrive\\Documents\\SRM\\Churn_Analysis\\data\\uploads\\120d1153050f425eb49c06e902387c63\\golden_healthcare.csv",
+    "sector": "healthcare",
+    "prediction_mode": "auto",
+    "rows": 7,
+    "columns": null,
+    "schema_version": null
+  },
+  "pipeline": null,
+  "coverage": {
+    "coverage_score": 0.8421,
+    "status": "Yellow",
+    "coverage_band": "Yellow",
+    "missing_critical": [],
+    "missing_high_impact": [
+      "Tenure_Months"
+    ],
+    "missing_all": [
+      "Tenure_Months",
+      "Insurance_Type",
+      "Specialty",
+      "Gender",
+      "State"
+    ],
+    "recovered_features": [],
+    "semantic_matches": [
+      "Days_Since_Last_Visit",
+      "Billing_Issues",
+      "Overall_Satisfaction",
+      "Visits_Last_Year",
+      "Avg_Out_Of_Pocket_Cost",
+      "Age",
+      "Missed_Appointments",
+      "Wait_Time_Satisfaction",
+      "Staff_Satisfaction",
+      "Provider_Rating"
+    ]
+  },
+  "concept_confidence": {
+    "sector": "healthcare",
+    "overall_confidence": 0.76,
+    "reconstructable_concepts": 4,
+    "total_concepts": 5,
+    "concepts_reconstructable": true,
+    "per_concept": {
+      "RECURRING_COMMITMENT": {
+        "confidence": 1.0,
+        "reconstructable": true,
+        "reason": "Reconstructed from resolved canonical field.",
+        "canonical_field": "Recurring_Cost",
+        "source_confidence": 1.0,
+        "resolution_confidence": 1.0
+      },
+      "CUSTOMER_LOYALTY": {
+        "confidence": 0.0,
+        "reconstructable": false,
+        "reason": "Canonical field 'Tenure_Raw' did not resolve from any column in this input.",
+        "canonical_field": "Tenure_Raw",
+        "source_confidence": 1.0,
+        "resolution_confidence": 0.0
+      },
+      "SUPPORT_FRICTION": {
+        "confidence": 0.9,
+        "reconstructable": true,
+        "reason": "Reconstructed from resolved canonical field.",
+        "canonical_field": "Support_Contacts",
+        "source_confidence": 0.9,
+        "resolution_confidence": 1.0
+      },
+      "ENGAGEMENT_LEVEL": {
+        "confidence": 0.9,
+        "reconstructable": true,
+        "reason": "Reconstructed from resolved canonical field.",
+        "canonical_field": "Engagement_Volume",
+        "source_confidence": 0.9,
+        "resolution_confidence": 1.0
+      },
+      "SATISFACTION_SIGNAL": {
+        "confidence": 1.0,
+        "reconstructable": true,
+        "reason": "Reconstructed from resolved canonical field.",
+        "canonical_field": "Satisfaction_Raw",
+        "source_confidence": 1.0,
+        "resolution_confidence": 1.0
+      }
+    }
+  },
+  "quality": {
+    "overall_passed": true,
+    "leakage_detected": false,
+    "leakage_flagged": [],
+    "leakage_warned": [],
+    "failed_columns": []
+  },
+  "routing": {
+    "selected_model": "UNIVERSAL_MODEL",
+    "selected_pipeline": "UniversalPipeline",
+    "prediction_mode": "PredictionMode.AUTO",
+    "routing_reason": "Auto mode — coverage Yellow (84.2%, between 60% and 85%). Sector model coverage insufficient; routed to universal model fallback. (Core Model hook: not yet implemented.)",
+    "coverage_score": 0.8421,
+    "coverage_band": "Yellow",
+    "quality_score": 1.0,
+    "quality_status": "GOOD",
+    "concept_confidence": 0.76,
+    "reliability": "High",
+    "model_artifact": "universal",
+    "warnings": [
+      "Coverage is Yellow (84.2%) — routed to universal model. Missing high-impact features: ['Tenure_Months']"
+    ]
+  },
+  "prediction": {
+    "rows": 7,
+    "predicted_churners": 4,
+    "average_probability": 0.5056,
+    "risk_distribution": {
+      "Medium": 4,
+      "Low": 3
+    },
+    "prediction_model": "Universal XGBoost",
+    "prediction_mode": "Auto"
+  },
+  "prediction_explanation": {
+    "headline": "HIGH CHURN",
+    "reason_text": "No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (LOW, 100% concept confidence). Weakest evidenced signal: SUPPORT_FRICTION (LOW, 90% concept confidence). Insufficient evidence to reason about: CUSTOMER_LOYALTY. Feature coverage was Yellow (84.2%). Overall concept confidence was 76.0% (4/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: High) — Auto mode — coverage Yellow (84.2%, between 60% and 85%). Sector model coverage insufficient; routed to universal model fallback. (Core Model hook: not yet implemented.)",
+    "recommendation_text": "No specific recommendation available.",
+    "overall_business_health": "MEDIUM",
+    "overall_customer_risk": "LOW",
+    "dominant_findings": []
+  },
+  "decision": {
+    "decision_readiness": "READY",
+    "overall_confidence": 0.7337,
+    "business_confidence": 0.5867,
+    "technical_confidence": 0.8807,
+    "evidence_strength": 0.8205,
+    "risk_level": "LOW",
+    "recommended_action": "Proceed with standard monitoring — no immediate action required.",
+    "warnings": [
+      "Coverage is Yellow (84.2%) — routed to universal model. Missing high-impact features: ['Tenure_Months']"
+    ]
+  },
+  "reports": [
+    {
+      "id": "exec_c8cadbf5e13e4d36aff302949cec812f_quality",
+      "type": "quality",
+      "title": "Quality",
+      "created_at": "2026-07-07T15:18:25.679053+00:00",
+      "location": "/reports/exec_c8cadbf5e13e4d36aff302949cec812f_quality"
+    },
+    {
+      "id": "exec_c8cadbf5e13e4d36aff302949cec812f_routing",
+      "type": "routing",
+      "title": "Routing",
+      "created_at": "2026-07-07T15:18:25.679053+00:00",
+      "location": "/reports/exec_c8cadbf5e13e4d36aff302949cec812f_routing"
+    },
+    {
+      "id": "exec_c8cadbf5e13e4d36aff302949cec812f_prediction_quality",
+      "type": "prediction_quality",
+      "title": "Prediction Quality",
+      "created_at": "2026-07-07T15:18:25.679053+00:00",
+      "location": "/reports/exec_c8cadbf5e13e4d36aff302949cec812f_prediction_quality"
+    },
+    {
+      "id": "exec_c8cadbf5e13e4d36aff302949cec812f_business_reasoning",
+      "type": "business_reasoning",
+      "title": "Business Reasoning",
+      "created_at": "2026-07-07T15:18:25.679053+00:00",
+      "location": "/reports/exec_c8cadbf5e13e4d36aff302949cec812f_business_reasoning"
+    },
+    {
+      "id": "exec_c8cadbf5e13e4d36aff302949cec812f_decision",
+      "type": "decision",
+      "title": "Decision",
+      "created_at": "2026-07-07T15:18:25.679053+00:00",
+      "location": "/reports/exec_c8cadbf5e13e4d36aff302949cec812f_decision"
+    }
+  ],
+  "warnings": [
+    "Coverage is Yellow (84.2%) — routed to universal model. Missing high-impact features: ['Tenure_Months']"
+  ],
+  "metadata": null,
+  "context": {
+    "execution_id": "dfc02bffd369485b977b34eba128c6da",
+    "filename": "C:\\Users\\DELL\\OneDrive\\Documents\\SRM\\Churn_Analysis\\data\\uploads\\120d1153050f425eb49c06e902387c63\\golden_healthcare.csv",
+    "sector": "healthcare",
+    "status": "SUCCEEDED"
+  },
+  "pipeline_state": {},
+  "events": [
+    {
+      "type": "analysis_started",
+      "status": "RUNNING",
+      "message": "Execution started"
+    },
+    {
+      "type": "analysis_completed",
+      "status": "SUCCEEDED",
+      "message": "Execution completed"
+    }
+  ]
+}

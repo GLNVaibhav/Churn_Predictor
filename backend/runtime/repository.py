@@ -45,11 +45,16 @@ class ExecutionRepository:
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     data = json.load(f)
+                execution = data.get("execution") if isinstance(data.get("execution"), dict) else data
+                execution_id = execution.get("execution_id")
+                if not execution_id:
+                    continue
                 summaries.append({
-                    "execution_id": data.get("execution_id"),
-                    "status": data.get("status"),
-                    "created_at": data.get("created_at"),
-                    "completed_at": data.get("completed_at"),
+                    "execution_id": execution_id,
+                    "status": execution.get("status"),
+                    "created_at": execution.get("created_at") or execution.get("started_at"),
+                    "started_at": execution.get("started_at"),
+                    "completed_at": execution.get("completed_at"),
                     "progress": data.get("pipeline_state", {}).get("progress"),
                 })
             except Exception:

@@ -66,9 +66,9 @@ export function AppSidebar() {
       </nav>
       <div className="border-t border-border/60 p-4">
         <div className="rounded-lg border border-border/60 bg-muted/30 p-3">
-          <p className="text-xs font-medium">Mock Data Mode</p>
+          <p className="text-xs font-medium">Live Backend Mode</p>
           <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-            Phase 1 UI — not yet connected to the Python backend.
+            Connected to the FastAPI transport layer.
           </p>
         </div>
       </div>

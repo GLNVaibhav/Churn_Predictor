@@ -1,0 +1,221 @@
+{
+  "execution_id": "13ff9b22e16c4ff7afb82649cb0c7f32",
+  "status": "SUCCEEDED",
+  "started_at": "2026-07-07 14:26:49 UTC",
+  "completed_at": "2026-07-07 14:26:51 UTC",
+  "execution_time_ms": null,
+  "framework_version": null,
+  "execution": {
+    "execution_id": "13ff9b22e16c4ff7afb82649cb0c7f32",
+    "status": "SUCCEEDED",
+    "started_at": "2026-07-07 14:26:49 UTC",
+    "completed_at": "2026-07-07 14:26:51 UTC",
+    "execution_time_ms": 2196.28,
+    "framework_version": "1.0.0"
+  },
+  "dataset": {
+    "filename": "C:\\Users\\DELL\\OneDrive\\Documents\\SRM\\Churn_Analysis\\data\\uploads\\ce406ad90e7a482691e878b488c910a0\\ecommerce_test.csv",
+    "sector": "ecommerce",
+    "prediction_mode": "auto",
+    "rows": 5,
+    "columns": null,
+    "schema_version": null
+  },
+  "pipeline": null,
+  "coverage": {
+    "coverage_score": 0.7143,
+    "status": "Yellow",
+    "coverage_band": "Yellow",
+    "missing_critical": [],
+    "missing_high_impact": [
+      "OrderAmountHikeFromlastYear",
+      "CouponUsed"
+    ],
+    "missing_all": [
+      "OrderAmountHikeFromlastYear",
+      "CouponUsed",
+      "NumberOfAddress",
+      "CityTier",
+      "PreferredLoginDevice",
+      "PreferredPaymentMode",
+      "PreferedOrderCat",
+      "MaritalStatus",
+      "Gender"
+    ],
+    "recovered_features": [],
+    "semantic_matches": [
+      "Tenure",
+      "Complain",
+      "DaySinceLastOrder",
+      "SatisfactionScore",
+      "OrderCount",
+      "CashbackAmount",
+      "NumberOfDeviceRegistered",
+      "HourSpendOnApp"
+    ]
+  },
+  "concept_confidence": {
+    "sector": "ecommerce",
+    "overall_confidence": 0.94,
+    "reconstructable_concepts": 5,
+    "total_concepts": 5,
+    "concepts_reconstructable": true,
+    "per_concept": {
+      "RECURRING_COMMITMENT": {
+        "confidence": 0.7,
+        "reconstructable": true,
+        "reason": "Reconstructed from resolved canonical field.",
+        "canonical_field": "Recurring_Cost",
+        "source_confidence": 0.7,
+        "resolution_confidence": 1.0
+      },
+      "CUSTOMER_LOYALTY": {
+        "confidence": 1.0,
+        "reconstructable": true,
+        "reason": "Reconstructed from resolved canonical field.",
+        "canonical_field": "Tenure_Raw",
+        "source_confidence": 1.0,
+        "resolution_confidence": 1.0
+      },
+      "SUPPORT_FRICTION": {
+        "confidence": 1.0,
+        "reconstructable": true,
+        "reason": "Reconstructed from resolved canonical field.",
+        "canonical_field": "Support_Contacts",
+        "source_confidence": 1.0,
+        "resolution_confidence": 1.0
+      },
+      "ENGAGEMENT_LEVEL": {
+        "confidence": 1.0,
+        "reconstructable": true,
+        "reason": "Reconstructed from resolved canonical field.",
+        "canonical_field": "Engagement_Volume",
+        "source_confidence": 1.0,
+        "resolution_confidence": 1.0
+      },
+      "SATISFACTION_SIGNAL": {
+        "confidence": 1.0,
+        "reconstructable": true,
+        "reason": "Reconstructed from resolved canonical field.",
+        "canonical_field": "Satisfaction_Raw",
+        "source_confidence": 1.0,
+        "resolution_confidence": 1.0
+      }
+    }
+  },
+  "quality": {
+    "overall_passed": true,
+    "leakage_detected": false,
+    "leakage_flagged": [],
+    "leakage_warned": [],
+    "failed_columns": []
+  },
+  "routing": {
+    "selected_model": "UNIVERSAL_MODEL",
+    "selected_pipeline": "UniversalPipeline",
+    "prediction_mode": "PredictionMode.AUTO",
+    "routing_reason": "Auto mode — coverage Yellow (71.4%, between 60% and 85%). Sector model coverage insufficient; routed to universal model fallback. (Core Model hook: not yet implemented.)",
+    "coverage_score": 0.7143,
+    "coverage_band": "Yellow",
+    "quality_score": 1.0,
+    "quality_status": "GOOD",
+    "concept_confidence": 0.94,
+    "reliability": "High",
+    "model_artifact": "universal",
+    "warnings": [
+      "Coverage is Yellow (71.4%) — routed to universal model. Missing high-impact features: ['OrderAmountHikeFromlastYear', 'CouponUsed']"
+    ]
+  },
+  "prediction": {
+    "rows": 5,
+    "predicted_churners": 2,
+    "average_probability": 0.5204,
+    "risk_distribution": {
+      "High": 2,
+      "Low": 2,
+      "Medium": 1
+    },
+    "prediction_model": "Universal XGBoost",
+    "prediction_mode": "Auto"
+  },
+  "prediction_explanation": {
+    "headline": "LOW CHURN",
+    "reason_text": "No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: CUSTOMER_LOYALTY (MEDIUM, 100% concept confidence). Weakest evidenced signal: RECURRING_COMMITMENT (HIGH, 70% concept confidence). Feature coverage was Yellow (71.4%). Overall concept confidence was 94.0% (5/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: High) — Auto mode — coverage Yellow (71.4%, between 60% and 85%). Sector model coverage insufficient; routed to universal model fallback. (Core Model hook: not yet implemented.)",
+    "recommendation_text": "No specific recommendation available.",
+    "overall_business_health": "MEDIUM",
+    "overall_customer_risk": "LOW",
+    "dominant_findings": []
+  },
+  "decision": {
+    "decision_readiness": "READY",
+    "overall_confidence": 0.7424,
+    "business_confidence": 0.6467,
+    "technical_confidence": 0.8381,
+    "evidence_strength": 0.8336,
+    "risk_level": "LOW",
+    "recommended_action": "Proceed with standard monitoring — no immediate action required.",
+    "warnings": [
+      "Coverage is Yellow (71.4%) — routed to universal model. Missing high-impact features: ['OrderAmountHikeFromlastYear', 'CouponUsed']"
+    ]
+  },
+  "reports": [
+    {
+      "id": "exec_c56cd7e87efb4621bdd56baca7f88578_quality",
+      "type": "quality",
+      "title": "Quality",
+      "created_at": "2026-07-07T14:26:51.959730+00:00",
+      "location": "/reports/exec_c56cd7e87efb4621bdd56baca7f88578_quality"
+    },
+    {
+      "id": "exec_c56cd7e87efb4621bdd56baca7f88578_routing",
+      "type": "routing",
+      "title": "Routing",
+      "created_at": "2026-07-07T14:26:51.959730+00:00",
+      "location": "/reports/exec_c56cd7e87efb4621bdd56baca7f88578_routing"
+    },
+    {
+      "id": "exec_c56cd7e87efb4621bdd56baca7f88578_prediction_quality",
+      "type": "prediction_quality",
+      "title": "Prediction Quality",
+      "created_at": "2026-07-07T14:26:51.959730+00:00",
+      "location": "/reports/exec_c56cd7e87efb4621bdd56baca7f88578_prediction_quality"
+    },
+    {
+      "id": "exec_c56cd7e87efb4621bdd56baca7f88578_business_reasoning",
+      "type": "business_reasoning",
+      "title": "Business Reasoning",
+      "created_at": "2026-07-07T14:26:51.959730+00:00",
+      "location": "/reports/exec_c56cd7e87efb4621bdd56baca7f88578_business_reasoning"
+    },
+    {
+      "id": "exec_c56cd7e87efb4621bdd56baca7f88578_decision",
+      "type": "decision",
+      "title": "Decision",
+      "created_at": "2026-07-07T14:26:51.959730+00:00",
+      "location": "/reports/exec_c56cd7e87efb4621bdd56baca7f88578_decision"
+    }
+  ],
+  "warnings": [
+    "Coverage is Yellow (71.4%) — routed to universal model. Missing high-impact features: ['OrderAmountHikeFromlastYear', 'CouponUsed']"
+  ],
+  "metadata": null,
+  "context": {
+    "execution_id": "13ff9b22e16c4ff7afb82649cb0c7f32",
+    "filename": "C:\\Users\\DELL\\OneDrive\\Documents\\SRM\\Churn_Analysis\\data\\uploads\\ce406ad90e7a482691e878b488c910a0\\ecommerce_test.csv",
+    "sector": "ecommerce",
+    "status": "SUCCEEDED"
+  },
+  "pipeline_state": {},
+  "events": [
+    {
+      "type": "analysis_started",
+      "status": "RUNNING",
+      "message": "Execution started"
+    },
+    {
+      "type": "analysis_completed",
+      "status": "SUCCEEDED",
+      "message": "Execution completed"
+    }
+  ]
+}

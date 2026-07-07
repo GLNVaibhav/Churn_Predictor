@@ -5,6 +5,8 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppTopbar } from "@/components/layout/app-topbar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DevModeProvider } from "@/lib/context/dev-mode-context";
+import { ExecutionProvider } from "@/lib/context/execution-context";
+import { AppQueryProvider } from "@/lib/query-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,17 +31,21 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <TooltipProvider delay={150}>
-          <DevModeProvider>
-            <div className="flex h-screen w-full overflow-hidden bg-background">
-              <AppSidebar />
-              <div className="flex flex-1 flex-col overflow-hidden">
-                <AppTopbar />
-                {children}
-              </div>
-            </div>
-          </DevModeProvider>
-        </TooltipProvider>
+        <AppQueryProvider>
+          <ExecutionProvider>
+            <TooltipProvider delay={150}>
+              <DevModeProvider>
+                <div className="flex h-screen w-full overflow-hidden bg-background">
+                  <AppSidebar />
+                  <div className="flex flex-1 flex-col overflow-hidden">
+                    <AppTopbar />
+                    {children}
+                  </div>
+                </div>
+              </DevModeProvider>
+            </TooltipProvider>
+          </ExecutionProvider>
+        </AppQueryProvider>
       </body>
     </html>
   );

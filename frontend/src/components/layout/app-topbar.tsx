@@ -54,8 +54,8 @@ export function AppTopbar() {
             Developer
           </button>
         </div>
-        <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-400">
-          Mock Data
+        <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+          Live API
         </Badge>
         <Avatar className="h-8 w-8">
           <AvatarFallback className="text-xs">RA</AvatarFallback>

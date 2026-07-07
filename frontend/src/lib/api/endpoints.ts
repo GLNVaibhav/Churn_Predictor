@@ -1,0 +1,12 @@
+export const API = {
+  upload: "/api/v1/upload",
+  analyze: "/api/v1/analyze",
+  executions: "/api/v1/executions",
+  execution: (executionId: string) => `/api/v1/analysis/${executionId}`,
+  pipeline: (executionId: string) => `/api/v1/analysis/${executionId}/pipeline`,
+  predictions: (executionId: string) => `/api/v1/analysis/${executionId}/predictions`,
+  reports: (executionId: string) => `/api/v1/analysis/${executionId}/reports`,
+  decision: (executionId: string) => `/api/v1/analysis/${executionId}/decision`,
+  context: (executionId: string) => `/api/v1/analysis/${executionId}/context`,
+  events: (executionId: string) => `/api/v1/analysis/${executionId}/events`,
+} as const;

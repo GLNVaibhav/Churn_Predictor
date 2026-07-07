@@ -44,4 +44,17 @@ async def run_analysis_task(
         payload["execution"]["execution_id"] = execution_id
     else:
         payload["execution_id"] = execution_id
+    dataset = payload.get("dataset") or {}
+    execution = payload.get("execution") or {}
+    payload["context"] = {
+        "execution_id": execution_id,
+        "filename": dataset.get("filename"),
+        "sector": dataset.get("sector"),
+        "status": execution.get("status", "SUCCEEDED"),
+    }
+    payload["pipeline_state"] = payload.get("pipeline") or {}
+    payload["events"] = [
+        {"type": "analysis_started", "status": "RUNNING", "message": "Execution started"},
+        {"type": "analysis_completed", "status": execution.get("status", "SUCCEEDED"), "message": "Execution completed"},
+    ]
     return payload

@@ -1,0 +1,215 @@
+{
+  "execution_id": "92ce3492a7d64e3f95656ce4ff2e573e",
+  "status": "SUCCEEDED",
+  "started_at": "2026-07-07 14:25:15 UTC",
+  "completed_at": "2026-07-07 14:25:16 UTC",
+  "execution_time_ms": null,
+  "framework_version": null,
+  "execution": {
+    "execution_id": "92ce3492a7d64e3f95656ce4ff2e573e",
+    "status": "SUCCEEDED",
+    "started_at": "2026-07-07 14:25:15 UTC",
+    "completed_at": "2026-07-07 14:25:16 UTC",
+    "execution_time_ms": 1229.87,
+    "framework_version": "1.0.0"
+  },
+  "dataset": {
+    "filename": "C:\\Users\\DELL\\OneDrive\\Documents\\SRM\\Churn_Analysis\\data\\uploads\\c78ce05446694f57852c43fcf410826d\\banking_test.csv",
+    "sector": "banking",
+    "prediction_mode": "auto",
+    "rows": 5,
+    "columns": null,
+    "schema_version": null
+  },
+  "pipeline": null,
+  "coverage": {
+    "coverage_score": 0.7105,
+    "status": "Yellow",
+    "coverage_band": "Yellow",
+    "missing_critical": [
+      "Geography",
+      "Tenure"
+    ],
+    "missing_high_impact": [],
+    "missing_all": [
+      "Geography",
+      "Tenure",
+      "HasCrCard",
+      "Gender"
+    ],
+    "recovered_features": [],
+    "semantic_matches": [
+      "NumOfProducts",
+      "Age",
+      "Balance",
+      "IsActiveMember",
+      "CreditScore"
+    ]
+  },
+  "concept_confidence": {
+    "sector": "banking",
+    "overall_confidence": 0.38,
+    "reconstructable_concepts": 3,
+    "total_concepts": 5,
+    "concepts_reconstructable": true,
+    "per_concept": {
+      "RECURRING_COMMITMENT": {
+        "confidence": 0.6,
+        "reconstructable": true,
+        "reason": "Reconstructed from resolved canonical field.",
+        "canonical_field": "Total_Spend",
+        "source_confidence": 0.6,
+        "resolution_confidence": 1.0
+      },
+      "CUSTOMER_LOYALTY": {
+        "confidence": 0.0,
+        "reconstructable": false,
+        "reason": "Canonical field 'Tenure_Raw' did not resolve from any column in this input.",
+        "canonical_field": "Tenure_Raw",
+        "source_confidence": 1.0,
+        "resolution_confidence": 0.0
+      },
+      "SUPPORT_FRICTION": {
+        "confidence": 0.0,
+        "reconstructable": false,
+        "reason": "Canonical field 'Support_Contacts' did not resolve from any column in this input.",
+        "canonical_field": "Support_Contacts",
+        "source_confidence": 0.7,
+        "resolution_confidence": 0.0
+      },
+      "ENGAGEMENT_LEVEL": {
+        "confidence": 0.9,
+        "reconstructable": true,
+        "reason": "Reconstructed from resolved canonical field.",
+        "canonical_field": "Engagement_Volume",
+        "source_confidence": 0.9,
+        "resolution_confidence": 1.0
+      },
+      "SATISFACTION_SIGNAL": {
+        "confidence": 0.4,
+        "reconstructable": true,
+        "reason": "Reconstructed from resolved canonical field.",
+        "canonical_field": "Satisfaction_Raw",
+        "source_confidence": 0.4,
+        "resolution_confidence": 1.0
+      }
+    }
+  },
+  "quality": {
+    "overall_passed": true,
+    "leakage_detected": false,
+    "leakage_flagged": [],
+    "leakage_warned": [],
+    "failed_columns": []
+  },
+  "routing": {
+    "selected_model": "UNIVERSAL_MODEL",
+    "selected_pipeline": "UniversalPipeline",
+    "prediction_mode": "PredictionMode.AUTO",
+    "routing_reason": "Auto mode — coverage Yellow (71.0%, between 60% and 85%). Sector model coverage insufficient; routed to universal model fallback. (Core Model hook: not yet implemented.)",
+    "coverage_score": 0.7105,
+    "coverage_band": "Yellow",
+    "quality_score": 1.0,
+    "quality_status": "GOOD",
+    "concept_confidence": 0.38,
+    "reliability": "Moderate",
+    "model_artifact": "universal",
+    "warnings": [
+      "Coverage is Yellow (71.0%) — routed to universal model. Missing high-impact features: []"
+    ]
+  },
+  "prediction": {
+    "rows": 5,
+    "predicted_churners": 4,
+    "average_probability": 0.6894,
+    "risk_distribution": {
+      "High": 3,
+      "Medium": 1,
+      "Low": 1
+    },
+    "prediction_model": "Universal XGBoost",
+    "prediction_mode": "Auto"
+  },
+  "prediction_explanation": {
+    "headline": "HIGH CHURN",
+    "reason_text": "No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: ENGAGEMENT_LEVEL (MEDIUM, 90% concept confidence). Weakest evidenced signal: SATISFACTION_SIGNAL (MEDIUM, 40% concept confidence). Insufficient evidence to reason about: CUSTOMER_LOYALTY, SUPPORT_FRICTION. Feature coverage was Yellow (71.0%). Overall concept confidence was 38.0% (3/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Moderate) — Auto mode — coverage Yellow (71.0%, between 60% and 85%). Sector model coverage insufficient; routed to universal model fallback. (Core Model hook: not yet implemented.)",
+    "recommendation_text": "No specific recommendation available.",
+    "overall_business_health": "MEDIUM",
+    "overall_customer_risk": "LOW",
+    "dominant_findings": []
+  },
+  "decision": {
+    "decision_readiness": "REVIEW",
+    "overall_confidence": 0.6068,
+    "business_confidence": 0.46,
+    "technical_confidence": 0.7535,
+    "evidence_strength": 0.6551,
+    "risk_level": "LOW",
+    "recommended_action": "Review prediction manually before acting — evidence is present but not yet strong enough to automate.",
+    "warnings": [
+      "Coverage is Yellow (71.0%) — routed to universal model. Missing high-impact features: []",
+      "Concept confidence is 38.0%, below the 40% automation threshold."
+    ]
+  },
+  "reports": [
+    {
+      "id": "exec_791a0ad7d28a482faecc5894a7932b8d_quality",
+      "type": "quality",
+      "title": "Quality",
+      "created_at": "2026-07-07T14:25:16.295506+00:00",
+      "location": "/reports/exec_791a0ad7d28a482faecc5894a7932b8d_quality"
+    },
+    {
+      "id": "exec_791a0ad7d28a482faecc5894a7932b8d_routing",
+      "type": "routing",
+      "title": "Routing",
+      "created_at": "2026-07-07T14:25:16.295506+00:00",
+      "location": "/reports/exec_791a0ad7d28a482faecc5894a7932b8d_routing"
+    },
+    {
+      "id": "exec_791a0ad7d28a482faecc5894a7932b8d_prediction_quality",
+      "type": "prediction_quality",
+      "title": "Prediction Quality",
+      "created_at": "2026-07-07T14:25:16.295506+00:00",
+      "location": "/reports/exec_791a0ad7d28a482faecc5894a7932b8d_prediction_quality"
+    },
+    {
+      "id": "exec_791a0ad7d28a482faecc5894a7932b8d_business_reasoning",
+      "type": "business_reasoning",
+      "title": "Business Reasoning",
+      "created_at": "2026-07-07T14:25:16.295506+00:00",
+      "location": "/reports/exec_791a0ad7d28a482faecc5894a7932b8d_business_reasoning"
+    },
+    {
+      "id": "exec_791a0ad7d28a482faecc5894a7932b8d_decision",
+      "type": "decision",
+      "title": "Decision",
+      "created_at": "2026-07-07T14:25:16.295506+00:00",
+      "location": "/reports/exec_791a0ad7d28a482faecc5894a7932b8d_decision"
+    }
+  ],
+  "warnings": [
+    "Coverage is Yellow (71.0%) — routed to universal model. Missing high-impact features: []",
+    "Concept confidence is 38.0%, below the 40% automation threshold."
+  ],
+  "metadata": null,
+  "context": {
+    "execution_id": "92ce3492a7d64e3f95656ce4ff2e573e",
+    "filename": "C:\\Users\\DELL\\OneDrive\\Documents\\SRM\\Churn_Analysis\\data\\uploads\\c78ce05446694f57852c43fcf410826d\\banking_test.csv",
+    "sector": "banking",
+    "status": "SUCCEEDED"
+  },
+  "pipeline_state": {},
+  "events": [
+    {
+      "type": "analysis_started",
+      "status": "RUNNING",
+      "message": "Execution started"
+    },
+    {
+      "type": "analysis_completed",
+      "status": "SUCCEEDED",
+      "message": "Execution completed"
+    }
+  ]
+}
