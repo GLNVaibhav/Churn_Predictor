@@ -160,13 +160,17 @@ def test_map_decision_none_is_none(mapper):
 # ── reports ──────────────────────────────────────────────────────
 
 def test_map_reports(mapper):
-    bundle = mapper.map_reports({"quality_report_text": "all good"})
-    assert bundle.quality_report_text == "all good"
+    execution = ExecutionInfo.start()
+    reports = mapper.map_reports({"quality_report_text": "all good"}, execution.execution_id)
+    assert isinstance(reports, list)
+    assert reports[0].type == "quality"
+    assert reports[0].title == "Quality"
 
 
 def test_map_reports_empty_is_none(mapper):
-    assert mapper.map_reports(None) is None
-    assert mapper.map_reports({}) is None
+    execution = ExecutionInfo.start()
+    assert mapper.map_reports(None, execution.execution_id) is None
+    assert mapper.map_reports({}, execution.execution_id) is None
 
 
 # ── warnings roll-up ─────────────────────────────────────────────

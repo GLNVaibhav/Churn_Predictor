@@ -285,38 +285,33 @@ class DecisionSummary:
 
 
 # ══════════════════════════════════════════════════════════════════
-# REPORTS (pre-rendered text)
+# REPORTS (independent references)
 # ══════════════════════════════════════════════════════════════════
 
 @dataclass
-class ReportsBundle:
+class ReportReference:
     """
-    Pre-rendered, human-readable report text already produced by the
-    framework's own printers (``quality_gate.print_quality_report``,
-    ``routing.print_routing_decision``,
-    ``business_reasoning_report.generate_business_reasoning_report``,
-    ``decision_report.generate_decision_report``, etc.), captured as
-    strings so a consumer that just wants to display text doesn't need
-    to know which framework module produced it.
+    Reference to an independently stored, human-readable report.
     """
-    quality_report_text: Optional[str] = None
-    routing_report_text: Optional[str] = None
-    prediction_quality_report_text: Optional[str] = None
-    business_reasoning_report_text: Optional[str] = None
-    decision_report_text: Optional[str] = None
+    id: str
+    type: str
+    title: str
+    created_at: str
+    location: str
 
     def to_dict(self) -> dict:
         return to_serializable(self)
 
     @classmethod
-    def from_dict(cls, d: dict) -> "ReportsBundle":
+    def from_dict(cls, d: dict) -> "ReportReference":
         return cls(
-            quality_report_text=d.get("quality_report_text"),
-            routing_report_text=d.get("routing_report_text"),
-            prediction_quality_report_text=d.get("prediction_quality_report_text"),
-            business_reasoning_report_text=d.get("business_reasoning_report_text"),
-            decision_report_text=d.get("decision_report_text"),
+            id=d.get("id", ""),
+            type=d.get("type", ""),
+            title=d.get("title", ""),
+            created_at=d.get("created_at", ""),
+            location=d.get("location", ""),
         )
+
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -347,7 +342,7 @@ class UniversalAnalysisResponse:
     prediction: Optional[PredictionSummary] = None
     prediction_explanation: Optional[PredictionExplanationSummary] = None
     decision: Optional[DecisionSummary] = None
-    reports: Optional[ReportsBundle] = None
+    reports: Optional[List[ReportReference]] = None
 
     warnings: List[str] = field(default_factory=list)
     metadata: Optional[FrameworkMetadata] = None
@@ -379,6 +374,12 @@ class UniversalAnalysisResponse:
             raw = d.get(key)
             return section_cls.from_dict(raw) if raw else None
 
+        raw_reports = d.get("reports")
+        reports_list = (
+            [ReportReference.from_dict(r) for r in raw_reports]
+            if isinstance(raw_reports, list) else None
+        )
+
         return cls(
             execution=ExecutionInfo.from_dict(execution_dict),
             dataset=_opt(DatasetInfo, "dataset"),
@@ -390,7 +391,7 @@ class UniversalAnalysisResponse:
             prediction=_opt(PredictionSummary, "prediction"),
             prediction_explanation=_opt(PredictionExplanationSummary, "prediction_explanation"),
             decision=_opt(DecisionSummary, "decision"),
-            reports=_opt(ReportsBundle, "reports"),
+            reports=reports_list,
             warnings=list(d.get("warnings", [])),
             metadata=_opt(FrameworkMetadata, "metadata"),
         )

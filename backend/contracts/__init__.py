@@ -26,7 +26,7 @@ from .analysis_response import (
     PredictionSummary,
     PredictionExplanationSummary,
     DecisionSummary,
-    ReportsBundle,
+    ReportReference,
 )
 
 __all__ = [
@@ -43,5 +43,5 @@ __all__ = [
     "PredictionSummary",
     "PredictionExplanationSummary",
     "DecisionSummary",
-    "ReportsBundle",
+    "ReportReference",
 ]

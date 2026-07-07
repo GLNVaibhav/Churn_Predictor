@@ -6,12 +6,12 @@ from __future__ import annotations
 
 from backend.contracts import (
     ExecutionInfo, DatasetInfo, PipelineStageInfo, PipelineSummary,
-    FrameworkMetadata,
+    FrameworkMetadata, ReportReference,
 )
 from backend.contracts.analysis_response import (
     UniversalAnalysisResponse, CoverageSummary, ConceptConfidenceSummary,
-    QualitySummary, RoutingSummary, PredictionSummary,
-    PredictionExplanationSummary, DecisionSummary, ReportsBundle,
+    QualitySummary, RoutingSummary, PredictionSummary, PredictionExplanationSummary,
+    DecisionSummary, ReportReference,
 )
 
 
@@ -161,10 +161,64 @@ def test_decision_summary_round_trip():
     assert rebuilt == d
 
 
-def test_reports_bundle_round_trip():
-    rb = ReportsBundle(quality_report_text="quality ok", decision_report_text="decision text")
-    rebuilt = ReportsBundle.from_dict(rb.to_dict())
-    assert rebuilt == rb
+def test_report_reference_round_trip():
+    rr = ReportReference(
+        id="rep_123",
+        type="quality",
+        title="Quality Report",
+        created_at="2023-01-01T00:00:00Z",
+        location="s3://bucket/reports/rep_123.txt",
+    )
+    rebuilt = ReportReference.from_dict(rr.to_dict())
+    assert rebuilt == rr
+
+def test_universal_analysis_response_full_round_trip():
+    execution = ExecutionInfo.start(framework_version="1.0.0").mark_succeeded(42.0)
+    response = UniversalAnalysisResponse(
+        execution=execution,
+        dataset=DatasetInfo(filename="t.csv", sector="telecom"),
+        pipeline=PipelineSummary.from_stages([PipelineStageInfo(name="coverage", status="OK")]),
+        coverage=CoverageSummary(coverage_score=0.9, status="Green", coverage_band="Green"),
+        concept_confidence=ConceptConfidenceSummary(sector="telecom", overall_confidence=0.7),
+        quality=QualitySummary(overall_passed=True),
+        routing=RoutingSummary(selected_model="FULL_SECTOR_MODEL"),
+        prediction=PredictionSummary(rows=5, predicted_churners=2),
+        prediction_explanation=PredictionExplanationSummary(headline="HIGH CHURN"),
+        decision=DecisionSummary(decision_readiness="READY"),
+        reports=[
+            ReportReference(
+                id="rep_1",
+                type="quality",
+                title="Quality Report",
+                created_at="2023-01-01T00:00:00Z",
+                location="/tmp/quality.txt",
+            ),
+            ReportReference(
+                id="rep_2",
+                type="decision",
+                title="Decision Report",
+                created_at="2023-01-01T00:00:00Z",
+                location="/tmp/decision.txt",
+            ),
+        ],
+        warnings=["some warning"],
+        metadata=FrameworkMetadata(framework_version="1.0.0"),
+    )
+    d = response.to_dict()
+    rebuilt = UniversalAnalysisResponse.from_dict(d)
+    assert rebuilt.execution.execution_id == execution.execution_id
+    assert rebuilt.dataset.sector == "telecom"
+    assert rebuilt.coverage.coverage_score == 0.9
+    assert rebuilt.concept_confidence.overall_confidence == 0.7
+    assert rebuilt.quality.overall_passed is True
+    assert rebuilt.routing.selected_model == "FULL_SECTOR_MODEL"
+    assert rebuilt.prediction.rows == 5
+    assert rebuilt.prediction_explanation.headline == "HIGH CHURN"
+    assert rebuilt.decision.decision_readiness == "READY"
+    assert rebuilt.reports[0].id == "rep_1"
+    assert rebuilt.reports[1].type == "decision"
+    assert rebuilt.warnings == ["some warning"]
+    assert rebuilt.metadata.framework_version == "1.0.0"
 
 
 # ── UniversalAnalysisResponse ────────────────────────────────────
@@ -190,7 +244,15 @@ def test_universal_analysis_response_full_round_trip():
         prediction=PredictionSummary(rows=5, predicted_churners=2),
         prediction_explanation=PredictionExplanationSummary(headline="HIGH CHURN"),
         decision=DecisionSummary(decision_readiness="READY"),
-        reports=ReportsBundle(quality_report_text="ok"),
+        reports=[
+            ReportReference(
+                id="rep_1",
+                type="quality",
+                title="Quality",
+                created_at="2023-01-01T00:00:00Z",
+                location="/tmp/quality.txt",
+            ),
+        ],
         warnings=["some warning"],
         metadata=FrameworkMetadata(framework_version="1.0.0"),
     )

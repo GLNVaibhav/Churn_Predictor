@@ -50,7 +50,7 @@ from ..contracts.analysis_response import (
     PredictionSummary,
     PredictionExplanationSummary,
     DecisionSummary,
-    ReportsBundle,
+    ReportReference,
 )
 from ..contracts.execution import ExecutionInfo
 from ..contracts.dataset import DatasetInfo
@@ -253,22 +253,33 @@ class FrameworkMapper:
             warnings=list(safe_get(assessment, "warnings", []) or []),
         )
 
-    # ── reports (pre-rendered text) ─────────────────────────────
+    # ── reports (independent references) ─────────────────────────
 
-    def map_reports(self, report_texts: Optional[Dict[str, str]]) -> Optional[ReportsBundle]:
+    def map_reports(
+        self, report_texts: Optional[Dict[str, str]], execution_id: str
+    ) -> Optional[List[ReportReference]]:
         """
-        ``report_texts`` is a plain dict of already-generated report
-        strings, keyed by the same names ``ReportsBundle`` exposes
-        (e.g. ``{'quality_report_text': quality_gate.generate...(),
-        'decision_report_text': decision_report.generate_decision_report(assessment)}``).
-        This mapper does not call any ``generate_*``/``print_*``
-        function itself — the caller renders text using the
-        framework's own printers/generators and hands the strings
-        here.
+        Build the list of ReportReference objects.
         """
         if not report_texts:
             return None
-        return ReportsBundle.from_dict(report_texts)
+        from datetime import datetime, timezone
+        now_str = datetime.now(timezone.utc).isoformat()
+        refs = []
+        for key, text in report_texts.items():
+            if not text:
+                continue
+            report_type = key.replace("_text", "")
+            report_id = f"{execution_id}_{report_type}"
+            title = report_type.replace("_", " ").title()
+            refs.append(ReportReference(
+                id=report_id,
+                type=report_type,
+                title=title,
+                created_at=now_str,
+                location=f"/reports/{report_id}"
+            ))
+        return refs
 
     # ── warnings roll-up ─────────────────────────────────────────
 
@@ -340,7 +351,7 @@ class FrameworkMapper:
         prediction_summary = self.map_prediction(results)
         explanation_summary = self.map_prediction_explanation(explanation_report)
         decision_summary = self.map_decision(decision_assessment)
-        reports_bundle = self.map_reports(report_texts)
+        reports_list = self.map_reports(report_texts, execution.execution_id)
 
         warnings = self.collect_warnings(
             routing_summary=routing_summary,
@@ -360,7 +371,7 @@ class FrameworkMapper:
             prediction=prediction_summary,
             prediction_explanation=explanation_summary,
             decision=decision_summary,
-            reports=reports_bundle,
+            reports=reports_list,
             warnings=warnings,
             metadata=metadata,
         )
