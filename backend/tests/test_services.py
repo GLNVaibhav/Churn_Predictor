@@ -1,0 +1,104 @@
+"""
+Integration tests for backend.services (AnalysisService, PipelineService,
+ReportService). Like test_framework_adapter.py, these exercise the real
+universal_churn pipeline against golden datasets and skip when the
+required trained artifacts aren't present in this environment.
+"""
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from backend.contracts import UniversalAnalysisResponse
+from backend.exceptions import ServiceInitializationError
+from backend.services import AnalysisService, PipelineService, ReportService
+
+UNIVERSAL_MODEL_PATH = Path("outputs/universal/universal_xgb_model.pkl")
+requires_models = pytest.mark.skipif(
+    not UNIVERSAL_MODEL_PATH.exists(),
+    reason="universal model artifact not trained in this environment",
+)
+
+GOLDEN_TELECOM = "tests/golden_telecom.csv"
+
+
+# ── AnalysisService ──────────────────────────────────────────────
+
+def test_analysis_service_requires_initialize():
+    service = AnalysisService()
+    with pytest.raises(ServiceInitializationError):
+        service.execute(input_path=GOLDEN_TELECOM, mode="auto")
+
+
+@requires_models
+def test_analysis_service_execute_returns_valid_response():
+    service = AnalysisService().initialize()
+    response = service.execute(input_path=GOLDEN_TELECOM, mode="auto")
+    assert isinstance(response, UniversalAnalysisResponse)
+    assert response.execution.status == "SUCCEEDED"
+    assert response.dataset.sector is not None
+    assert response.coverage is not None
+    assert response.routing is not None
+    service.shutdown()
+
+
+@requires_models
+def test_analysis_service_execute_with_reports():
+    service = AnalysisService().initialize()
+    response = service.execute(input_path=GOLDEN_TELECOM, mode="auto", include_reports=True)
+    if response.routing and response.routing.selected_model != "CRITICAL_UNRELIABLE":
+        assert response.reports is not None
+
+
+@requires_models
+def test_analysis_service_response_is_json_serializable():
+    import json
+    service = AnalysisService().initialize()
+    response = service.execute(input_path=GOLDEN_TELECOM, mode="auto")
+    payload = json.dumps(response.to_dict())
+    assert response.execution.execution_id in payload
+
+
+def test_analysis_service_wraps_framework_errors():
+    from backend.exceptions import FrameworkExecutionError
+    service = AnalysisService().initialize()
+    with pytest.raises(FrameworkExecutionError):
+        service.execute(input_path="does_not_exist.csv", mode="auto")
+
+
+# ── PipelineService ──────────────────────────────────────────────
+
+def test_pipeline_service_requires_initialize():
+    service = PipelineService()
+    with pytest.raises(ServiceInitializationError):
+        service.list_models()
+
+
+def test_pipeline_service_lists_known_models():
+    service = PipelineService().initialize()
+    models = service.list_models()
+    names = {m.model_name for m in models}
+    assert "universal_cross_sector_model" in names
+    assert any(name.endswith("_sector_model") for name in names)
+
+
+def test_pipeline_service_summary_counts_match_registry():
+    service = PipelineService().initialize()
+    models = service.list_models()
+    summary = service.summary()
+    assert summary.total_stages == len(models)
+
+
+# ── ReportService ────────────────────────────────────────────────
+
+def test_report_service_degrades_gracefully_on_missing_inputs():
+    from types import SimpleNamespace
+    service = ReportService()
+    fake_result = SimpleNamespace(
+        quality=None, routing_decision=None, results=None,
+        coverage=None, sector="telecom", explanation_report=None,
+        decision_assessment=None,
+    )
+    texts = service.generate_reports(fake_result)
+    assert texts == {}
