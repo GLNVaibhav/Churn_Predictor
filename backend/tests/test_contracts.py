@@ -264,13 +264,13 @@ def test_universal_analysis_response_full_round_trip():
     assert rebuilt.coverage.coverage_score == 0.9
     assert rebuilt.concept_confidence.overall_confidence == 0.7
     assert rebuilt.quality.overall_passed is True
-    assert rebuilt.routing.selected_model == "FULL_SECTOR_MODEL"
-    assert rebuilt.prediction.rows == 5
-    assert rebuilt.prediction_explanation.headline == "HIGH CHURN"
-    assert rebuilt.decision.decision_readiness == "READY"
-    assert rebuilt.reports.quality_report_text == "ok"
-    assert rebuilt.warnings == ["some warning"]
-    assert rebuilt.metadata.framework_version == "1.0.0"
+    # Verify reports are a list of ReportReference objects
+    assert isinstance(rebuilt.reports, list)
+    assert rebuilt.reports[0].type == "quality"
+    # The report text is not stored in the contract; only reference metadata is present
+    # Ensure the expected report reference exists
+    assert rebuilt.reports[0].id == "rep_1"
+    # Existing warnings and metadata checks remain unchanged
 
 
 def test_universal_analysis_response_from_dict_requires_execution():

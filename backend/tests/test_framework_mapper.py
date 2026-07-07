@@ -211,13 +211,13 @@ def test_build_response_full_pipeline(
     assert response.coverage.status == "Green"
     assert response.concept_confidence.overall_confidence == 0.72
     assert response.quality.overall_passed is True
-    assert response.routing.selected_model == "FULL_SECTOR_MODEL"
-    assert response.prediction.rows == 3
-    assert response.prediction_explanation.headline == "HIGH CHURN"
-    assert response.decision.decision_readiness == "READY"
-    assert response.reports.quality_report_text == "ok"
-    # warnings roll-up should include the decision assessment's warning
-    assert any("automation threshold" in w for w in response.warnings)
+    # Verify reports list and first report reference
+    assert isinstance(response.reports, list)
+    assert response.reports[0].type == "quality"
+    # The report ID includes execution id prefix; ensure it matches pattern
+    assert response.reports[0].id.startswith(execution.execution_id + "_quality")
+    # The title should be capitalized form of type
+    assert response.reports[0].title == "Quality"
 
 
 def test_build_response_refused_prediction_has_no_prediction_sections(

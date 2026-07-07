@@ -1,0 +1,97 @@
+{
+  "upload_id": "9ad225f4c6b6491d90c7e063900089f3",
+  "filename": "ecommerce_test.csv",
+  "rows": 5,
+  "columns": 10,
+  "null_counts": {
+    "CustomerID": 0,
+    "Tenure": 0,
+    "WarehouseToHome": 0,
+    "HourSpendOnApp": 0,
+    "NumberOfDeviceRegistered": 0,
+    "SatisfactionScore": 0,
+    "DaySinceLastOrder": 0,
+    "Complain": 0,
+    "CashbackAmount": 0,
+    "Churn": 0
+  },
+  "dtypes": {
+    "CustomerID": "str",
+    "Tenure": "int64",
+    "WarehouseToHome": "int64",
+    "HourSpendOnApp": "int64",
+    "NumberOfDeviceRegistered": "int64",
+    "SatisfactionScore": "int64",
+    "DaySinceLastOrder": "int64",
+    "Complain": "int64",
+    "CashbackAmount": "float64",
+    "Churn": "int64"
+  },
+  "preview_rows": [
+    {
+      "CustomerID": "ADV_ECO_01",
+      "Tenure": 0,
+      "WarehouseToHome": 35,
+      "HourSpendOnApp": 2,
+      "NumberOfDeviceRegistered": 5,
+      "SatisfactionScore": 1,
+      "DaySinceLastOrder": 45,
+      "Complain": 1,
+      "CashbackAmount": 500.0,
+      "Churn": 0
+    },
+    {
+      "CustomerID": "ADV_ECO_02",
+      "Tenure": 48,
+      "WarehouseToHome": 8,
+      "HourSpendOnApp": 1,
+      "NumberOfDeviceRegistered": 1,
+      "SatisfactionScore": 3,
+      "DaySinceLastOrder": 90,
+      "Complain": 0,
+      "CashbackAmount": 0.0,
+      "Churn": 1
+    },
+    {
+      "CustomerID": "ADV_ECO_03",
+      "Tenure": 1,
+      "WarehouseToHome": 5,
+      "HourSpendOnApp": 5,
+      "NumberOfDeviceRegistered": 2,
+      "SatisfactionScore": 5,
+      "DaySinceLastOrder": 2,
+      "Complain": 1,
+      "CashbackAmount": 150.0,
+      "Churn": 0
+    },
+    {
+      "CustomerID": "ADV_ECO_04",
+      "Tenure": 24,
+      "WarehouseToHome": 33,
+      "HourSpendOnApp": 4,
+      "NumberOfDeviceRegistered": 4,
+      "SatisfactionScore": 1,
+      "DaySinceLastOrder": 3,
+      "Complain": 0,
+      "CashbackAmount": 0.0,
+      "Churn": 1
+    },
+    {
+      "CustomerID": "ADV_ECO_05",
+      "Tenure": 14,
+      "WarehouseToHome": 12,
+      "HourSpendOnApp": 3,
+      "NumberOfDeviceRegistered": 3,
+      "SatisfactionScore": 2,
+      "DaySinceLastOrder": 14,
+      "Complain": 1,
+      "CashbackAmount": 10.0,
+      "Churn": 1
+    }
+  ],
+  "sector": "ecommerce",
+  "coverage_score": null,
+  "concept_confidence": null,
+  "warnings": [],
+  "created_at": "2026-07-07T13:24:01.274313Z"
+}

@@ -269,7 +269,7 @@ class FrameworkMapper:
         for key, text in report_texts.items():
             if not text:
                 continue
-            report_type = key.replace("_text", "")
+            report_type = key.replace("_report_text", "")
             report_id = f"{execution_id}_{report_type}"
             title = report_type.replace("_", " ").title()
             refs.append(ReportReference(
