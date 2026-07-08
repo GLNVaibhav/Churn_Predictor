@@ -1,0 +1,6 @@
+Patient_ID,Membership_Duration,Monthly Subscription Fee,Invoice Problems,Clinic Visits Last Year,Overall Experience,Doctor Rating,Nurse Rating,Waiting Experience,Last Appointment Days Ago,Patient Portal Activity,Referral Count,Distance to Clinic,Sex,Province,Churned
+1001,24,3500,1,12,4.5,4.7,4.6,4.2,20,18,3,5,Male,AP,0
+1002,6,1800,5,3,2.9,3.2,3.1,2.8,120,2,0,28,Female,TS,1
+1003,48,5200,0,20,4.9,5.0,4.8,4.9,5,32,6,2,Male,KA,0
+1004,12,2400,3,7,3.4,3.8,3.5,3.2,70,8,1,14,Female,TN,1
+1005,36,4100,1,15,4.3,4.5,4.4,4.1,12,25,5,6,Male,MH,0

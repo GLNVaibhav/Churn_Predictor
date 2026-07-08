@@ -1,0 +1,225 @@
+{
+  "execution_id": "4b6096707d34472bb6e0665a25b77de3",
+  "status": "SUCCEEDED",
+  "started_at": "2026-07-08 03:53:23 UTC",
+  "completed_at": "2026-07-08 03:53:23 UTC",
+  "execution_time_ms": null,
+  "framework_version": null,
+  "execution": {
+    "execution_id": "4b6096707d34472bb6e0665a25b77de3",
+    "status": "SUCCEEDED",
+    "started_at": "2026-07-08 03:53:23 UTC",
+    "completed_at": "2026-07-08 03:53:23 UTC",
+    "execution_time_ms": 674.91,
+    "framework_version": "1.0.0"
+  },
+  "dataset": {
+    "filename": "C:\\Users\\DELL\\OneDrive\\Documents\\SRM\\Churn_Analysis\\data\\uploads\\044df69767004e80b786b1e383313f80\\healthcare_semantic.csv",
+    "sector": "healthcare",
+    "prediction_mode": "auto",
+    "rows": 5,
+    "columns": null,
+    "schema_version": null
+  },
+  "pipeline": null,
+  "coverage": {
+    "coverage_score": 0.4035,
+    "status": "Red",
+    "coverage_band": "Red",
+    "missing_critical": [
+      "Days_Since_Last_Visit",
+      "Billing_Issues",
+      "Age",
+      "Missed_Appointments"
+    ],
+    "missing_high_impact": [
+      "Distance_To_Facility_Miles",
+      "Tenure_Months"
+    ],
+    "missing_all": [
+      "Days_Since_Last_Visit",
+      "Billing_Issues",
+      "Age",
+      "Missed_Appointments",
+      "Distance_To_Facility_Miles",
+      "Tenure_Months",
+      "Portal_Usage",
+      "Referrals_Made",
+      "Insurance_Type",
+      "Specialty",
+      "Gender",
+      "State"
+    ],
+    "recovered_features": [],
+    "semantic_matches": [
+      "Overall_Satisfaction",
+      "Visits_Last_Year",
+      "Avg_Out_Of_Pocket_Cost",
+      "Wait_Time_Satisfaction",
+      "Staff_Satisfaction",
+      "Provider_Rating"
+    ]
+  },
+  "concept_confidence": {
+    "sector": "healthcare",
+    "overall_confidence": 0.464,
+    "reconstructable_concepts": 3,
+    "total_concepts": 5,
+    "concepts_reconstructable": true,
+    "per_concept": {
+      "RECURRING_COMMITMENT": {
+        "confidence": 0.8,
+        "reconstructable": true,
+        "reason": "Reconstructed from resolved canonical field.",
+        "canonical_field": "Recurring_Cost",
+        "source_confidence": 1.0,
+        "resolution_confidence": 0.8
+      },
+      "CUSTOMER_LOYALTY": {
+        "confidence": 0.0,
+        "reconstructable": false,
+        "reason": "Canonical field 'Tenure_Raw' did not resolve from any column in this input.",
+        "canonical_field": "Tenure_Raw",
+        "source_confidence": 1.0,
+        "resolution_confidence": 0.0
+      },
+      "SUPPORT_FRICTION": {
+        "confidence": 0.0,
+        "reconstructable": false,
+        "reason": "Canonical field 'Support_Contacts' did not resolve from any column in this input.",
+        "canonical_field": "Support_Contacts",
+        "source_confidence": 0.9,
+        "resolution_confidence": 0.0
+      },
+      "ENGAGEMENT_LEVEL": {
+        "confidence": 0.72,
+        "reconstructable": true,
+        "reason": "Reconstructed from resolved canonical field.",
+        "canonical_field": "Engagement_Volume",
+        "source_confidence": 0.9,
+        "resolution_confidence": 0.8
+      },
+      "SATISFACTION_SIGNAL": {
+        "confidence": 0.8,
+        "reconstructable": true,
+        "reason": "Reconstructed from resolved canonical field.",
+        "canonical_field": "Satisfaction_Raw",
+        "source_confidence": 1.0,
+        "resolution_confidence": 0.8
+      }
+    }
+  },
+  "quality": {
+    "overall_passed": true,
+    "leakage_detected": false,
+    "leakage_flagged": [],
+    "leakage_warned": [],
+    "failed_columns": []
+  },
+  "routing": {
+    "selected_model": "UNIVERSAL_MODEL",
+    "selected_pipeline": "UniversalPipeline",
+    "prediction_mode": "PredictionMode.AUTO",
+    "routing_reason": "Auto mode — coverage is Red (40.4% < 60%), but business concepts remain reconstructable (concept confidence 46.4%). Missing critical features: ['Days_Since_Last_Visit', 'Billing_Issues', 'Age', 'Missed_Appointments']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+    "coverage_score": 0.4035,
+    "coverage_band": "Red",
+    "quality_score": 1.0,
+    "quality_status": "GOOD",
+    "concept_confidence": 0.464,
+    "reliability": "Low",
+    "model_artifact": "universal",
+    "warnings": [
+      "Coverage is Red (40.4%) but business concepts are still reconstructable (concept confidence 46.4%) — routed to the universal model instead of refusing outright."
+    ]
+  },
+  "prediction": {
+    "rows": 5,
+    "predicted_churners": 5,
+    "average_probability": 0.9187,
+    "risk_distribution": {
+      "High": 5
+    },
+    "prediction_model": "Universal XGBoost",
+    "prediction_mode": "Auto"
+  },
+  "prediction_explanation": {
+    "headline": "HIGH CHURN",
+    "reason_text": "No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 80% concept confidence). Weakest evidenced signal: ENGAGEMENT_LEVEL (MEDIUM, 72% concept confidence). Insufficient evidence to reason about: CUSTOMER_LOYALTY, SUPPORT_FRICTION. Feature coverage was Red (40.4%). Overall concept confidence was 46.4% (3/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (40.4% < 60%), but business concepts remain reconstructable (concept confidence 46.4%). Missing critical features: ['Days_Since_Last_Visit', 'Billing_Issues', 'Age', 'Missed_Appointments']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+    "recommendation_text": "No specific recommendation available.",
+    "overall_business_health": "MEDIUM",
+    "overall_customer_risk": "LOW",
+    "dominant_findings": []
+  },
+  "decision": {
+    "decision_readiness": "REVIEW",
+    "overall_confidence": 0.5279,
+    "business_confidence": 0.488,
+    "technical_confidence": 0.5678,
+    "evidence_strength": 0.5619,
+    "risk_level": "LOW",
+    "recommended_action": "Review prediction manually before acting — evidence is present but not yet strong enough to automate.",
+    "warnings": [
+      "Coverage is Red (40.4%) but business concepts are still reconstructable (concept confidence 46.4%) — routed to the universal model instead of refusing outright."
+    ]
+  },
+  "reports": [
+    {
+      "id": "exec_301fe78d74ee4b88b4f90cd142c7964f_quality",
+      "type": "quality",
+      "title": "Quality",
+      "created_at": "2026-07-08T03:53:23.952772+00:00",
+      "location": "/reports/exec_301fe78d74ee4b88b4f90cd142c7964f_quality"
+    },
+    {
+      "id": "exec_301fe78d74ee4b88b4f90cd142c7964f_routing",
+      "type": "routing",
+      "title": "Routing",
+      "created_at": "2026-07-08T03:53:23.952772+00:00",
+      "location": "/reports/exec_301fe78d74ee4b88b4f90cd142c7964f_routing"
+    },
+    {
+      "id": "exec_301fe78d74ee4b88b4f90cd142c7964f_prediction_quality",
+      "type": "prediction_quality",
+      "title": "Prediction Quality",
+      "created_at": "2026-07-08T03:53:23.952772+00:00",
+      "location": "/reports/exec_301fe78d74ee4b88b4f90cd142c7964f_prediction_quality"
+    },
+    {
+      "id": "exec_301fe78d74ee4b88b4f90cd142c7964f_business_reasoning",
+      "type": "business_reasoning",
+      "title": "Business Reasoning",
+      "created_at": "2026-07-08T03:53:23.952772+00:00",
+      "location": "/reports/exec_301fe78d74ee4b88b4f90cd142c7964f_business_reasoning"
+    },
+    {
+      "id": "exec_301fe78d74ee4b88b4f90cd142c7964f_decision",
+      "type": "decision",
+      "title": "Decision",
+      "created_at": "2026-07-08T03:53:23.952772+00:00",
+      "location": "/reports/exec_301fe78d74ee4b88b4f90cd142c7964f_decision"
+    }
+  ],
+  "warnings": [
+    "Coverage is Red (40.4%) but business concepts are still reconstructable (concept confidence 46.4%) — routed to the universal model instead of refusing outright."
+  ],
+  "metadata": null,
+  "context": {
+    "execution_id": "4b6096707d34472bb6e0665a25b77de3",
+    "filename": "C:\\Users\\DELL\\OneDrive\\Documents\\SRM\\Churn_Analysis\\data\\uploads\\044df69767004e80b786b1e383313f80\\healthcare_semantic.csv",
+    "sector": "healthcare",
+    "status": "SUCCEEDED"
+  },
+  "pipeline_state": {},
+  "events": [
+    {
+      "type": "analysis_started",
+      "status": "RUNNING",
+      "message": "Execution started"
+    },
+    {
+      "type": "analysis_completed",
+      "status": "SUCCEEDED",
+      "message": "Execution completed"
+    }
+  ]
+}
