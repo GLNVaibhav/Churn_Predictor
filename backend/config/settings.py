@@ -19,10 +19,11 @@ FRAMEWORK_VERSION = "1.0.0"
 RUNTIME_VERSION = "1.0.0"
 API_VERSION = "v1"
 
-# CORS allowed origins for development
+# CORS allowed origins for local development and deployed frontend
 CORS_ORIGINS = [
-    "http://localhost:5000",
-    "http://127.0.0.1:5000",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://churnframework.vercel.app",
 ]
 
 # Limits
