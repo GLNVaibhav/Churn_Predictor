@@ -9,6 +9,9 @@ class ExecutionSummaryResponse(BaseModel):
     created_at: str | None = None
     started_at: str | None = None
     completed_at: str | None = None
+    execution_time_ms: float | None = None
+    filename: str | None = None
+    sector: str | None = None
     progress: float | int | None = None
 
 
@@ -28,6 +31,10 @@ class ReportsResponse(BaseModel):
     reports: list[dict[str, Any]]
 
 
+class ReportTextsResponse(BaseModel):
+    report_texts: dict[str, str]
+
+
 class DecisionResponse(BaseModel):
     decision: dict[str, Any]
 
@@ -38,3 +45,12 @@ class ContextResponse(BaseModel):
 
 class EventsResponse(BaseModel):
     events: list[dict[str, Any]]
+
+
+class DiagnosticsResponse(BaseModel):
+    diagnostics: dict[str, Any]
+    execution_state: dict[str, Any]
+
+
+class FeatureEngineeringResponse(BaseModel):
+    feature_engineering: dict[str, Any]

@@ -1,7 +1,7 @@
 """
 backend.services.analysis_service
 ══════════════════════════════════════════════════════════════════════
-``AnalysisService`` — orchestrator only (Sprint 3).
+``AnalysisService`` — orchestrator only (Sprint 3 / Phase II).
 
 Responsibilities:
     - validate request (via ``initialize()`` lifecycle)
@@ -9,10 +9,7 @@ Responsibilities:
     - measure execution time / create ``ExecutionInfo``
     - apply Type-B presentation aggregation (KPI roll-ups)
     - call ``FrameworkMapper`` (pure translation → API DTO)
-    - return ``UniversalAnalysisResponse``
-
-Forbidden:
-    - prediction / routing / coverage / quality / report generation logic
+    - return ``AnalysisRunBundle`` for platform enrichment
 """
 from __future__ import annotations
 
@@ -20,27 +17,17 @@ import time
 from typing import Optional
 
 from ..adapters import FrameworkAdapter
-from ..contracts import (
-    ExecutionInfo, DatasetInfo, UniversalAnalysisResponse,
-)
+from ..contracts import ExecutionInfo, DatasetInfo
 from ..exceptions import FrameworkExecutionError, ServiceInitializationError
 from ..mappers import FrameworkMapper
 from ..models.execution_result import ExecutionResult
 from ..presentation import build_prediction_summary
+from .analysis_run import AnalysisRunBundle
 from .report_service import ReportService
 
 
 class AnalysisService:
-    """
-    Orchestrator — wires adapter, presentation, mapper, and reports.
-
-    Usage::
-
-        service = AnalysisService()
-        service.initialize()
-        response = service.execute(input_path="tests/golden_telecom.csv", mode="auto")
-        service.shutdown()
-    """
+    """Orchestrator — wires adapter, presentation, mapper, and reports."""
 
     def __init__(
         self,
@@ -84,10 +71,8 @@ class AnalysisService:
         mode: str = "auto",
         explain: bool = False,
         include_reports: bool = False,
-    ) -> UniversalAnalysisResponse:
-        """
-        Run one analysis end-to-end and return the public contract.
-        """
+    ) -> AnalysisRunBundle:
+        """Run one analysis end-to-end; returns response + execution snapshot."""
         self._require_initialized()
 
         execution = ExecutionInfo.start(framework_version=self._framework_version)
@@ -98,7 +83,7 @@ class AnalysisService:
                 input_path=input_path, sector=sector, mode=mode, explain=explain,
             )
         except Exception as exc:
-            execution = execution.mark_failed(
+            execution.mark_failed(
                 execution_time_ms=round((time.perf_counter() - start) * 1000, 2)
             )
             raise FrameworkExecutionError(
@@ -127,13 +112,30 @@ class AnalysisService:
             else None
         )
 
-        # Type-B presentation aggregation (KPI roll-ups for dashboard cards)
         prediction_summary = build_prediction_summary(execution_result.results_df)
 
-        return self._mapper.build_response(
+        metadata = None
+        try:
+            from ..mappers.platform_enricher import build_framework_metadata
+            metadata = build_framework_metadata(sector=execution_result.sector)
+        except Exception:
+            pass
+
+        pipeline = None
+        try:
+            from ..mappers.platform_enricher import build_pipeline_summary
+            pipeline = build_pipeline_summary(execution_result)
+        except Exception:
+            pass
+
+        response = self._mapper.build_response(
             execution=execution,
             execution_result=execution_result,
             dataset=dataset,
             prediction_summary=prediction_summary,
+            metadata=metadata,
+            pipeline=pipeline,
             extra_warnings=extra_warnings,
         )
+
+        return AnalysisRunBundle(response=response, execution_result=execution_result)

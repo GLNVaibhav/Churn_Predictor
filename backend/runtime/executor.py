@@ -1,6 +1,11 @@
 import asyncio
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+
+from ..mappers.platform_enricher import enrich_platform_payload
+from ..models.execution_record import ExecutionEvent, ExecutionRecord
 from ..services.analysis_service import AnalysisService
+from ..utils import utc_timestamp
+
 
 async def run_analysis_task(
     execution_id: str,
@@ -10,24 +15,20 @@ async def run_analysis_task(
     mode: str = "auto",
     explain: bool = False,
     include_reports: bool = False,
+    upload_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Background coroutine invoked by :class:`ExecutionManager`.
 
-    It performs a full analysis using :class:`AnalysisService` and returns a
-    serialisable dictionary representing the final execution payload. The
-    ``cancel_event`` can be checked periodically for graceful termination –
-    the current implementation does not support mid‑pipeline cancellation
-    because the underlying ``AnalysisService`` runs synchronously, but the
-    flag is kept for future fine‑grained support.
+    Runs analysis, builds ``ExecutionRecord``, and returns the full
+    platform payload for persistence.
     """
-    # Early cancellation check before starting heavy work
     if cancel_event.is_set():
         raise asyncio.CancelledError()
 
     service = AnalysisService()
     service.initialize()
     try:
-        response = service.execute(
+        bundle = service.execute(
             input_path=input_path,
             sector=sector,
             mode=mode,
@@ -37,24 +38,53 @@ async def run_analysis_task(
     finally:
         service.shutdown()
 
-    # ``UniversalAnalysisResponse`` provides ``to_dict`` for JSON export
-    payload = response.to_dict()
-    # Ensure the execution_id in the payload matches the manager's id
-    if "execution" in payload and isinstance(payload["execution"], dict):
-        payload["execution"]["execution_id"] = execution_id
-    else:
-        payload["execution_id"] = execution_id
-    dataset = payload.get("dataset") or {}
+    payload = enrich_platform_payload(
+        bundle.response,
+        bundle.execution_result,
+        upload_id=upload_id,
+    )
+
     execution = payload.get("execution") or {}
-    payload["context"] = {
-        "execution_id": execution_id,
-        "filename": dataset.get("filename"),
-        "sector": dataset.get("sector"),
-        "status": execution.get("status", "SUCCEEDED"),
-    }
-    payload["pipeline_state"] = payload.get("pipeline") or {}
-    payload["events"] = [
-        {"type": "analysis_started", "status": "RUNNING", "message": "Execution started"},
-        {"type": "analysis_completed", "status": execution.get("status", "SUCCEEDED"), "message": "Execution completed"},
+    if isinstance(execution, dict):
+        execution["execution_id"] = execution_id
+        payload["execution"] = execution
+
+    started_at = execution.get("started_at") if isinstance(execution, dict) else None
+    completed_at = execution.get("completed_at") if isinstance(execution, dict) else None
+    status = execution.get("status", "SUCCEEDED") if isinstance(execution, dict) else "SUCCEEDED"
+
+    events = [
+        ExecutionEvent(
+            type="analysis_started", status="RUNNING",
+            message="Execution started", timestamp=started_at,
+        ),
+        ExecutionEvent(
+            type="analysis_completed", status=status,
+            message="Execution completed", timestamp=completed_at or utc_timestamp(),
+        ),
     ]
-    return payload
+
+    record = ExecutionRecord(
+        execution_id=execution_id,
+        status=status,
+        created_at=started_at or utc_timestamp(),
+        started_at=started_at,
+        completed_at=completed_at,
+        execution_time_ms=execution.get("execution_time_ms") if isinstance(execution, dict) else None,
+        upload_id=upload_id,
+        dataset=payload.get("dataset"),
+        events=events,
+        artifacts={"input_path": input_path, "mode": mode},
+        diagnostics=payload.get("diagnostics"),
+        report_texts=payload.get("report_texts"),
+        result=payload,
+        execution_result=payload.get("execution_result"),
+        context={
+            "execution_id": execution_id,
+            "filename": (payload.get("dataset") or {}).get("filename"),
+            "sector": (payload.get("dataset") or {}).get("sector"),
+            "status": status,
+        },
+    )
+
+    return record.to_dict()

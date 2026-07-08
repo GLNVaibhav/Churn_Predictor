@@ -49,6 +49,7 @@ async def start_analysis(
             mode=request.mode,
             explain=request.explain,
             include_reports=request.include_reports,
+            upload_id=request.upload_id,
         )
 
     execution_id = manager.start_execution(task_factory)

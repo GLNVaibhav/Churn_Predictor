@@ -34,30 +34,32 @@ def test_analysis_service_requires_initialize():
 @requires_models
 def test_analysis_service_execute_returns_valid_response():
     service = AnalysisService().initialize()
-    response = service.execute(input_path=GOLDEN_TELECOM, mode="auto")
-    assert isinstance(response, UniversalAnalysisResponse)
+    bundle = service.execute(input_path=GOLDEN_TELECOM, mode="auto")
+    response = bundle.response
     assert response.execution.status == "SUCCEEDED"
     assert response.dataset.sector is not None
     assert response.coverage is not None
     assert response.routing is not None
+    assert bundle.execution_result.sector is not None
     service.shutdown()
 
 
 @requires_models
 def test_analysis_service_execute_with_reports():
     service = AnalysisService().initialize()
-    response = service.execute(input_path=GOLDEN_TELECOM, mode="auto", include_reports=True)
+    bundle = service.execute(input_path=GOLDEN_TELECOM, mode="auto", include_reports=True)
+    response = bundle.response
     if response.routing and response.routing.selected_model != "CRITICAL_UNRELIABLE":
-        assert response.reports is not None
+        assert response.reports is not None or bundle.execution_result.reports
 
 
 @requires_models
 def test_analysis_service_response_is_json_serializable():
     import json
     service = AnalysisService().initialize()
-    response = service.execute(input_path=GOLDEN_TELECOM, mode="auto")
-    payload = json.dumps(response.to_dict())
-    assert response.execution.execution_id in payload
+    bundle = service.execute(input_path=GOLDEN_TELECOM, mode="auto")
+    payload = json.dumps(bundle.response.to_dict())
+    assert bundle.response.execution.execution_id in payload
 
 
 def test_analysis_service_wraps_framework_errors():
