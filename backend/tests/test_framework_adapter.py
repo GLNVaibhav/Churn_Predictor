@@ -17,7 +17,8 @@ from pathlib import Path
 
 import pytest
 
-from backend.adapters import FrameworkAdapter, FrameworkExecutionResult
+from backend.adapters import FrameworkAdapter
+from backend.models.execution_result import ExecutionResult
 
 GOLDEN = {
     "telecom": "tests/golden_telecom.csv",
@@ -48,7 +49,7 @@ def adapter() -> FrameworkAdapter:
 @requires_models
 def test_auto_mode_returns_execution_result(adapter):
     result = adapter.execute(input_path=GOLDEN["telecom"], mode="auto")
-    assert isinstance(result, FrameworkExecutionResult)
+    assert isinstance(result, ExecutionResult)
     assert result.sector == "telecom"
     assert result.mode == "auto"
     assert result.coverage is not None
@@ -61,10 +62,10 @@ def test_auto_mode_non_refused_has_results(adapter):
     result = adapter.execute(input_path=GOLDEN["ecommerce"], mode="auto")
     if result.refused:
         pytest.skip("routing refused this golden dataset in this environment")
-    assert result.results is not None
-    assert len(result.results) > 0
-    assert "Predicted_Churn" in result.results.columns
-    assert "Churn_Probability" in result.results.columns
+    assert result.results_df is not None
+    assert len(result.results_df) > 0
+    assert "Predicted_Churn" in result.results_df.columns
+    assert "Churn_Probability" in result.results_df.columns
 
 
 @requires_models
@@ -75,7 +76,7 @@ def test_sector_mode_matches_detected_sector(adapter):
     assert result.sector == "banking"
     assert result.mode == "sector"
     if not result.refused:
-        assert result.results is not None
+        assert result.results_df is not None
         assert result.routing_decision is not None
         assert result.routing_decision.selected_model.value == "FULL_SECTOR_MODEL"
 
@@ -86,7 +87,7 @@ def test_universal_mode_runs_for_any_sector(adapter):
     assert result.sector == "healthcare"
     assert result.mode == "universal"
     if not result.refused:
-        assert result.results is not None
+        assert result.results_df is not None
         assert result.routing_decision.selected_model.value == "UNIVERSAL_MODEL"
 
 
@@ -107,5 +108,5 @@ def test_enrichment_attaches_explanation_and_decision(adapter):
         pytest.skip("routing refused this golden dataset in this environment")
     # explanation/decision enrichment is best-effort — assert it at
     # least ran without raising and (when successful) is attached.
-    assert result.explanation_report is None or hasattr(result.explanation_report, "reasoning_report")
-    assert result.decision_assessment is None or hasattr(result.decision_assessment, "decision_readiness")
+    assert result.reasoning is None or hasattr(result.reasoning, "reasoning_report")
+    assert result.decision is None or hasattr(result.decision, "decision_readiness")

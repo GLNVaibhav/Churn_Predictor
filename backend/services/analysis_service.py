@@ -1,56 +1,45 @@
 """
 backend.services.analysis_service
 ══════════════════════════════════════════════════════════════════════
-``AnalysisService`` — the primary Sprint 2 service: run one full
-analysis and return a ``UniversalAnalysisResponse``.
+``AnalysisService`` — orchestrator only (Sprint 3).
 
-Layering
---------
-::
+Responsibilities:
+    - validate request (via ``initialize()`` lifecycle)
+    - call ``FrameworkAdapter`` (framework executes exactly once)
+    - measure execution time / create ``ExecutionInfo``
+    - apply Type-B presentation aggregation (KPI roll-ups)
+    - call ``FrameworkMapper`` (pure translation → API DTO)
+    - return ``UniversalAnalysisResponse``
 
-    AnalysisService
-        -> FrameworkAdapter   (calls universal_churn, returns raw objects)
-        -> FrameworkMapper    (raw objects -> UniversalAnalysisResponse)
-
-This class adds exactly two things neither of those layers has on its
-own: execution lifecycle (``ExecutionInfo`` timing/status) and a
-single, stable exception type (``FrameworkExecutionError``) for
-anything that goes wrong in the framework call itself. It computes
-nothing else — every value in the returned response was already
-produced by ``universal_churn`` and reshaped, unmodified, by
-``FrameworkMapper``.
+Forbidden:
+    - prediction / routing / coverage / quality / report generation logic
 """
 from __future__ import annotations
 
 import time
 from typing import Optional
 
-from ..adapters import FrameworkAdapter, FrameworkExecutionResult
+from ..adapters import FrameworkAdapter
 from ..contracts import (
     ExecutionInfo, DatasetInfo, UniversalAnalysisResponse,
 )
 from ..exceptions import FrameworkExecutionError, ServiceInitializationError
 from ..mappers import FrameworkMapper
+from ..models.execution_result import ExecutionResult
+from ..presentation import build_prediction_summary
 from .report_service import ReportService
 
 
 class AnalysisService:
     """
-    Usage
-    -----
+    Orchestrator — wires adapter, presentation, mapper, and reports.
+
+    Usage::
+
         service = AnalysisService()
         service.initialize()
         response = service.execute(input_path="tests/golden_telecom.csv", mode="auto")
         service.shutdown()
-
-    ``initialize()`` / ``shutdown()`` model an explicit lifecycle so a
-    future long-lived host (a FastAPI app's startup/shutdown hooks —
-    see docs/BACKEND_INTEGRATION.md's Sprint 2 plan) has a clear place
-    to wire this in; today ``initialize()`` only constructs its
-    collaborators, but keeping the lifecycle explicit means adding
-    real setup (e.g. warming the Knowledge Base singleton, verifying
-    model artifacts exist) later never changes this class's public
-    shape.
     """
 
     def __init__(
@@ -66,17 +55,7 @@ class AnalysisService:
         self._framework_version = framework_version
         self._initialized = False
 
-    # ── lifecycle ────────────────────────────────────────────────
-
     def initialize(self) -> "AnalysisService":
-        """
-        Construct/validate collaborators. Wrapped in
-        ServiceInitializationError so a broken environment (e.g. the
-        Knowledge Base failing its own fail-fast validation at import
-        time — see knowledge_loader.KnowledgeValidationError) surfaces
-        as one stable backend exception type rather than an arbitrary
-        framework import error.
-        """
         try:
             if self._framework_version is None:
                 from universal_churn.config import PIPELINE_VERSION
@@ -89,9 +68,6 @@ class AnalysisService:
         return self
 
     def shutdown(self) -> None:
-        """No held resources to release today (stateless collaborators)
-        — exists so callers get a symmetric lifecycle regardless of
-        what a later sprint adds here (connection pools, caches, ...)."""
         self._initialized = False
 
     def _require_initialized(self) -> None:
@@ -100,8 +76,6 @@ class AnalysisService:
                 "AnalysisService.execute() called before initialize(). "
                 "Call service.initialize() once before running analyses."
             )
-
-    # ── execution ────────────────────────────────────────────────
 
     def execute(
         self,
@@ -113,36 +87,6 @@ class AnalysisService:
     ) -> UniversalAnalysisResponse:
         """
         Run one analysis end-to-end and return the public contract.
-
-        Parameters
-        ----------
-        input_path : path to the input CSV (mirrors ``cli.py --input``).
-        sector : explicit sector override (``cli.py --sector``); if
-            omitted, the framework auto-detects it exactly as it does
-            for the CLI.
-        mode : ``'sector'`` | ``'universal'`` | ``'auto'`` — mirrors
-            ``cli.py --mode``.
-        explain : whether to run the SHAP explanation log
-            (``cli.py --explain``).
-        include_reports : whether to render the human-readable report
-            texts (``ReportsBundle``) alongside the structured data —
-            off by default since rendering text nobody asked for is
-            wasted work; set True for a CLI-parity "give me everything"
-            call.
-
-        Raises
-        ------
-        ServiceInitializationError
-            if called before ``initialize()``.
-        FrameworkExecutionError
-            if the framework call itself fails for a reason OTHER than
-            a modeled routing refusal (see ``FrameworkAdapter``'s
-            docstring for the refusal-vs-error distinction). A modeled
-            refusal is NOT an error — it still returns a fully valid
-            ``UniversalAnalysisResponse`` with ``coverage``/``quality``/
-            ``routing`` populated and ``prediction``/
-            ``prediction_explanation``/``decision`` left ``None``,
-            exactly per docs/BACKEND_INTEGRATION.md's contract.
         """
         self._require_initialized()
 
@@ -150,7 +94,7 @@ class AnalysisService:
         start = time.perf_counter()
 
         try:
-            result: FrameworkExecutionResult = self._adapter.execute(
+            execution_result: ExecutionResult = self._adapter.execute(
                 input_path=input_path, sector=sector, mode=mode, explain=explain,
             )
         except Exception as exc:
@@ -166,28 +110,30 @@ class AnalysisService:
             execution_time_ms=round((time.perf_counter() - start) * 1000, 2)
         )
 
+        if include_reports:
+            report_texts = self._report_service.generate_reports(execution_result)
+            execution_result = execution_result.with_reports(report_texts)
+
         dataset = DatasetInfo(
             filename=input_path,
-            sector=result.sector,
+            sector=execution_result.sector,
             prediction_mode=mode,
-            rows=len(result.results) if result.results is not None else None,
+            rows=len(execution_result.results_df) if execution_result.results_df is not None else None,
         )
 
-        extra_warnings = [result.refusal_reason] if result.refused and result.refusal_reason else None
-
-        report_texts = (
-            self._report_service.generate_reports(result) if include_reports else None
+        extra_warnings = (
+            [execution_result.refusal_reason]
+            if execution_result.refused and execution_result.refusal_reason
+            else None
         )
+
+        # Type-B presentation aggregation (KPI roll-ups for dashboard cards)
+        prediction_summary = build_prediction_summary(execution_result.results_df)
 
         return self._mapper.build_response(
             execution=execution,
+            execution_result=execution_result,
             dataset=dataset,
-            coverage=result.coverage,
-            quality=result.quality,
-            routing_decision=result.routing_decision,
-            results=result.results,
-            explanation_report=result.explanation_report,
-            decision_assessment=result.decision_assessment,
-            report_texts=report_texts,
+            prediction_summary=prediction_summary,
             extra_warnings=extra_warnings,
         )

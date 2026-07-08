@@ -1,33 +1,21 @@
 """
 backend.services.report_service
 ══════════════════════════════════════════════════════════════════════
-``ReportService`` — renders the human-readable report text a
-``backend.contracts.ReportsBundle`` carries, using ONLY the
+``ReportService`` — renders human-readable report text using ONLY the
 framework's own existing printers/generators.
 
-No new report logic lives here. Two shapes of framework functions
-exist and this service adapts to both, without duplicating either:
+No new report logic lives here.  Two shapes of framework functions
+exist and this service adapts to both:
 
     generate_*() -> str
         Already returns text directly — called and used as-is.
-        (``reporting.generate_prediction_quality_report``,
-        ``business_reasoning_report.generate_business_reasoning_report``,
-        ``decision_report.generate_decision_report``)
 
     print_*() -> None
-        Writes straight to stdout with no text-returning counterpart
-        (``quality_gate.print_quality_report``,
-        ``routing.print_routing_decision`` /
-        ``reporting.print_routing_decision``). For these, this service
-        captures stdout via ``contextlib.redirect_stdout`` rather than
-        reimplementing the formatting — the exact bytes a human running
-        the CLI would see are what a consumer of this bundle gets too.
+        Writes to stdout with no text-returning counterpart.
+        Captured via ``redirect_stdout`` behind ``_StdoutCaptureBackend``.
+        TODO: Remove when framework exposes structured report API.
 
-Every method degrades to ``None`` (that field simply absent from the
-bundle) when its required input is unavailable — e.g. no
-``business_reasoning_report_text`` when no ``ReasoningReport`` was
-produced for this run — never fabricates report text for data that
-was never computed.
+Every method degrades to ``None`` when its required input is unavailable.
 """
 from __future__ import annotations
 
@@ -41,13 +29,18 @@ from universal_churn.reporting import generate_prediction_quality_report
 from universal_churn.business_reasoning_report import generate_business_reasoning_report
 from universal_churn.decision_report import generate_decision_report
 
+from ..models.execution_result import ExecutionResult
 
-class ReportService:
-    """Stateless — every method is a pure read of already-computed
-    framework objects, formatted via the framework's own printers."""
+
+class _StdoutCaptureBackend:
+    """
+    Isolated stdout capture for framework print_* functions.
+
+    TODO: Remove when framework exposes structured report API.
+    """
 
     @staticmethod
-    def _captured(fn, *args, **kwargs) -> Optional[str]:
+    def capture(fn, *args, **kwargs) -> Optional[str]:
         buffer = io.StringIO()
         try:
             with redirect_stdout(buffer):
@@ -57,15 +50,19 @@ class ReportService:
         text = buffer.getvalue().strip()
         return text or None
 
+
+class ReportService:
+    """Stateless — formats already-computed framework objects via UC printers."""
+
     def quality_report_text(self, quality: Optional[dict]) -> Optional[str]:
         if quality is None:
             return None
-        return self._captured(print_quality_report, quality)
+        return _StdoutCaptureBackend.capture(print_quality_report, quality)
 
     def routing_report_text(self, routing_decision: Any) -> Optional[str]:
         if routing_decision is None:
             return None
-        return self._captured(_routing_print_routing_decision, routing_decision)
+        return _StdoutCaptureBackend.capture(_routing_print_routing_decision, routing_decision)
 
     def prediction_quality_report_text(
         self,
@@ -100,25 +97,23 @@ class ReportService:
         except Exception:
             return None
 
-    # ── one-shot helper, matching FrameworkExecutionResult's shape ──
-
-    def generate_reports(self, result) -> dict:
+    def generate_reports(self, execution_result: ExecutionResult) -> dict:
         """
-        Build the full ``report_texts`` dict ``FrameworkMapper.
-        map_reports()`` / ``ReportsBundle.from_dict()`` expects, from
-        one ``backend.adapters.FrameworkExecutionResult``. Any section
-        whose inputs are unavailable is simply omitted (``ReportsBundle``
-        treats a missing key the same as an explicit ``None``).
+        Build the ``report_texts`` dict from one ``ExecutionResult``.
+        Sections whose inputs are unavailable are omitted.
         """
         texts = {
-            "quality_report_text": self.quality_report_text(result.quality),
-            "routing_report_text": self.routing_report_text(result.routing_decision),
+            "quality_report_text": self.quality_report_text(execution_result.quality),
+            "routing_report_text": self.routing_report_text(execution_result.routing),
             "prediction_quality_report_text": self.prediction_quality_report_text(
-                result.results, result.coverage, result.sector, result.routing_decision,
+                execution_result.results_df,
+                execution_result.coverage,
+                execution_result.sector,
+                execution_result.routing,
             ),
             "business_reasoning_report_text": self.business_reasoning_report_text(
-                result.explanation_report,
+                execution_result.reasoning,
             ),
-            "decision_report_text": self.decision_report_text(result.decision_assessment),
+            "decision_report_text": self.decision_report_text(execution_result.decision),
         }
         return {k: v for k, v in texts.items() if v is not None}

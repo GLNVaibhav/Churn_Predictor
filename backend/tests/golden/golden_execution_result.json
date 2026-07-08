@@ -1,0 +1,1611 @@
+{
+  "coverage": {
+    "concept_confidence": {
+      "concepts_reconstructable": true,
+      "overall_confidence": 0.4,
+      "per_concept": {
+        "CUSTOMER_LOYALTY": {
+          "canonical_field": "Tenure_Raw",
+          "confidence": 1.0,
+          "reason": "Reconstructed from resolved canonical field.",
+          "reconstructable": true,
+          "resolution_confidence": 1.0,
+          "source_confidence": 1.0
+        },
+        "ENGAGEMENT_LEVEL": {
+          "canonical_field": "Engagement_Volume",
+          "confidence": 0.0,
+          "reason": "Canonical field 'Engagement_Volume' did not resolve from any column in this input.",
+          "reconstructable": false,
+          "resolution_confidence": 0.0,
+          "source_confidence": 0.8
+        },
+        "RECURRING_COMMITMENT": {
+          "canonical_field": "Recurring_Cost",
+          "confidence": 1.0,
+          "reason": "Reconstructed from resolved canonical field.",
+          "reconstructable": true,
+          "resolution_confidence": 1.0,
+          "source_confidence": 1.0
+        },
+        "SATISFACTION_SIGNAL": {
+          "canonical_field": null,
+          "confidence": 0.0,
+          "reason": "No documented business-concept source for sector 'telecom'.",
+          "reconstructable": false,
+          "resolution_confidence": null,
+          "source_confidence": null
+        },
+        "SUPPORT_FRICTION": {
+          "canonical_field": null,
+          "confidence": 0.0,
+          "reason": "No documented business-concept source for sector 'telecom'.",
+          "reconstructable": false,
+          "resolution_confidence": null,
+          "source_confidence": null
+        }
+      },
+      "reconstructable_concepts": 2,
+      "sector": "telecom",
+      "total_concepts": 5
+    },
+    "coverage_band": "Red",
+    "coverage_score": 0.2917,
+    "detail": [
+      {
+        "feature": "Contract",
+        "quality": 0,
+        "reason": "constant (no variance)",
+        "semantically_recovered": true,
+        "weight": 5
+      },
+      {
+        "feature": "tenure",
+        "quality": 1,
+        "reason": "OK — semantic match ('tenure' <- 'Tenure_Raw')",
+        "semantically_recovered": true,
+        "weight": 5
+      },
+      {
+        "feature": "MonthlyCharges",
+        "quality": 1,
+        "reason": "OK — semantic match ('MonthlyCharges' <- 'Recurring_Cost')",
+        "semantically_recovered": true,
+        "weight": 5
+      },
+      {
+        "feature": "TotalCharges",
+        "quality": 1,
+        "reason": "OK — semantic match ('TotalCharges' <- 'Total_Spend')",
+        "semantically_recovered": true,
+        "weight": 4
+      },
+      {
+        "feature": "InternetService",
+        "quality": 0,
+        "reason": "constant (no variance)",
+        "semantically_recovered": false,
+        "weight": 4
+      },
+      {
+        "feature": "TechSupport",
+        "quality": 0,
+        "reason": "absent",
+        "semantically_recovered": false,
+        "weight": 3
+      },
+      {
+        "feature": "OnlineSecurity",
+        "quality": 0,
+        "reason": "absent",
+        "semantically_recovered": false,
+        "weight": 3
+      },
+      {
+        "feature": "PaymentMethod",
+        "quality": 0,
+        "reason": "absent",
+        "semantically_recovered": false,
+        "weight": 3
+      },
+      {
+        "feature": "MultipleLines",
+        "quality": 0,
+        "reason": "absent",
+        "semantically_recovered": false,
+        "weight": 2
+      },
+      {
+        "feature": "OnlineBackup",
+        "quality": 0,
+        "reason": "absent",
+        "semantically_recovered": false,
+        "weight": 2
+      },
+      {
+        "feature": "DeviceProtection",
+        "quality": 0,
+        "reason": "absent",
+        "semantically_recovered": false,
+        "weight": 2
+      },
+      {
+        "feature": "StreamingTV",
+        "quality": 0,
+        "reason": "absent",
+        "semantically_recovered": false,
+        "weight": 2
+      },
+      {
+        "feature": "StreamingMovies",
+        "quality": 0,
+        "reason": "absent",
+        "semantically_recovered": false,
+        "weight": 2
+      },
+      {
+        "feature": "PaperlessBilling",
+        "quality": 0,
+        "reason": "absent",
+        "semantically_recovered": false,
+        "weight": 1
+      },
+      {
+        "feature": "SeniorCitizen",
+        "quality": 0,
+        "reason": "absent",
+        "semantically_recovered": false,
+        "weight": 1
+      },
+      {
+        "feature": "Partner",
+        "quality": 0,
+        "reason": "absent",
+        "semantically_recovered": false,
+        "weight": 1
+      },
+      {
+        "feature": "Dependents",
+        "quality": 0,
+        "reason": "absent",
+        "semantically_recovered": false,
+        "weight": 1
+      },
+      {
+        "feature": "PhoneService",
+        "quality": 0,
+        "reason": "absent",
+        "semantically_recovered": false,
+        "weight": 1
+      },
+      {
+        "feature": "gender",
+        "quality": 0,
+        "reason": "absent",
+        "semantically_recovered": false,
+        "weight": 1
+      }
+    ],
+    "missing_all": [
+      "Contract",
+      "InternetService",
+      "TechSupport",
+      "OnlineSecurity",
+      "PaymentMethod",
+      "MultipleLines",
+      "OnlineBackup",
+      "DeviceProtection",
+      "StreamingTV",
+      "StreamingMovies",
+      "PaperlessBilling",
+      "SeniorCitizen",
+      "Partner",
+      "Dependents",
+      "PhoneService",
+      "gender"
+    ],
+    "missing_critical": [
+      "Contract",
+      "InternetService"
+    ],
+    "missing_high_impact": [
+      "TechSupport",
+      "OnlineSecurity",
+      "PaymentMethod"
+    ],
+    "prediction_mode": "Refused",
+    "recovered_features": [],
+    "semantic_matches": [
+      "tenure",
+      "MonthlyCharges",
+      "TotalCharges"
+    ],
+    "status": "Red"
+  },
+  "decision": {
+    "business_confidence": 0.4667,
+    "decision_readiness": "REVIEW",
+    "evidence_strength": 0.5179,
+    "overall_confidence": 0.4986,
+    "recommended_action": "Review prediction manually before acting — evidence is present but not yet strong enough to automate.",
+    "risk_level": "LOW",
+    "technical_confidence": 0.5306,
+    "warnings": [
+      "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright."
+    ]
+  },
+  "diagnostics": {
+    "manifest": {
+      "canonical_field_collisions": {},
+      "resolution_summary": {
+        "exact_matches": 5,
+        "matched_fields": [
+          "Contract_Commitment",
+          "CustomerID_Raw",
+          "Recurring_Cost",
+          "Tenure_Raw",
+          "Total_Spend"
+        ],
+        "regex_matches": 0,
+        "semantic_matches": 0,
+        "unmatched_fields": [
+          "Active_Status",
+          "Activity_Recency",
+          "Auto_Payment_Flag",
+          "Demographic_Risk",
+          "Engagement_Volume",
+          "Satisfaction_Raw",
+          "Support_Contacts"
+        ],
+        "unresolved_columns": 1
+      },
+      "temporal_columns_derived": []
+    },
+    "resolutions": [
+      {
+        "canonical_field": "CustomerID_Raw",
+        "confidence": 1.0,
+        "explanation": null,
+        "method": "exact",
+        "raw_column": "customerID",
+        "semantic_score": null
+      },
+      {
+        "canonical_field": "Tenure_Raw",
+        "confidence": 1.0,
+        "explanation": null,
+        "method": "exact",
+        "raw_column": "tenure",
+        "semantic_score": null
+      },
+      {
+        "canonical_field": null,
+        "confidence": 0.0,
+        "explanation": null,
+        "method": "unresolved",
+        "raw_column": "InternetService",
+        "semantic_score": null
+      },
+      {
+        "canonical_field": "Contract_Commitment",
+        "confidence": 1.0,
+        "explanation": null,
+        "method": "exact",
+        "raw_column": "Contract",
+        "semantic_score": null
+      },
+      {
+        "canonical_field": "Recurring_Cost",
+        "confidence": 1.0,
+        "explanation": null,
+        "method": "exact",
+        "raw_column": "MonthlyCharges",
+        "semantic_score": null
+      },
+      {
+        "canonical_field": "Total_Spend",
+        "confidence": 1.0,
+        "explanation": null,
+        "method": "exact",
+        "raw_column": "TotalCharges",
+        "semantic_score": null
+      }
+    ]
+  },
+  "metadata": {
+    "input_path": "C:\\Users\\DELL\\OneDrive\\Documents\\SRM\\Churn_Analysis\\tests\\golden_telecom.csv",
+    "mode": "auto",
+    "refusal_reason": null,
+    "refused": false,
+    "sector": "telecom"
+  },
+  "predictions": {
+    "attrs": {
+      "canonical_manifest": null,
+      "coverage": {
+        "concept_confidence": {
+          "concepts_reconstructable": true,
+          "overall_confidence": 0.4,
+          "per_concept": {
+            "CUSTOMER_LOYALTY": {
+              "canonical_field": "Tenure_Raw",
+              "confidence": 1.0,
+              "reason": "Reconstructed from resolved canonical field.",
+              "reconstructable": true,
+              "resolution_confidence": 1.0,
+              "source_confidence": 1.0
+            },
+            "ENGAGEMENT_LEVEL": {
+              "canonical_field": "Engagement_Volume",
+              "confidence": 0.0,
+              "reason": "Canonical field 'Engagement_Volume' did not resolve from any column in this input.",
+              "reconstructable": false,
+              "resolution_confidence": 0.0,
+              "source_confidence": 0.8
+            },
+            "RECURRING_COMMITMENT": {
+              "canonical_field": "Recurring_Cost",
+              "confidence": 1.0,
+              "reason": "Reconstructed from resolved canonical field.",
+              "reconstructable": true,
+              "resolution_confidence": 1.0,
+              "source_confidence": 1.0
+            },
+            "SATISFACTION_SIGNAL": {
+              "canonical_field": null,
+              "confidence": 0.0,
+              "reason": "No documented business-concept source for sector 'telecom'.",
+              "reconstructable": false,
+              "resolution_confidence": null,
+              "source_confidence": null
+            },
+            "SUPPORT_FRICTION": {
+              "canonical_field": null,
+              "confidence": 0.0,
+              "reason": "No documented business-concept source for sector 'telecom'.",
+              "reconstructable": false,
+              "resolution_confidence": null,
+              "source_confidence": null
+            }
+          },
+          "reconstructable_concepts": 2,
+          "sector": "telecom",
+          "total_concepts": 5
+        },
+        "coverage_band": "Red",
+        "coverage_score": 0.2917,
+        "detail": [
+          {
+            "feature": "Contract",
+            "quality": 0,
+            "reason": "constant (no variance)",
+            "semantically_recovered": true,
+            "weight": 5
+          },
+          {
+            "feature": "tenure",
+            "quality": 1,
+            "reason": "OK — semantic match ('tenure' <- 'Tenure_Raw')",
+            "semantically_recovered": true,
+            "weight": 5
+          },
+          {
+            "feature": "MonthlyCharges",
+            "quality": 1,
+            "reason": "OK — semantic match ('MonthlyCharges' <- 'Recurring_Cost')",
+            "semantically_recovered": true,
+            "weight": 5
+          },
+          {
+            "feature": "TotalCharges",
+            "quality": 1,
+            "reason": "OK — semantic match ('TotalCharges' <- 'Total_Spend')",
+            "semantically_recovered": true,
+            "weight": 4
+          },
+          {
+            "feature": "InternetService",
+            "quality": 0,
+            "reason": "constant (no variance)",
+            "semantically_recovered": false,
+            "weight": 4
+          },
+          {
+            "feature": "TechSupport",
+            "quality": 0,
+            "reason": "absent",
+            "semantically_recovered": false,
+            "weight": 3
+          },
+          {
+            "feature": "OnlineSecurity",
+            "quality": 0,
+            "reason": "absent",
+            "semantically_recovered": false,
+            "weight": 3
+          },
+          {
+            "feature": "PaymentMethod",
+            "quality": 0,
+            "reason": "absent",
+            "semantically_recovered": false,
+            "weight": 3
+          },
+          {
+            "feature": "MultipleLines",
+            "quality": 0,
+            "reason": "absent",
+            "semantically_recovered": false,
+            "weight": 2
+          },
+          {
+            "feature": "OnlineBackup",
+            "quality": 0,
+            "reason": "absent",
+            "semantically_recovered": false,
+            "weight": 2
+          },
+          {
+            "feature": "DeviceProtection",
+            "quality": 0,
+            "reason": "absent",
+            "semantically_recovered": false,
+            "weight": 2
+          },
+          {
+            "feature": "StreamingTV",
+            "quality": 0,
+            "reason": "absent",
+            "semantically_recovered": false,
+            "weight": 2
+          },
+          {
+            "feature": "StreamingMovies",
+            "quality": 0,
+            "reason": "absent",
+            "semantically_recovered": false,
+            "weight": 2
+          },
+          {
+            "feature": "PaperlessBilling",
+            "quality": 0,
+            "reason": "absent",
+            "semantically_recovered": false,
+            "weight": 1
+          },
+          {
+            "feature": "SeniorCitizen",
+            "quality": 0,
+            "reason": "absent",
+            "semantically_recovered": false,
+            "weight": 1
+          },
+          {
+            "feature": "Partner",
+            "quality": 0,
+            "reason": "absent",
+            "semantically_recovered": false,
+            "weight": 1
+          },
+          {
+            "feature": "Dependents",
+            "quality": 0,
+            "reason": "absent",
+            "semantically_recovered": false,
+            "weight": 1
+          },
+          {
+            "feature": "PhoneService",
+            "quality": 0,
+            "reason": "absent",
+            "semantically_recovered": false,
+            "weight": 1
+          },
+          {
+            "feature": "gender",
+            "quality": 0,
+            "reason": "absent",
+            "semantically_recovered": false,
+            "weight": 1
+          }
+        ],
+        "missing_all": [
+          "Contract",
+          "InternetService",
+          "TechSupport",
+          "OnlineSecurity",
+          "PaymentMethod",
+          "MultipleLines",
+          "OnlineBackup",
+          "DeviceProtection",
+          "StreamingTV",
+          "StreamingMovies",
+          "PaperlessBilling",
+          "SeniorCitizen",
+          "Partner",
+          "Dependents",
+          "PhoneService",
+          "gender"
+        ],
+        "missing_critical": [
+          "Contract",
+          "InternetService"
+        ],
+        "missing_high_impact": [
+          "TechSupport",
+          "OnlineSecurity",
+          "PaymentMethod"
+        ],
+        "prediction_mode": "Refused",
+        "recovered_features": [],
+        "semantic_matches": [
+          "tenure",
+          "MonthlyCharges",
+          "TotalCharges"
+        ],
+        "status": "Red"
+      },
+      "decision_assessment": {
+        "business_confidence": 0.4667,
+        "decision_readiness": "REVIEW",
+        "evidence_strength": 0.5179,
+        "generated_at": "2026-07-08 11:43:35 UTC",
+        "overall_confidence": 0.4986,
+        "recommended_action": "Review prediction manually before acting — evidence is present but not yet strong enough to automate.",
+        "risk_level": "LOW",
+        "sector": "telecom",
+        "supporting_evidence": [
+          {
+            "name": "Coverage Score",
+            "source": "CoverageResult",
+            "value": "29.2%"
+          },
+          {
+            "name": "Coverage Band",
+            "source": "CoverageResult",
+            "value": "Red"
+          },
+          {
+            "name": "Concept Confidence",
+            "source": "ConceptConfidenceReport",
+            "value": "40.0%"
+          },
+          {
+            "name": "Quality Status",
+            "source": "QualityResult",
+            "value": "GOOD"
+          },
+          {
+            "name": "Selected Model",
+            "source": "RoutingDecision",
+            "value": "UNIVERSAL_MODEL"
+          },
+          {
+            "name": "Prediction Reliability",
+            "source": "RoutingDecision",
+            "value": "Low"
+          },
+          {
+            "name": "Business Findings Fired",
+            "source": "ReasoningReport",
+            "value": "0"
+          },
+          {
+            "name": "Business Health",
+            "source": "ReasoningReport",
+            "value": "MEDIUM"
+          }
+        ],
+        "technical_confidence": 0.5306,
+        "warnings": [
+          "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright."
+        ]
+      },
+      "explain_summary": null,
+      "prediction_explanation": {
+        "dataset_explanation": {
+          "average_probability": 0.4266,
+          "business_strengths": [],
+          "business_weaknesses": [],
+          "dominant_findings": [],
+          "overall_business_health": "MEDIUM",
+          "overall_customer_risk": "LOW",
+          "predicted_churners": 2,
+          "risk_distribution": {
+            "High": 2,
+            "Low": 3
+          },
+          "rows_analyzed": 5,
+          "top_recommendation": ""
+        },
+        "dataset_narrative": {
+          "acceptance_text": "Coverage was red, concepts remained reconstructable, quality gate passed, UNIVERSAL_MODEL selected.",
+          "findings_text": "No business findings fired for this input.",
+          "full_text": "Prediction: LOW CHURN\nReason: No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.\nBusiness Findings: No business findings fired for this input.\nRecommendation: No specific recommendation available.\nPrediction accepted because: Coverage was red, concepts remained reconstructable, quality gate passed, UNIVERSAL_MODEL selected.",
+          "headline": "LOW CHURN",
+          "reason_text": "No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+          "recommendation_text": "No specific recommendation available."
+        },
+        "generated_at": "2026-07-08 11:43:35 UTC",
+        "reasoning_report": {
+          "findings": [],
+          "generated_at": "2026-07-08 11:43:35 UTC",
+          "inferences": {
+            "CUSTOMER_LOYALTY": {
+              "aggregate_value": 0.41142857142857137,
+              "band": "MEDIUM",
+              "concept_id": "CUSTOMER_LOYALTY",
+              "confidence": 1.0,
+              "dependency_health": "GOOD",
+              "missing_fields": [],
+              "reconstructable": true,
+              "resolved_fields": [
+                "Tenure_Raw"
+              ]
+            },
+            "ENGAGEMENT_LEVEL": {
+              "aggregate_value": 0.5,
+              "band": "MEDIUM",
+              "concept_id": "ENGAGEMENT_LEVEL",
+              "confidence": 0.0,
+              "dependency_health": "POOR",
+              "missing_fields": [
+                "Engagement_Volume"
+              ],
+              "reconstructable": false,
+              "resolved_fields": []
+            },
+            "RECURRING_COMMITMENT": {
+              "aggregate_value": 0.580478589420655,
+              "band": "MEDIUM",
+              "concept_id": "RECURRING_COMMITMENT",
+              "confidence": 1.0,
+              "dependency_health": "GOOD",
+              "missing_fields": [],
+              "reconstructable": true,
+              "resolved_fields": [
+                "Recurring_Cost",
+                "Total_Spend"
+              ]
+            },
+            "SATISFACTION_SIGNAL": {
+              "aggregate_value": 0.5,
+              "band": "MEDIUM",
+              "concept_id": "SATISFACTION_SIGNAL",
+              "confidence": 0.0,
+              "dependency_health": "POOR",
+              "missing_fields": [
+                "Satisfaction_Raw"
+              ],
+              "reconstructable": false,
+              "resolved_fields": []
+            },
+            "SUPPORT_FRICTION": {
+              "aggregate_value": 0.5,
+              "band": "MEDIUM",
+              "concept_id": "SUPPORT_FRICTION",
+              "confidence": 0.0,
+              "dependency_health": "POOR",
+              "missing_fields": [
+                "Support_Contacts"
+              ],
+              "reconstructable": false,
+              "resolved_fields": []
+            }
+          },
+          "sector": "telecom",
+          "summary": {
+            "business_strengths": [],
+            "business_weaknesses": [],
+            "dominant_failure_reason": null,
+            "dominant_positive_signal": null,
+            "overall_business_health": "MEDIUM",
+            "overall_customer_risk": "LOW"
+          }
+        },
+        "row_explanations": [
+          {
+            "evidence": {
+              "business_finding_ids": [],
+              "concept_confidence": 0.4,
+              "coverage_band": "Red",
+              "coverage_score": 0.2917,
+              "items": [
+                {
+                  "name": "Coverage Score",
+                  "source": "CoverageResult",
+                  "value": "29.2%"
+                },
+                {
+                  "name": "Coverage Band",
+                  "source": "CoverageResult",
+                  "value": "Red"
+                },
+                {
+                  "name": "Concept Confidence",
+                  "source": "ConceptConfidenceReport",
+                  "value": "40.0%"
+                },
+                {
+                  "name": "Quality Status",
+                  "source": "QualityResult",
+                  "value": "GOOD"
+                },
+                {
+                  "name": "Selected Model",
+                  "source": "RoutingDecision",
+                  "value": "UNIVERSAL_MODEL"
+                },
+                {
+                  "name": "Routing Reason",
+                  "source": "RoutingDecision",
+                  "value": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone."
+                }
+              ],
+              "quality_status": "GOOD",
+              "routing_reason": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+              "routing_selected_model": "UNIVERSAL_MODEL"
+            },
+            "narrative": {
+              "acceptance_text": "Coverage was red, concepts remained reconstructable, quality gate passed, UNIVERSAL_MODEL selected.",
+              "findings_text": "No business findings fired for this input.",
+              "full_text": "Prediction: HIGH CHURN\nReason: No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.\nBusiness Findings: No business findings fired for this input.\nRecommendation: No specific recommendation available.\nPrediction accepted because: Coverage was red, concepts remained reconstructable, quality gate passed, UNIVERSAL_MODEL selected.",
+              "headline": "HIGH CHURN",
+              "reason_text": "No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+              "recommendation_text": "No specific recommendation available."
+            },
+            "recommendation": {
+              "finding_id": null,
+              "recommendation_text": ""
+            },
+            "reliability": {
+              "level": "Low",
+              "missing_features": [
+                "Contract",
+                "InternetService",
+                "TechSupport",
+                "OnlineSecurity",
+                "PaymentMethod"
+              ],
+              "reasons": [
+                "Coverage 29.2%",
+                "Concept Confidence 40.0%",
+                "Quality PASS",
+                "UNIVERSAL_MODEL selected",
+                "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright."
+              ]
+            },
+            "summary": {
+              "customer_id": "TEL_GOLD_01",
+              "predicted_label": "Yes",
+              "prediction_mode": "Auto",
+              "prediction_model": "Universal XGBoost",
+              "probability": 0.8896999955177307,
+              "risk_level": "High",
+              "row_index": 0,
+              "sector": "telecom"
+            }
+          },
+          {
+            "evidence": {
+              "business_finding_ids": [],
+              "concept_confidence": 0.4,
+              "coverage_band": "Red",
+              "coverage_score": 0.2917,
+              "items": [
+                {
+                  "name": "Coverage Score",
+                  "source": "CoverageResult",
+                  "value": "29.2%"
+                },
+                {
+                  "name": "Coverage Band",
+                  "source": "CoverageResult",
+                  "value": "Red"
+                },
+                {
+                  "name": "Concept Confidence",
+                  "source": "ConceptConfidenceReport",
+                  "value": "40.0%"
+                },
+                {
+                  "name": "Quality Status",
+                  "source": "QualityResult",
+                  "value": "GOOD"
+                },
+                {
+                  "name": "Selected Model",
+                  "source": "RoutingDecision",
+                  "value": "UNIVERSAL_MODEL"
+                },
+                {
+                  "name": "Routing Reason",
+                  "source": "RoutingDecision",
+                  "value": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone."
+                }
+              ],
+              "quality_status": "GOOD",
+              "routing_reason": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+              "routing_selected_model": "UNIVERSAL_MODEL"
+            },
+            "narrative": {
+              "acceptance_text": "Coverage was red, concepts remained reconstructable, quality gate passed, UNIVERSAL_MODEL selected.",
+              "findings_text": "No business findings fired for this input.",
+              "full_text": "Prediction: LOW CHURN\nReason: No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.\nBusiness Findings: No business findings fired for this input.\nRecommendation: No specific recommendation available.\nPrediction accepted because: Coverage was red, concepts remained reconstructable, quality gate passed, UNIVERSAL_MODEL selected.",
+              "headline": "LOW CHURN",
+              "reason_text": "No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+              "recommendation_text": "No specific recommendation available."
+            },
+            "recommendation": {
+              "finding_id": null,
+              "recommendation_text": ""
+            },
+            "reliability": {
+              "level": "Low",
+              "missing_features": [
+                "Contract",
+                "InternetService",
+                "TechSupport",
+                "OnlineSecurity",
+                "PaymentMethod"
+              ],
+              "reasons": [
+                "Coverage 29.2%",
+                "Concept Confidence 40.0%",
+                "Quality PASS",
+                "UNIVERSAL_MODEL selected",
+                "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright."
+              ]
+            },
+            "summary": {
+              "customer_id": "TEL_GOLD_02",
+              "predicted_label": "No",
+              "prediction_mode": "Auto",
+              "prediction_model": "Universal XGBoost",
+              "probability": 0.2556000053882599,
+              "risk_level": "Low",
+              "row_index": 1,
+              "sector": "telecom"
+            }
+          },
+          {
+            "evidence": {
+              "business_finding_ids": [],
+              "concept_confidence": 0.4,
+              "coverage_band": "Red",
+              "coverage_score": 0.2917,
+              "items": [
+                {
+                  "name": "Coverage Score",
+                  "source": "CoverageResult",
+                  "value": "29.2%"
+                },
+                {
+                  "name": "Coverage Band",
+                  "source": "CoverageResult",
+                  "value": "Red"
+                },
+                {
+                  "name": "Concept Confidence",
+                  "source": "ConceptConfidenceReport",
+                  "value": "40.0%"
+                },
+                {
+                  "name": "Quality Status",
+                  "source": "QualityResult",
+                  "value": "GOOD"
+                },
+                {
+                  "name": "Selected Model",
+                  "source": "RoutingDecision",
+                  "value": "UNIVERSAL_MODEL"
+                },
+                {
+                  "name": "Routing Reason",
+                  "source": "RoutingDecision",
+                  "value": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone."
+                }
+              ],
+              "quality_status": "GOOD",
+              "routing_reason": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+              "routing_selected_model": "UNIVERSAL_MODEL"
+            },
+            "narrative": {
+              "acceptance_text": "Coverage was red, concepts remained reconstructable, quality gate passed, UNIVERSAL_MODEL selected.",
+              "findings_text": "No business findings fired for this input.",
+              "full_text": "Prediction: LOW CHURN\nReason: No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.\nBusiness Findings: No business findings fired for this input.\nRecommendation: No specific recommendation available.\nPrediction accepted because: Coverage was red, concepts remained reconstructable, quality gate passed, UNIVERSAL_MODEL selected.",
+              "headline": "LOW CHURN",
+              "reason_text": "No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+              "recommendation_text": "No specific recommendation available."
+            },
+            "recommendation": {
+              "finding_id": null,
+              "recommendation_text": ""
+            },
+            "reliability": {
+              "level": "Low",
+              "missing_features": [
+                "Contract",
+                "InternetService",
+                "TechSupport",
+                "OnlineSecurity",
+                "PaymentMethod"
+              ],
+              "reasons": [
+                "Coverage 29.2%",
+                "Concept Confidence 40.0%",
+                "Quality PASS",
+                "UNIVERSAL_MODEL selected",
+                "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright."
+              ]
+            },
+            "summary": {
+              "customer_id": "TEL_GOLD_03",
+              "predicted_label": "No",
+              "prediction_mode": "Auto",
+              "prediction_model": "Universal XGBoost",
+              "probability": 0.06549999862909317,
+              "risk_level": "Low",
+              "row_index": 2,
+              "sector": "telecom"
+            }
+          },
+          {
+            "evidence": {
+              "business_finding_ids": [],
+              "concept_confidence": 0.4,
+              "coverage_band": "Red",
+              "coverage_score": 0.2917,
+              "items": [
+                {
+                  "name": "Coverage Score",
+                  "source": "CoverageResult",
+                  "value": "29.2%"
+                },
+                {
+                  "name": "Coverage Band",
+                  "source": "CoverageResult",
+                  "value": "Red"
+                },
+                {
+                  "name": "Concept Confidence",
+                  "source": "ConceptConfidenceReport",
+                  "value": "40.0%"
+                },
+                {
+                  "name": "Quality Status",
+                  "source": "QualityResult",
+                  "value": "GOOD"
+                },
+                {
+                  "name": "Selected Model",
+                  "source": "RoutingDecision",
+                  "value": "UNIVERSAL_MODEL"
+                },
+                {
+                  "name": "Routing Reason",
+                  "source": "RoutingDecision",
+                  "value": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone."
+                }
+              ],
+              "quality_status": "GOOD",
+              "routing_reason": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+              "routing_selected_model": "UNIVERSAL_MODEL"
+            },
+            "narrative": {
+              "acceptance_text": "Coverage was red, concepts remained reconstructable, quality gate passed, UNIVERSAL_MODEL selected.",
+              "findings_text": "No business findings fired for this input.",
+              "full_text": "Prediction: HIGH CHURN\nReason: No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.\nBusiness Findings: No business findings fired for this input.\nRecommendation: No specific recommendation available.\nPrediction accepted because: Coverage was red, concepts remained reconstructable, quality gate passed, UNIVERSAL_MODEL selected.",
+              "headline": "HIGH CHURN",
+              "reason_text": "No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+              "recommendation_text": "No specific recommendation available."
+            },
+            "recommendation": {
+              "finding_id": null,
+              "recommendation_text": ""
+            },
+            "reliability": {
+              "level": "Low",
+              "missing_features": [
+                "Contract",
+                "InternetService",
+                "TechSupport",
+                "OnlineSecurity",
+                "PaymentMethod"
+              ],
+              "reasons": [
+                "Coverage 29.2%",
+                "Concept Confidence 40.0%",
+                "Quality PASS",
+                "UNIVERSAL_MODEL selected",
+                "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright."
+              ]
+            },
+            "summary": {
+              "customer_id": "TEL_GOLD_04",
+              "predicted_label": "Yes",
+              "prediction_mode": "Auto",
+              "prediction_model": "Universal XGBoost",
+              "probability": 0.8321999907493591,
+              "risk_level": "High",
+              "row_index": 3,
+              "sector": "telecom"
+            }
+          },
+          {
+            "evidence": {
+              "business_finding_ids": [],
+              "concept_confidence": 0.4,
+              "coverage_band": "Red",
+              "coverage_score": 0.2917,
+              "items": [
+                {
+                  "name": "Coverage Score",
+                  "source": "CoverageResult",
+                  "value": "29.2%"
+                },
+                {
+                  "name": "Coverage Band",
+                  "source": "CoverageResult",
+                  "value": "Red"
+                },
+                {
+                  "name": "Concept Confidence",
+                  "source": "ConceptConfidenceReport",
+                  "value": "40.0%"
+                },
+                {
+                  "name": "Quality Status",
+                  "source": "QualityResult",
+                  "value": "GOOD"
+                },
+                {
+                  "name": "Selected Model",
+                  "source": "RoutingDecision",
+                  "value": "UNIVERSAL_MODEL"
+                },
+                {
+                  "name": "Routing Reason",
+                  "source": "RoutingDecision",
+                  "value": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone."
+                }
+              ],
+              "quality_status": "GOOD",
+              "routing_reason": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+              "routing_selected_model": "UNIVERSAL_MODEL"
+            },
+            "narrative": {
+              "acceptance_text": "Coverage was red, concepts remained reconstructable, quality gate passed, UNIVERSAL_MODEL selected.",
+              "findings_text": "No business findings fired for this input.",
+              "full_text": "Prediction: LOW CHURN\nReason: No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.\nBusiness Findings: No business findings fired for this input.\nRecommendation: No specific recommendation available.\nPrediction accepted because: Coverage was red, concepts remained reconstructable, quality gate passed, UNIVERSAL_MODEL selected.",
+              "headline": "LOW CHURN",
+              "reason_text": "No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+              "recommendation_text": "No specific recommendation available."
+            },
+            "recommendation": {
+              "finding_id": null,
+              "recommendation_text": ""
+            },
+            "reliability": {
+              "level": "Low",
+              "missing_features": [
+                "Contract",
+                "InternetService",
+                "TechSupport",
+                "OnlineSecurity",
+                "PaymentMethod"
+              ],
+              "reasons": [
+                "Coverage 29.2%",
+                "Concept Confidence 40.0%",
+                "Quality PASS",
+                "UNIVERSAL_MODEL selected",
+                "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright."
+              ]
+            },
+            "summary": {
+              "customer_id": "TEL_GOLD_05",
+              "predicted_label": "No",
+              "prediction_mode": "Auto",
+              "prediction_model": "Universal XGBoost",
+              "probability": 0.08990000188350677,
+              "risk_level": "Low",
+              "row_index": 4,
+              "sector": "telecom"
+            }
+          }
+        ],
+        "sector": "telecom"
+      },
+      "quality": {
+        "column_results": [
+          {
+            "column": "customerID",
+            "is_near_constant": false,
+            "leakage_flag": false,
+            "leakage_warning": false,
+            "n_unique": 5,
+            "null_rate": 0.0,
+            "passed": true,
+            "reasons": [],
+            "target_correlation": null
+          },
+          {
+            "column": "tenure",
+            "is_near_constant": false,
+            "leakage_flag": false,
+            "leakage_warning": false,
+            "n_unique": 5,
+            "null_rate": 0.0,
+            "passed": true,
+            "reasons": [],
+            "target_correlation": null
+          },
+          {
+            "column": "InternetService",
+            "is_near_constant": false,
+            "leakage_flag": false,
+            "leakage_warning": false,
+            "n_unique": 3,
+            "null_rate": 0.0,
+            "passed": true,
+            "reasons": [],
+            "target_correlation": null
+          },
+          {
+            "column": "Contract",
+            "is_near_constant": false,
+            "leakage_flag": false,
+            "leakage_warning": false,
+            "n_unique": 3,
+            "null_rate": 0.0,
+            "passed": true,
+            "reasons": [],
+            "target_correlation": null
+          },
+          {
+            "column": "MonthlyCharges",
+            "is_near_constant": false,
+            "leakage_flag": false,
+            "leakage_warning": false,
+            "n_unique": 5,
+            "null_rate": 0.0,
+            "passed": true,
+            "reasons": [],
+            "target_correlation": null
+          },
+          {
+            "column": "TotalCharges",
+            "is_near_constant": false,
+            "leakage_flag": false,
+            "leakage_warning": false,
+            "n_unique": 5,
+            "null_rate": 0.0,
+            "passed": true,
+            "reasons": [],
+            "target_correlation": null
+          }
+        ],
+        "failed_columns": [],
+        "leakage_detected": false,
+        "leakage_flagged": [],
+        "leakage_warned": [],
+        "overall_passed": true
+      },
+      "routing_decision": {
+        "concept_confidence": 0.4,
+        "coverage_band": "Red",
+        "coverage_score": 0.2917,
+        "metadata": {
+          "concepts_reconstructable": true,
+          "missing_critical": [
+            "Contract",
+            "InternetService"
+          ],
+          "sector": "telecom"
+        },
+        "prediction_mode": "auto",
+        "quality_score": 1.0,
+        "quality_status": "GOOD",
+        "reliability": "Low",
+        "routing_reason": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+        "selected_model": "UNIVERSAL_MODEL",
+        "selected_pipeline": "UniversalPipeline",
+        "warnings": [
+          "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright."
+        ]
+      }
+    },
+    "columns": [
+      "CustomerID",
+      "Predicted_Churn",
+      "Churn_Probability",
+      "Risk_Level",
+      "Sector",
+      "Prediction_Model",
+      "Prediction_Mode",
+      "Coverage_Score",
+      "Coverage_Status",
+      "Prediction_Confidence",
+      "Coverage_Confidence",
+      "Prediction_Timestamp",
+      "Pipeline_Version",
+      "Sector_Model_Version",
+      "Universal_Model_Version",
+      "Normalization_Version",
+      "Coverage_Algorithm_Version",
+      "Selected_Model",
+      "Routing_Reason",
+      "Coverage_Band",
+      "Quality_Score",
+      "Quality_Status",
+      "Prediction_Reliability",
+      "Concept_Confidence",
+      "Routing_Warnings",
+      "Model_Artifact",
+      "Routing_Timestamp",
+      "Explanation_Prediction",
+      "Explanation_Probability",
+      "Explanation_Triggered_Findings",
+      "Explanation_Dominant_Concepts",
+      "Explanation_Business_Reason",
+      "Explanation_Recommendation",
+      "Explanation_Reliability",
+      "Explanation_Reliability_Reasons",
+      "Explanation_Missing_Features",
+      "Decision_Readiness",
+      "Decision_Overall_Confidence",
+      "Decision_Business_Confidence",
+      "Decision_Technical_Confidence",
+      "Decision_Evidence_Strength",
+      "Decision_Risk_Level",
+      "Decision_Recommended_Action",
+      "Decision_Warnings"
+    ],
+    "records": [
+      {
+        "Churn_Probability": 0.8896999955177307,
+        "Concept_Confidence": "40.0%",
+        "Coverage_Algorithm_Version": "1.0.0",
+        "Coverage_Band": "Red",
+        "Coverage_Confidence": "Insufficient",
+        "Coverage_Score": "29.2%",
+        "Coverage_Status": "Red",
+        "CustomerID": "TEL_GOLD_01",
+        "Decision_Business_Confidence": "46.7%",
+        "Decision_Evidence_Strength": "51.8%",
+        "Decision_Overall_Confidence": "49.9%",
+        "Decision_Readiness": "REVIEW",
+        "Decision_Recommended_Action": "Review prediction manually before acting — evidence is present but not yet strong enough to automate.",
+        "Decision_Risk_Level": "LOW",
+        "Decision_Technical_Confidence": "53.1%",
+        "Decision_Warnings": "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright.",
+        "Explanation_Business_Reason": "No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+        "Explanation_Dominant_Concepts": "",
+        "Explanation_Missing_Features": "Contract; InternetService; TechSupport; OnlineSecurity; PaymentMethod",
+        "Explanation_Prediction": "HIGH CHURN",
+        "Explanation_Probability": 0.8896999955177307,
+        "Explanation_Recommendation": "",
+        "Explanation_Reliability": "Low",
+        "Explanation_Reliability_Reasons": "Coverage 29.2%; Concept Confidence 40.0%; Quality PASS; UNIVERSAL_MODEL selected; Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright.",
+        "Explanation_Triggered_Findings": "",
+        "Model_Artifact": "universal",
+        "Normalization_Version": "1.0.0",
+        "Pipeline_Version": "1.0.0",
+        "Predicted_Churn": "Yes",
+        "Prediction_Confidence": "High",
+        "Prediction_Mode": "Auto",
+        "Prediction_Model": "Universal XGBoost",
+        "Prediction_Reliability": "Low",
+        "Prediction_Timestamp": "2026-07-08 11:43:35 UTC",
+        "Quality_Score": "100.0%",
+        "Quality_Status": "GOOD",
+        "Risk_Level": "High",
+        "Routing_Reason": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+        "Routing_Timestamp": "2026-07-08 11:43:35 UTC",
+        "Routing_Warnings": "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright.",
+        "Sector": "Telecom",
+        "Sector_Model_Version": "N/A",
+        "Selected_Model": "UNIVERSAL_MODEL",
+        "Universal_Model_Version": "1.0.0"
+      },
+      {
+        "Churn_Probability": 0.2556000053882599,
+        "Concept_Confidence": "40.0%",
+        "Coverage_Algorithm_Version": "1.0.0",
+        "Coverage_Band": "Red",
+        "Coverage_Confidence": "Insufficient",
+        "Coverage_Score": "29.2%",
+        "Coverage_Status": "Red",
+        "CustomerID": "TEL_GOLD_02",
+        "Decision_Business_Confidence": "46.7%",
+        "Decision_Evidence_Strength": "51.8%",
+        "Decision_Overall_Confidence": "49.9%",
+        "Decision_Readiness": "REVIEW",
+        "Decision_Recommended_Action": "Review prediction manually before acting — evidence is present but not yet strong enough to automate.",
+        "Decision_Risk_Level": "LOW",
+        "Decision_Technical_Confidence": "53.1%",
+        "Decision_Warnings": "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright.",
+        "Explanation_Business_Reason": "No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+        "Explanation_Dominant_Concepts": "",
+        "Explanation_Missing_Features": "Contract; InternetService; TechSupport; OnlineSecurity; PaymentMethod",
+        "Explanation_Prediction": "LOW CHURN",
+        "Explanation_Probability": 0.2556000053882599,
+        "Explanation_Recommendation": "",
+        "Explanation_Reliability": "Low",
+        "Explanation_Reliability_Reasons": "Coverage 29.2%; Concept Confidence 40.0%; Quality PASS; UNIVERSAL_MODEL selected; Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright.",
+        "Explanation_Triggered_Findings": "",
+        "Model_Artifact": "universal",
+        "Normalization_Version": "1.0.0",
+        "Pipeline_Version": "1.0.0",
+        "Predicted_Churn": "No",
+        "Prediction_Confidence": "Very Low",
+        "Prediction_Mode": "Auto",
+        "Prediction_Model": "Universal XGBoost",
+        "Prediction_Reliability": "Low",
+        "Prediction_Timestamp": "2026-07-08 11:43:35 UTC",
+        "Quality_Score": "100.0%",
+        "Quality_Status": "GOOD",
+        "Risk_Level": "Low",
+        "Routing_Reason": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+        "Routing_Timestamp": "2026-07-08 11:43:35 UTC",
+        "Routing_Warnings": "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright.",
+        "Sector": "Telecom",
+        "Sector_Model_Version": "N/A",
+        "Selected_Model": "UNIVERSAL_MODEL",
+        "Universal_Model_Version": "1.0.0"
+      },
+      {
+        "Churn_Probability": 0.06549999862909317,
+        "Concept_Confidence": "40.0%",
+        "Coverage_Algorithm_Version": "1.0.0",
+        "Coverage_Band": "Red",
+        "Coverage_Confidence": "Insufficient",
+        "Coverage_Score": "29.2%",
+        "Coverage_Status": "Red",
+        "CustomerID": "TEL_GOLD_03",
+        "Decision_Business_Confidence": "46.7%",
+        "Decision_Evidence_Strength": "51.8%",
+        "Decision_Overall_Confidence": "49.9%",
+        "Decision_Readiness": "REVIEW",
+        "Decision_Recommended_Action": "Review prediction manually before acting — evidence is present but not yet strong enough to automate.",
+        "Decision_Risk_Level": "LOW",
+        "Decision_Technical_Confidence": "53.1%",
+        "Decision_Warnings": "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright.",
+        "Explanation_Business_Reason": "No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+        "Explanation_Dominant_Concepts": "",
+        "Explanation_Missing_Features": "Contract; InternetService; TechSupport; OnlineSecurity; PaymentMethod",
+        "Explanation_Prediction": "LOW CHURN",
+        "Explanation_Probability": 0.06549999862909317,
+        "Explanation_Recommendation": "",
+        "Explanation_Reliability": "Low",
+        "Explanation_Reliability_Reasons": "Coverage 29.2%; Concept Confidence 40.0%; Quality PASS; UNIVERSAL_MODEL selected; Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright.",
+        "Explanation_Triggered_Findings": "",
+        "Model_Artifact": "universal",
+        "Normalization_Version": "1.0.0",
+        "Pipeline_Version": "1.0.0",
+        "Predicted_Churn": "No",
+        "Prediction_Confidence": "Very Low",
+        "Prediction_Mode": "Auto",
+        "Prediction_Model": "Universal XGBoost",
+        "Prediction_Reliability": "Low",
+        "Prediction_Timestamp": "2026-07-08 11:43:35 UTC",
+        "Quality_Score": "100.0%",
+        "Quality_Status": "GOOD",
+        "Risk_Level": "Low",
+        "Routing_Reason": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+        "Routing_Timestamp": "2026-07-08 11:43:35 UTC",
+        "Routing_Warnings": "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright.",
+        "Sector": "Telecom",
+        "Sector_Model_Version": "N/A",
+        "Selected_Model": "UNIVERSAL_MODEL",
+        "Universal_Model_Version": "1.0.0"
+      },
+      {
+        "Churn_Probability": 0.8321999907493591,
+        "Concept_Confidence": "40.0%",
+        "Coverage_Algorithm_Version": "1.0.0",
+        "Coverage_Band": "Red",
+        "Coverage_Confidence": "Insufficient",
+        "Coverage_Score": "29.2%",
+        "Coverage_Status": "Red",
+        "CustomerID": "TEL_GOLD_04",
+        "Decision_Business_Confidence": "46.7%",
+        "Decision_Evidence_Strength": "51.8%",
+        "Decision_Overall_Confidence": "49.9%",
+        "Decision_Readiness": "REVIEW",
+        "Decision_Recommended_Action": "Review prediction manually before acting — evidence is present but not yet strong enough to automate.",
+        "Decision_Risk_Level": "LOW",
+        "Decision_Technical_Confidence": "53.1%",
+        "Decision_Warnings": "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright.",
+        "Explanation_Business_Reason": "No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+        "Explanation_Dominant_Concepts": "",
+        "Explanation_Missing_Features": "Contract; InternetService; TechSupport; OnlineSecurity; PaymentMethod",
+        "Explanation_Prediction": "HIGH CHURN",
+        "Explanation_Probability": 0.8321999907493591,
+        "Explanation_Recommendation": "",
+        "Explanation_Reliability": "Low",
+        "Explanation_Reliability_Reasons": "Coverage 29.2%; Concept Confidence 40.0%; Quality PASS; UNIVERSAL_MODEL selected; Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright.",
+        "Explanation_Triggered_Findings": "",
+        "Model_Artifact": "universal",
+        "Normalization_Version": "1.0.0",
+        "Pipeline_Version": "1.0.0",
+        "Predicted_Churn": "Yes",
+        "Prediction_Confidence": "High",
+        "Prediction_Mode": "Auto",
+        "Prediction_Model": "Universal XGBoost",
+        "Prediction_Reliability": "Low",
+        "Prediction_Timestamp": "2026-07-08 11:43:35 UTC",
+        "Quality_Score": "100.0%",
+        "Quality_Status": "GOOD",
+        "Risk_Level": "High",
+        "Routing_Reason": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+        "Routing_Timestamp": "2026-07-08 11:43:35 UTC",
+        "Routing_Warnings": "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright.",
+        "Sector": "Telecom",
+        "Sector_Model_Version": "N/A",
+        "Selected_Model": "UNIVERSAL_MODEL",
+        "Universal_Model_Version": "1.0.0"
+      },
+      {
+        "Churn_Probability": 0.08990000188350677,
+        "Concept_Confidence": "40.0%",
+        "Coverage_Algorithm_Version": "1.0.0",
+        "Coverage_Band": "Red",
+        "Coverage_Confidence": "Insufficient",
+        "Coverage_Score": "29.2%",
+        "Coverage_Status": "Red",
+        "CustomerID": "TEL_GOLD_05",
+        "Decision_Business_Confidence": "46.7%",
+        "Decision_Evidence_Strength": "51.8%",
+        "Decision_Overall_Confidence": "49.9%",
+        "Decision_Readiness": "REVIEW",
+        "Decision_Recommended_Action": "Review prediction manually before acting — evidence is present but not yet strong enough to automate.",
+        "Decision_Risk_Level": "LOW",
+        "Decision_Technical_Confidence": "53.1%",
+        "Decision_Warnings": "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright.",
+        "Explanation_Business_Reason": "No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+        "Explanation_Dominant_Concepts": "",
+        "Explanation_Missing_Features": "Contract; InternetService; TechSupport; OnlineSecurity; PaymentMethod",
+        "Explanation_Prediction": "LOW CHURN",
+        "Explanation_Probability": 0.08990000188350677,
+        "Explanation_Recommendation": "",
+        "Explanation_Reliability": "Low",
+        "Explanation_Reliability_Reasons": "Coverage 29.2%; Concept Confidence 40.0%; Quality PASS; UNIVERSAL_MODEL selected; Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright.",
+        "Explanation_Triggered_Findings": "",
+        "Model_Artifact": "universal",
+        "Normalization_Version": "1.0.0",
+        "Pipeline_Version": "1.0.0",
+        "Predicted_Churn": "No",
+        "Prediction_Confidence": "Very Low",
+        "Prediction_Mode": "Auto",
+        "Prediction_Model": "Universal XGBoost",
+        "Prediction_Reliability": "Low",
+        "Prediction_Timestamp": "2026-07-08 11:43:35 UTC",
+        "Quality_Score": "100.0%",
+        "Quality_Status": "GOOD",
+        "Risk_Level": "Low",
+        "Routing_Reason": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+        "Routing_Timestamp": "2026-07-08 11:43:35 UTC",
+        "Routing_Warnings": "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright.",
+        "Sector": "Telecom",
+        "Sector_Model_Version": "N/A",
+        "Selected_Model": "UNIVERSAL_MODEL",
+        "Universal_Model_Version": "1.0.0"
+      }
+    ]
+  },
+  "quality": {
+    "column_results": [
+      {
+        "column": "customerID",
+        "is_near_constant": false,
+        "leakage_flag": false,
+        "leakage_warning": false,
+        "n_unique": 5,
+        "null_rate": 0.0,
+        "passed": true,
+        "reasons": [],
+        "target_correlation": null
+      },
+      {
+        "column": "tenure",
+        "is_near_constant": false,
+        "leakage_flag": false,
+        "leakage_warning": false,
+        "n_unique": 5,
+        "null_rate": 0.0,
+        "passed": true,
+        "reasons": [],
+        "target_correlation": null
+      },
+      {
+        "column": "InternetService",
+        "is_near_constant": false,
+        "leakage_flag": false,
+        "leakage_warning": false,
+        "n_unique": 3,
+        "null_rate": 0.0,
+        "passed": true,
+        "reasons": [],
+        "target_correlation": null
+      },
+      {
+        "column": "Contract",
+        "is_near_constant": false,
+        "leakage_flag": false,
+        "leakage_warning": false,
+        "n_unique": 3,
+        "null_rate": 0.0,
+        "passed": true,
+        "reasons": [],
+        "target_correlation": null
+      },
+      {
+        "column": "MonthlyCharges",
+        "is_near_constant": false,
+        "leakage_flag": false,
+        "leakage_warning": false,
+        "n_unique": 5,
+        "null_rate": 0.0,
+        "passed": true,
+        "reasons": [],
+        "target_correlation": null
+      },
+      {
+        "column": "TotalCharges",
+        "is_near_constant": false,
+        "leakage_flag": false,
+        "leakage_warning": false,
+        "n_unique": 5,
+        "null_rate": 0.0,
+        "passed": true,
+        "reasons": [],
+        "target_correlation": null
+      }
+    ],
+    "failed_columns": [],
+    "leakage_detected": false,
+    "leakage_flagged": [],
+    "leakage_warned": [],
+    "overall_passed": true
+  },
+  "reasoning": {
+    "dominant_findings": [],
+    "headline": "LOW CHURN",
+    "overall_business_health": "MEDIUM",
+    "overall_customer_risk": "LOW",
+    "reason_text": "No single business rule crossed its trigger threshold for this input. Strongest evidenced signal: RECURRING_COMMITMENT (MEDIUM, 100% concept confidence). Insufficient evidence to reason about: SUPPORT_FRICTION, ENGAGEMENT_LEVEL, SATISFACTION_SIGNAL. Feature coverage was Red (29.2%). Overall concept confidence was 40.0% (2/5 concepts reconstructed). UNIVERSAL_MODEL was selected (reliability: Low) — Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+    "recommendation_text": "No specific recommendation available."
+  },
+  "reports": null,
+  "routing": {
+    "Concept_Confidence": "40.0%",
+    "Coverage_Algorithm_Version": "1.0.0",
+    "Coverage_Band": "Red",
+    "Coverage_Score": "29.2%",
+    "Model_Artifact": "universal",
+    "Pipeline_Version": "1.0.0",
+    "Prediction_Reliability": "Low",
+    "Quality_Score": "100.0%",
+    "Quality_Status": "GOOD",
+    "Routing_Reason": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+    "Routing_Timestamp": "2026-07-08 11:43:35 UTC",
+    "Routing_Warnings": "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright.",
+    "Selected_Model": "UNIVERSAL_MODEL",
+    "concept_confidence": 0.4,
+    "coverage_band": "Red",
+    "coverage_score": 0.2917,
+    "model_artifact": "universal",
+    "prediction_mode": "auto",
+    "quality_score": 1.0,
+    "quality_status": "GOOD",
+    "reliability": "Low",
+    "routing_reason": "Auto mode — coverage is Red (29.2% < 60%), but business concepts remain reconstructable (concept confidence 40.0%). Missing critical features: ['Contract', 'InternetService']. Routed to the universal model rather than refused, per routing policy: reject only on quality failure or unreconstructable concepts, not on feature count alone.",
+    "selected_model": "UNIVERSAL_MODEL",
+    "selected_pipeline": "UniversalPipeline",
+    "warnings": [
+      "Coverage is Red (29.2%) but business concepts are still reconstructable (concept confidence 40.0%) — routed to the universal model instead of refusing outright."
+    ]
+  }
+}

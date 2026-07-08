@@ -11,6 +11,8 @@ import pytest
 from backend.contracts import ExecutionInfo
 from backend.exceptions import UnsupportedFrameworkOutputError
 from backend.mappers import FrameworkMapper
+from backend.models.execution_result import ExecutionResult
+from backend.presentation import build_prediction_summary
 
 
 @pytest.fixture
@@ -196,15 +198,19 @@ def test_build_response_full_pipeline(
     fake_results_df, fake_explanation_report, fake_decision_assessment,
 ):
     execution = ExecutionInfo.start(framework_version="1.0.0")
-    response = mapper.build_response(
-        execution=execution,
+    execution_result = ExecutionResult.from_framework_output(
+        sector="telecom", mode="auto",
+        results=fake_results_df,
         coverage=fake_coverage_dict,
         quality=fake_quality_dict,
         routing_decision=fake_routing_decision,
-        results=fake_results_df,
         explanation_report=fake_explanation_report,
         decision_assessment=fake_decision_assessment,
-        report_texts={"quality_report_text": "ok"},
+    ).with_reports({"quality_report_text": "ok"})
+    response = mapper.build_response(
+        execution=execution,
+        execution_result=execution_result,
+        prediction_summary=build_prediction_summary(fake_results_df),
     )
 
     assert response.execution is execution
@@ -226,14 +232,16 @@ def test_build_response_refused_prediction_has_no_prediction_sections(
     """A quality-gate FAIL means no prediction was ever made — the
     response must still be well-formed with those sections as None."""
     execution = ExecutionInfo.start()
-    response = mapper.build_response(
-        execution=execution,
+    execution_result = ExecutionResult.from_framework_output(
+        sector="telecom", mode="auto",
+        refused=True, refusal_reason="CRITICAL_UNRELIABLE",
         coverage=fake_coverage_dict,
         quality=fake_quality_dict_leaked,
-        routing_decision=None,
-        results=None,
-        explanation_report=None,
-        decision_assessment=None,
+    )
+    response = mapper.build_response(
+        execution=execution,
+        execution_result=execution_result,
+        prediction_summary=None,
     )
     assert response.quality.leakage_detected is True
     assert response.routing is None
@@ -248,9 +256,17 @@ def test_build_response_is_fully_serializable(
 ):
     import json
     execution = ExecutionInfo.start().mark_succeeded(10.0)
+    execution_result = ExecutionResult.from_framework_output(
+        sector="telecom", mode="auto",
+        results=fake_results_df,
+        coverage=fake_coverage_dict,
+        quality=fake_quality_dict,
+        routing_decision=fake_routing_decision,
+    )
     response = mapper.build_response(
-        execution=execution, coverage=fake_coverage_dict, quality=fake_quality_dict,
-        routing_decision=fake_routing_decision, results=fake_results_df,
+        execution=execution,
+        execution_result=execution_result,
+        prediction_summary=build_prediction_summary(fake_results_df),
     )
     payload = json.dumps(response.to_dict())
     assert "FULL_SECTOR_MODEL" in payload

@@ -93,12 +93,10 @@ def test_pipeline_service_summary_counts_match_registry():
 # ── ReportService ────────────────────────────────────────────────
 
 def test_report_service_degrades_gracefully_on_missing_inputs():
-    from types import SimpleNamespace
+    from backend.models.execution_result import ExecutionResult
     service = ReportService()
-    fake_result = SimpleNamespace(
-        quality=None, routing_decision=None, results=None,
-        coverage=None, sector="telecom", explanation_report=None,
-        decision_assessment=None,
+    fake_result = ExecutionResult.from_framework_output(
+        sector="telecom", mode="auto",
     )
     texts = service.generate_reports(fake_result)
     assert texts == {}
