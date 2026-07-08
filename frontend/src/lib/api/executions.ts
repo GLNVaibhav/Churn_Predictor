@@ -9,6 +9,9 @@ export interface ExecutionSummaryResponse {
   created_at?: string;
   started_at?: string;
   completed_at?: string | null;
+  execution_time_ms?: number | null;
+  filename?: string | null;
+  sector?: string | null;
   progress?: number | null;
 }
 

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { AlertTriangle, Inbox, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -12,12 +13,21 @@ export function LoadingState({ label = "Loading live data..." }: { label?: strin
   );
 }
 
-export function EmptyState({ title, description }: { title: string; description: string }) {
+export function EmptyState({
+  title,
+  description,
+  action,
+}: {
+  title: string;
+  description: string;
+  action?: ReactNode;
+}) {
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/70 bg-muted/20 px-6 py-10 text-center">
       <Inbox className="h-8 w-8 text-muted-foreground" />
       <p className="mt-3 text-sm font-medium">{title}</p>
       <p className="mt-1 max-w-md text-xs text-muted-foreground">{description}</p>
+      {action ? <div className="mt-4">{action}</div> : null}
     </div>
   );
 }
