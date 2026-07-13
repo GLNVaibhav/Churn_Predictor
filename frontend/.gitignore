@@ -1,8 +1,60 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+########################################
+# Python
+########################################
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.pyre/
+.cache/
 
-# dependencies
-/node_modules
-/.pnp
+########################################
+# Virtual Environments
+########################################
+.venv/
+venv/
+env/
+ENV/
+
+########################################
+# Jupyter
+########################################
+.ipynb_checkpoints/
+
+########################################
+# Logs
+########################################
+*.log
+logs/
+
+########################################
+# Build
+########################################
+build/
+dist/
+
+########################################
+# Node / Next.js
+########################################
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.vercel/
+frontend/*.tsbuildinfo
+node_modules/
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -10,34 +62,85 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
+########################################
+# Environment
+########################################
+.env
+.env.*
+!.env.example
 
-# next.js
-/.next/
-/out/
+########################################
+# IDE
+########################################
+.vscode/
+.idea/
+*.swp
 
-# production
-/build
-
-# misc
+########################################
+# OS
+########################################
 .DS_Store
-*.pem
+Thumbs.db
 
-# debug
+########################################
+# ML / Model Files
+########################################
+*.h5
+*.ckpt
+*.pkl
+*.joblib
+*.onnx
+*.pt
+*.pth
+
+########################################
+# Data Files
+########################################
+*.parquet
+*.feather
+
+########################################
+# Runtime Data
+########################################
+data/uploads/*
+!data/uploads/.gitkeep
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+########################################
+# Generated Outputs
+########################################
+outputs/*
+!outputs/.gitkeep
+!outputs/predictions/
+!outputs/reports/
+!outputs/logs/
+outputs/predictions/*
+!outputs/predictions/.gitkeep
+outputs/reports/*
+!outputs/reports/.gitkeep
+outputs/logs/*
+!outputs/logs/.gitkeep
+
+########################################
+# Experiment Tracking
+########################################
+mlruns/
+wandb/
+artifacts/
+
+########################################
+# Deploy
+########################################
+.vercel/
+.render/
+
+########################################
+# Misc
+########################################
+*.pem
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-.vercel
+pnpm-debug.log*
