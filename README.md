@@ -20,14 +20,53 @@ UCIF is a modular AI platform that transforms raw customer datasets into actiona
 
 ---
 
-# 🌐 Live Experience
+# 🌐 Experience UCIF
 
-| Experience | Purpose | Link |
-|------------|---------|------|
-| 🌟 **Official Landing Page** | Product overview, platform vision, architecture, and features | https://churn-prediction-gray-delta.vercel.app/ |
-| 💻 **Enterprise Platform** | Interactive AI Decision Intelligence Platform powered by FastAPI & Next.js | https://churnframework.vercel.app/ |
+UCIF can be explored through three complementary interfaces, each serving a different purpose.
 
-> **Note:** The Enterprise Platform demonstrates the complete frontend experience with FastAPI integration. Some advanced framework capabilities (execution persistence, local artifacts, and reports) are best experienced in a local deployment due to cloud hosting limitations.
+| Experience | Purpose | Recommended For |
+|------------|---------|-----------------|
+| 🖥️ **CLI (Reference Implementation)** | Complete Universal Churn Intelligence pipeline with every intelligence layer, report, and executive decision output | ⭐ **Recommended Experience** |
+| 💻 **Enterprise Platform** | Interactive AI Decision Intelligence Platform powered by FastAPI & Next.js | Enterprise UI, APIs, and workflow demonstration |
+| 🌟 **Official Landing Page** | Product overview, architecture, vision, and feature showcase | First-time visitors and project overview |
+
+---
+
+> ## ⭐ Recommended Experience
+>
+> The **Command Line Interface (CLI)** is the **reference implementation** of the Universal Churn Intelligence Framework.
+>
+> It demonstrates the complete intelligence pipeline exactly as designed, without the constraints of cloud deployment.
+>
+> Through the CLI, you can experience:
+>
+> - ✅ Automatic Industry Detection
+> - ✅ Universal Dataset Intelligence
+> - ✅ Coverage Intelligence
+> - ✅ Concept Confidence Analysis
+> - ✅ Data Quality Validation
+> - ✅ Adaptive Routing Engine
+> - ✅ Universal & Sector Prediction
+> - ✅ Prediction Quality Report
+> - ✅ Explainable AI
+> - ✅ Business Reasoning
+> - ✅ Executive Decision Intelligence
+> - ✅ Comprehensive Report Generation
+>
+> **For the most complete UCIF experience, we recommend running the framework locally using the CLI.**
+>
+> The Enterprise Web Platform showcases these capabilities through an interactive interface and REST APIs, while the Official Landing Page provides an overview of the platform, architecture, and vision.
+
+---
+
+## 🌍 Live Applications
+
+| Application | URL |
+|-------------|-----|
+| 🌟 Official Landing Page | https://churn-prediction-gray-delta.vercel.app/ |
+| 💻 Enterprise Platform | https://churnframework.vercel.app/ |
+
+> **Note:** The Enterprise Platform demonstrates the frontend experience with FastAPI integration. Some advanced framework capabilities—such as local artifact generation, full execution persistence, and complete CLI reporting—are available only when running UCIF locally.
 
 ---
 
