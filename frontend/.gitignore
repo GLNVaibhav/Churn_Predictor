@@ -15,10 +15,6 @@ __pycache__/
 .coverage
 coverage.xml
 htmlcov/
-.tox/
-.nox/
-.pyre/
-.cache/
 
 ########################################
 # Virtual Environments
@@ -38,6 +34,7 @@ ENV/
 ########################################
 *.log
 logs/
+outputs/logs/
 
 ########################################
 # Build
@@ -53,6 +50,10 @@ frontend/.next/
 frontend/out/
 frontend/.vercel/
 frontend/*.tsbuildinfo
+
+########################################
+# Root Node (only if used)
+########################################
 node_modules/
 .pnp
 .pnp.*
@@ -83,56 +84,37 @@ node_modules/
 Thumbs.db
 
 ########################################
-# ML / Model Files
+# Model Files (optional)
 ########################################
 *.h5
 *.ckpt
-*.pkl
-*.joblib
-*.onnx
-*.pt
-*.pth
 
 ########################################
-# Data Files
+# Temporary Outputs
 ########################################
-*.parquet
-*.feather
+outputs/temp/
+outputs/cache/
 
 ########################################
-# Runtime Data
+# Uploaded Files
 ########################################
 data/uploads/*
 !data/uploads/.gitkeep
-data/raw/*
-!data/raw/.gitkeep
-data/processed/*
-!data/processed/.gitkeep
 
 ########################################
-# Generated Outputs
+# Generated Predictions
 ########################################
-outputs/*
-!outputs/.gitkeep
-!outputs/predictions/
-!outputs/reports/
-!outputs/logs/
 outputs/predictions/*
 !outputs/predictions/.gitkeep
+
+########################################
+# Reports
+########################################
 outputs/reports/*
 !outputs/reports/.gitkeep
-outputs/logs/*
-!outputs/logs/.gitkeep
 
 ########################################
-# Experiment Tracking
-########################################
-mlruns/
-wandb/
-artifacts/
-
-########################################
-# Deploy
+# Render / Vercel
 ########################################
 .vercel/
 .render/
