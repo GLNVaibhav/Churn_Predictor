@@ -5,3 +5,6 @@ __pycache__/
 
 .vercel
 .env*
+
+# VS Code
+.vscode/
