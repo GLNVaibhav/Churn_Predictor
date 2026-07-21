@@ -1,8 +1,8 @@
 # 🚀 Universal Churn Intelligence Framework (UCIF)
 
-> **Enterprise AI Decision Intelligence Platform for Universal Customer Churn Prediction**
+> **An Explainable Churn Intelligence Framework for Universal Customer Churn Analysis**
 
-UCIF is a modular AI platform that transforms raw customer datasets into actionable business decisions through intelligent schema understanding, adaptive model routing, explainable predictions, business reasoning, and executive decision intelligence.
+UCIF is a modular and explainable software framework that transforms raw customer datasets into transparent business diagnostic insights through intelligent schema understanding, adaptive model routing, explainable predictions, business reasoning, and decision support.
 
 ---
 
@@ -26,8 +26,8 @@ UCIF can be explored through three complementary interfaces, each serving a diff
 
 | Experience | Purpose | Recommended For |
 |------------|---------|-----------------|
-| 🖥️ **CLI (Reference Implementation)** | Complete Universal Churn Intelligence pipeline with every intelligence layer, report, and executive decision output | ⭐ **Recommended Experience** |
-| 💻 **Enterprise Platform** | Interactive AI Decision Intelligence Platform powered by FastAPI & Next.js | Enterprise UI, APIs, and workflow demonstration |
+| 🖥️ **CLI (Reference Implementation)** | Complete Universal Churn Intelligence pipeline with every intelligence layer, report, and business diagnostic output | ⭐ **Recommended Experience** |
+| 💻 **Enterprise Platform** | Interactive Explainable Churn Intelligence Platform powered by FastAPI & Next.js | Enterprise UI, APIs, and workflow demonstration |
 | 🌟 **Official Landing Page** | Product overview, architecture, vision, and feature showcase | First-time visitors and project overview |
 
 ---
@@ -50,7 +50,7 @@ UCIF can be explored through three complementary interfaces, each serving a diff
 > - ✅ Prediction Quality Report
 > - ✅ Explainable AI
 > - ✅ Business Reasoning
-> - ✅ Executive Decision Intelligence
+> - ✅ Business Diagnostic Insights
 > - ✅ Comprehensive Report Generation
 >
 > **For the most complete UCIF experience, we recommend running the framework locally using the CLI.**
@@ -72,7 +72,7 @@ UCIF can be explored through three complementary interfaces, each serving a diff
 
 ## 🎯 Vision
 
-The Universal Churn Intelligence Framework (UCIF) is designed to go beyond traditional churn prediction by combining **AI, business intelligence, and decision support** into a unified enterprise platform.
+The Universal Churn Intelligence Framework (UCIF) is designed to go beyond traditional churn prediction by combining **semantic intelligence, business reasoning, explainability, and decision support** within a unified software architecture.
 
 Instead of only predicting whether a customer will churn, UCIF answers:
 
@@ -80,22 +80,33 @@ Instead of only predicting whether a customer will churn, UCIF answers:
 - **Is prediction technically reliable?**
 - **Which prediction strategy should be used?**
 - **Why is the customer likely to churn?**
-- **What business action should be taken?**
+- **What analytical evidence supports this prediction?**
 
-This transforms predictive analytics into an **AI Decision Intelligence Platform** suitable for enterprise environments.
+This transforms traditional predictive analytics into an **Explainable Churn Intelligence Framework** that supports evidence-based business analysis.
 
+---
+
+# 🧭 Diagnostics Before Decisions
+
+A fundamental design principle of UCIF is **Diagnostics Before Decisions**.
+
+The framework is intentionally designed as an **Explainable Decision Support Framework**, not an autonomous decision-making platform.
+
+Rather than prescribing business decisions, UCIF produces semantic interpretations, coverage assessments, data quality evaluations, business reasoning, prediction explanations, and business diagnostic insights that enable analysts and decision-makers to understand customer churn behavior with greater transparency.
+
+Organizational decisions remain under human control while being supported by explainable analytical evidence.
 
 ---
 
 # 📖 What is UCIF?
 
-The **Universal Churn Intelligence Framework (UCIF)** is an enterprise-grade AI Decision Intelligence Platform that enables organizations to analyze customer churn across multiple industries using a single intelligent framework.
+The **Universal Churn Intelligence Framework (UCIF)** is a modular and explainable software framework that enables organizations to analyze customer churn across multiple industries using a unified analytical architecture.
 
-Unlike conventional churn prediction systems that only generate a binary prediction, UCIF performs a complete end-to-end intelligence pipeline—from understanding the dataset to recommending business actions.
+Unlike conventional churn prediction systems that only generate a binary prediction, UCIF performs a complete end-to-end intelligence pipeline—from understanding heterogeneous customer datasets to producing transparent business diagnostic insights.
 
-UCIF is designed around the philosophy that **prediction alone is not enough**. Every prediction should be measurable, explainable, trustworthy, and actionable.
+UCIF is designed around the philosophy that **prediction alone is not enough**. Every prediction should be measurable, explainable, trustworthy, and supported by analytical evidence.
 
-The framework combines machine learning, adaptive routing, business reasoning, explainable AI, and executive decision intelligence into a unified platform that can be deployed through a CLI, REST APIs, or an enterprise web application.
+The framework combines machine learning, adaptive routing, business reasoning, explainable AI, and business diagnostic insights into a unified platform that can be deployed through a CLI, REST APIs, or an enterprise web application.
 
 ---
 
@@ -114,9 +125,9 @@ UCIF answers several critical business questions before making a prediction:
 - ✅ Which prediction strategy should be used?
 - ✅ Why is the prediction being made?
 - ✅ What business evidence supports it?
-- ✅ What should decision-makers do next?
+- ✅ What diagnostic insights should analysts investigate?
 
-This transforms predictive analytics into a complete **AI Decision Intelligence Platform**.
+This transforms traditional predictive analytics into an **Explainable Churn Intelligence Framework**.
 
 ---
 
@@ -229,20 +240,22 @@ This bridges the gap between data science and business decision-making.
 
 ---
 
-### 🏢 Executive Decision Intelligence
+### 🏢 Business Diagnostic Insights
 
-The final stage of the framework converts technical outputs into executive-level recommendations.
+The final stage of the framework synthesizes prediction outcomes, business reasoning, coverage assessment, and data quality evaluation into evidence-based business diagnostic insights.
 
 Outputs include:
 
-- Decision Readiness
-- Business Confidence
-- Technical Confidence
-- Evidence Strength
-- Recommended Actions
-- Supporting Evidence
+- Business Diagnostic Report
+- Business Confidence Indicators
+- Analytical Confidence
+- Coverage Summary
+- Data Quality Assessment
+- Prediction Explanations
+- Supporting Business Evidence
+- Investigation Priorities
 
-Designed specifically for business leaders and decision-makers.
+Designed to support business analysts and organizational stakeholders by providing transparent analytical evidence while preserving human decision authority.
 
 ---
 
@@ -271,7 +284,7 @@ The architecture is extensible, allowing additional industries to be integrated 
 - Adaptive AI model routing
 - Explainable predictions
 - Business reasoning engine
-- Executive decision intelligence
+- Business diagnostic insights
 - Enterprise REST APIs
 - Modern Next.js web platform
 - FastAPI backend
@@ -279,8 +292,6 @@ The architecture is extensible, allowing additional industries to be integrated 
 - Modular architecture
 - Multi-industry design
 - Production-ready deployment architecture
-
----
 
 ---
 
@@ -329,7 +340,7 @@ Each layer has a single responsibility, making the platform scalable, maintainab
                             Business Reasoning
                                        │
                                        ▼
-                       Executive Decision Intelligence
+                         Business Diagnostic Insights
                                        │
                                        ▼
                           Reports & Execution Result
@@ -375,7 +386,7 @@ Business Reasoning
 Prediction Explanation
       │
       ▼
-Executive Decision Intelligence
+Business Diagnostic Insights
       │
       ▼
 Report Generation
@@ -434,7 +445,7 @@ The backend intentionally avoids implementing business intelligence. All predict
 
 # 🎨 Frontend Architecture
 
-The enterprise frontend is built using Next.js and provides a unified AI Decision Intelligence Workspace.
+The enterprise frontend is built using Next.js and provides a unified Churn Intelligence Workspace.
 
 ```text
 Mission Control Dashboard
@@ -451,7 +462,7 @@ Pipeline Coverage Quality
  ▼        ▼        ▼
 Routing Prediction Reports
  ▼        ▼        ▼
-Reasoning Decision Monitoring
+Reasoning Diagnostics Monitoring
 ```
 
 The frontend follows a **single execution model**, where one analysis powers the entire workspace.
@@ -488,7 +499,10 @@ Prediction
 Business Reasoning
       │
       ▼
-Executive Decision
+Prediction Explainability
+      │
+      ▼
+Business Diagnostic Insights
       │
       ▼
 Reports
@@ -530,6 +544,7 @@ UCIF is built around several core engineering principles:
 - **Separation of Concerns** — Business intelligence remains inside the framework; orchestration stays in the backend.
 - **Extensibility** — New industries and AI domains can be added without redesigning the architecture.
 - **Explainability** — Every prediction is accompanied by business reasoning and supporting evidence.
+- **Decision Support** — UCIF provides explainable analytical evidence that supports human decision-making rather than replacing it.
 - **Enterprise Readiness** — REST APIs, modern frontend, deployment support, and scalable architecture.
 - **Framework Independence** — The `universal_churn` engine can be consumed via CLI, FastAPI, or future integrations without modification.
 
@@ -539,9 +554,9 @@ UCIF is built around several core engineering principles:
 
 # ✨ Platform Features
 
-The Universal Churn Intelligence Framework (UCIF) combines machine learning, business intelligence, and decision support into a unified enterprise platform.
+The Universal Churn Intelligence Framework (UCIF) combines machine learning, business intelligence, explainability, and decision support into a unified analytical framework.
 
-Each module is designed to solve a specific challenge in the customer churn prediction lifecycle while working seamlessly as part of a larger AI Decision Intelligence ecosystem.
+Each module is designed to solve a specific challenge in the customer churn prediction lifecycle while working seamlessly as part of a larger explainable churn intelligence ecosystem.
 
 ---
 
@@ -691,21 +706,21 @@ This bridges the gap between machine learning and business decision-making.
 
 ---
 
-# 🏛 Executive Decision Intelligence
+# 📊 Business Diagnostic Insights
 
-The final layer converts technical outputs into executive-level recommendations suitable for decision-makers.
+The final layer synthesizes technical outputs into transparent business diagnostics that support analysts and decision-makers.
 
 Outputs include:
 
-- Decision Readiness
-- Business Confidence
+- Business Diagnostic Report
+- Business Confidence Indicators
 - Technical Confidence
-- Overall Confidence
+- Overall Analytical Confidence
 - Evidence Strength
-- Recommended Action
-- Supporting Evidence
+- Supporting Business Evidence
+- Investigation Priorities
 
-This allows executives to make informed decisions without interpreting raw machine learning outputs.
+Rather than prescribing decisions, UCIF provides explainable analytical evidence that supports informed business decision-making.
 
 ---
 
@@ -721,7 +736,7 @@ Available reports include:
 - Routing Decision Report
 - Prediction Quality Report
 - Prediction Explanation Report
-- Executive Decision Report
+- Business Diagnostic Report
 - Execution Summary
 
 Reports are available through:
@@ -745,7 +760,7 @@ Key modules include:
 - Coverage Intelligence
 - Prediction Analytics
 - Business Reasoning
-- Executive Decision
+- Business Diagnostic Insights
 - Reports
 - Monitoring
 - Knowledge Base
@@ -788,7 +803,7 @@ The CLI provides detailed execution insights including:
 - Adaptive Routing
 - Prediction Results
 - Business Reasoning
-- Executive Decision Report
+- Business Diagnostic Report
 
 ---
 
@@ -807,7 +822,7 @@ Future extensions include:
 - Recommendation Systems
 - Customer Segmentation
 
-The framework architecture remains reusable across multiple AI decision intelligence domains.
+The framework architecture remains reusable across multiple AI-powered analytical domains.
 
 ---
 
@@ -826,7 +841,7 @@ No installation required.
 | 🌟 Official Landing Page | https://churn-prediction-gray-delta.vercel.app/ |
 | 💻 Enterprise Platform | https://churnframework.vercel.app/ |
 
-Simply upload a supported dataset and start exploring the complete AI Decision Intelligence workflow.
+Simply upload a supported dataset and start exploring the complete Explainable Churn Intelligence workflow.
 
 ---
 
@@ -859,4 +874,40 @@ npm install
 npm run dev
 ```
 
-The local deployment is intended for contributors, development, debugging, and extending the framework.
+The local deployment is intended for contributors, development, debugging, research, and extending the framework.
+
+---
+
+# 📜 License
+
+This project is licensed under the **MIT License**.
+
+---
+
+# 👨‍💻 Author
+
+**Gollamudi Lakshmi Narasimha Vaibhav**
+
+Computer Science Engineering Student
+
+Interests:
+
+- Explainable AI
+- Software Architecture
+- Machine Learning
+- Business Intelligence
+- Customer Analytics
+- Enterprise AI Systems
+
+---
+
+# ⭐ Support
+
+If you find this project useful, consider giving it a ⭐ on GitHub.
+
+Contributions, suggestions, and feedback are always welcome.
+
+---
+
+> **Universal Churn Intelligence Framework (UCIF)**  
+> *An Explainable Churn Intelligence Framework for Universal Customer Churn Analysis*
