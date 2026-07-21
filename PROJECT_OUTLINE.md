@@ -99,29 +99,31 @@ Transform technical prediction outputs into transparent business diagnostic insi
 
 ---
 
-# Supported Business Domains
-
-The Universal Churn Intelligence Framework is designed as a domain-extensible architecture capable of analyzing customer churn across multiple industries through a unified intelligence pipeline.
-
 ### Currently Supported Industries
+
+The current implementation of UCIF provides specialized analytical support for the following customer churn domains:
 
 - 📞 Telecommunications
 - 🏦 Banking
 - 🛒 E-Commerce
 - ❤️ Healthcare
-- ☁ SaaS
-- 📦 Subscription Services
+
+Each supported industry includes domain-specific knowledge, feature mappings, adaptive routing strategies, and prediction pipelines while sharing the same universal analytical architecture.
 
 ### Planned Industry Extensions
 
+The framework has been designed with extensibility as a core architectural principle. Future releases may introduce support for additional domains such as:
+
 - 🛡 Insurance
+- ☁ SaaS
+- 📦 Subscription Services
 - 🏭 Manufacturing
 - 🏬 Retail
 - 🎓 Education
 - 🏨 Hospitality
 - ⚡ Energy
 
-The framework's modular architecture enables additional industry adapters to be incorporated without modifying the core analytical pipeline.
+These domains are not part of the current implementation but can be integrated without modifying the core framework architecture.
 
 ---
 
