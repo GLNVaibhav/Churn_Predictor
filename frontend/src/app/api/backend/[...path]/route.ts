@@ -9,7 +9,17 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_ORIGIN = process.env.BACKEND_URL || "http://localhost:8000";
+function getBackendOrigin() {
+  return (
+    process.env.BACKEND_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    (process.env.NODE_ENV === "production"
+      ? "https://churn-framework-api.vercel.app"
+      : "http://localhost:8000")
+  ).replace(/\/$/, "");
+}
+
+const BACKEND_ORIGIN = getBackendOrigin();
 
 async function proxy(req: NextRequest, path: string[]) {
   const target = `${BACKEND_ORIGIN}/${path.join("/")}${req.nextUrl.search}`;

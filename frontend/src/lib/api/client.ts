@@ -22,7 +22,12 @@ export class ApiError extends Error {
 
 function baseUrl() {
   const url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
-  if (!url) return "/api/backend";
+  if (!url) {
+    if (process.env.NODE_ENV === "production") {
+      return "https://churn-framework-api.vercel.app";
+    }
+    return "/api/backend";
+  }
 
   const isLocalApi = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(url);
   const isLocalBrowser =
