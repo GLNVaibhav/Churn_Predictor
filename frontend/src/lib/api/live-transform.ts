@@ -1,8 +1,8 @@
-// Adapters that map raw FastAPI backend JSON (which preserves the
+// Adapters that map raw FastAPI API JSON (which preserves the
 // framework's own field names/terminology verbatim, e.g. "Coverage_Score",
 // "Selected_Model", "UNIVERSAL_MODEL") into the frontend's existing
 // display types. No values are invented here — every field is read from
-// a real backend response; only shape/casing is adapted so existing
+// a real API response; only shape/casing is adapted so existing
 // UI components (built against the mock contract) render unchanged.
 
 import type {
@@ -25,42 +25,71 @@ const stageTemplate = (
   order: number,
   name: string,
   shortLabel: string,
-  backendModule: string,
+  integrationSurface: string,
+  description?: string,
+  detail?: string,
 ): PipelineStage => ({
   id,
   order,
   name,
   shortLabel,
-  description: `${name} output from the live backend execution contract.`,
+  description: description || `${name} output from the live API execution contract.`,
   status: "pending",
   durationMs: 0,
   metrics: [],
-  detail: `${name} is owned by the backend UCIF pipeline and rendered here from execution state.`,
-  backendModule,
-  inputSample: "Live execution context",
-  outputSample: "Backend contract section",
+  detail: detail || `${name} is mapped from the API contract and rendered without recomputing framework logic in the frontend.`,
+  backendModule: integrationSurface,
+  inputSample: "Frontend request or persisted execution context",
+  outputSample: "API contract section",
   futureEndpoint: "/api/v1/analysis/{execution_id}",
-  notes: "Frontend does not infer or recompute this stage.",
+  notes: "Frontend renders the contract. Framework behavior is exposed through the API and mapper boundary.",
 });
 
 const PIPELINE_STAGE_TEMPLATES: PipelineStage[] = [
-  stageTemplate("upload-dataset", 1, "Upload Dataset", "Upload", "backend.services.upload_service"),
-  stageTemplate("schema-intelligence", 2, "Schema Intelligence", "Schema", "universal_churn.schema_resolution"),
-  stageTemplate("canonical-field-resolution", 3, "Canonical Field Resolution", "Canonical", "universal_churn.canonical_fields"),
-  stageTemplate("coverage-intelligence", 4, "Coverage Intelligence", "Coverage", "universal_churn.coverage"),
-  stageTemplate("concept-confidence", 5, "Concept Confidence", "Concepts", "universal_churn.concept_confidence"),
-  stageTemplate("quality-gate", 6, "Quality Gate", "Quality", "universal_churn.quality_gate"),
-  stageTemplate("adaptive-routing", 7, "Adaptive Routing", "Routing", "universal_churn.routing"),
-  stageTemplate("prediction", 8, "Prediction", "Prediction", "universal_churn.sector_pipeline"),
-  stageTemplate("prediction-explanation", 9, "Prediction Explanation", "Explain", "universal_churn.prediction_explanation"),
-  stageTemplate("decision-intelligence", 10, "Decision Intelligence", "Decision", "universal_churn.decision_intelligence"),
+  stageTemplate(
+    "frontend-intake",
+    1,
+    "Data Intake",
+    "Intake",
+    "frontend.src.app.upload",
+    "Dataset submission and analysis controls.",
+    "The workspace collects the CSV, selected industry, and business context before analysis starts."
+  ),
+  stageTemplate(
+    "api-contract",
+    2,
+    "Upload Validation",
+    "Validate",
+    "backend.api.routers.analysis",
+    "File validation, profiling, and execution preparation.",
+    "The service checks dataset shape, previews fields, and prepares the analysis run."
+  ),
+  stageTemplate(
+    "framework-mapper",
+    3,
+    "Industry Alignment",
+    "Industry",
+    "backend.mappers.framework_mapper",
+    "Industry selection and customer data alignment.",
+    "The selected industry controls coverage expectations, risk signals, and decision context."
+  ),
+  stageTemplate("schema-intelligence", 4, "Schema Intelligence", "Schema", "universal_churn.schema_resolution"),
+  stageTemplate("canonical-field-resolution", 5, "Canonical Field Resolution", "Canonical", "universal_churn.canonical_fields"),
+  stageTemplate("coverage-intelligence", 6, "Coverage Intelligence", "Coverage", "universal_churn.coverage"),
+  stageTemplate("concept-confidence", 7, "Concept Confidence", "Concepts", "universal_churn.concept_confidence"),
+  stageTemplate("quality-gate", 8, "Quality Gate", "Quality", "universal_churn.quality_gate"),
+  stageTemplate("adaptive-routing", 9, "Adaptive Routing", "Routing", "universal_churn.routing"),
+  stageTemplate("prediction", 10, "Prediction", "Prediction", "universal_churn.sector_pipeline"),
+  stageTemplate("prediction-explanation", 11, "Prediction Explanation", "Explain", "universal_churn.prediction_explanation"),
+  stageTemplate("decision-intelligence", 12, "Decision Intelligence", "Decision", "universal_churn.decision_intelligence"),
 ];
 
 export interface BackendStage {
-  id: string;
+  id?: string;
   name: string;
   status: string;
-  durationMs: number;
+  durationMs?: number;
+  execution_time?: number;
 }
 
 export interface PipelineStatusResponse {
@@ -153,30 +182,55 @@ function pct(value: unknown): number {
   return 0;
 }
 
-// Backend snake_case stage ids -> frontend kebab-case stage ids. The
-// backend's "load_model" stage has no dedicated frontend node — its
-// duration is folded into "upload-dataset" since it's part of the same
-// pre-processing setup window.
+// API snake_case stage ids -> frontend kebab-case stage ids. Transport
+// and mapping are first-class nodes even when the execution payload only
+// reports framework-owned stage timings.
 const STAGE_ID_MAP: Record<string, string> = {
-  upload: "upload-dataset",
-  load_model: "upload-dataset",
+  frontend_intake: "frontend-intake",
+  "frontend intake": "frontend-intake",
+  api_contract: "api-contract",
+  "api contract": "api-contract",
+  framework_mapper: "framework-mapper",
+  "framework mapper": "framework-mapper",
+  upload: "api-contract",
+  load_model: "framework-mapper",
   schema: "schema-intelligence",
+  business_meaning: "schema-intelligence",
+  "business meaning": "schema-intelligence",
+  context_validation: "schema-intelligence",
+  "context validation": "schema-intelligence",
+  semantic_graph: "schema-intelligence",
+  "semantic graph": "schema-intelligence",
   canonical: "canonical-field-resolution",
+  canonical_mapping: "canonical-field-resolution",
+  "canonical mapping": "canonical-field-resolution",
   coverage: "coverage-intelligence",
+  coverage_intelligence: "coverage-intelligence",
+  "coverage intelligence": "coverage-intelligence",
   concept_confidence: "concept-confidence",
   quality_gate: "quality-gate",
+  "quality gate": "quality-gate",
   routing: "adaptive-routing",
+  routing_intelligence: "adaptive-routing",
+  "routing intelligence": "adaptive-routing",
   prediction: "prediction",
   prediction_explanation: "prediction-explanation",
+  "prediction explanation": "prediction-explanation",
+  adaptive_business: "decision-intelligence",
+  "adaptive business intelligence": "decision-intelligence",
   decision_intelligence: "decision-intelligence",
+  "decision intelligence": "decision-intelligence",
+  reports: "decision-intelligence",
 };
 
 export function mapPipelineStages(backendStages: BackendStage[]): PipelineStage[] {
   const durationByFrontendId = new Map<string, number>();
   for (const stage of backendStages) {
-    const frontendId = STAGE_ID_MAP[stage.id];
+    const sourceId = String(stage.id || stage.name || "").toLowerCase();
+    const frontendId = STAGE_ID_MAP[sourceId];
     if (!frontendId) continue;
-    durationByFrontendId.set(frontendId, (durationByFrontendId.get(frontendId) || 0) + stage.durationMs);
+    const duration = stage.durationMs ?? stage.execution_time ?? 0;
+    durationByFrontendId.set(frontendId, (durationByFrontendId.get(frontendId) || 0) + duration);
   }
   return PIPELINE_STAGE_TEMPLATES.map((stage) => ({
     ...stage,
@@ -492,18 +546,29 @@ export function mapQualityReport(content: Record<string, unknown>): ReportViewer
 export function mapDecisionIntelligenceReport(content: Record<string, unknown>): ReportViewerContent {
   const inferences = (content["inferences"] as Record<string, Record<string, unknown>>) || {};
   const concepts = Object.keys(inferences);
+  const adaptive = (content["adaptive_business"] || {}) as Record<string, unknown>;
   return {
     category: "Decision Intelligence",
-    headline: `Decision Intelligence — ${String(content["sector"] || "").toUpperCase()} Run`,
-    summary: String(content["summary"] || `Routing rationale synthesized with ${concepts.length} cited business concepts.`),
+    headline: `Decision Intelligence - ${String(content["decision_readiness"] || content["sector"] || "RUN")} Run`,
+    summary: String(content["summary"] || content["adaptive_context"] || `Routing rationale synthesized with ${concepts.length} cited business concepts.`),
     sections: [
       {
-        heading: "Cited Business Concepts",
-        body: concepts.length ? concepts.join(", ") : "No business concepts were reconstructed for this run.",
-        metrics: concepts.slice(0, 3).map((c) => ({
-          label: c,
-          value: String(inferences[c]["band"] || "—"),
-        })),
+        heading: "Decision Support",
+        body: String(content["recommended_action"] || "No recommended action was generated for this run."),
+        metrics: [
+          { label: "Overall Confidence", value: `${pct(content["overall_confidence"]).toFixed(1)}%` },
+          { label: "Business Confidence", value: `${pct(content["business_confidence"]).toFixed(1)}%` },
+          { label: "Technical Confidence", value: `${pct(content["technical_confidence"]).toFixed(1)}%` },
+        ],
+      },
+      {
+        heading: "Adaptive Business Context",
+        body: String(adaptive["summary"] || "No external business context JSON was supplied for this run."),
+        metrics: [
+          { label: "Impact", value: String(adaptive["overall_business_impact"] || "NOT_PROVIDED") },
+          { label: "Evidence Confidence", value: `${pct(adaptive["evidence_confidence"]).toFixed(1)}%` },
+          { label: "Signals", value: String(adaptive["signal_count"] || 0) },
+        ],
       },
     ],
   };

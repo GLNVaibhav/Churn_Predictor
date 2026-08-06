@@ -65,9 +65,8 @@ from __future__ import annotations
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-
 import numpy as np
-
+import pandas as pd
 from .schema_resolution import CanonicalField, CANONICAL_FIELDS
 
 
@@ -297,6 +296,196 @@ def _humanize(identifier: str) -> str:
     s = s.replace('_', ' ').replace('-', ' ')
     s = re.sub(r'\s+', ' ', s).strip().lower()
     return s or identifier.lower()
+
+# Alias for backward compatibility – ensures existing code referencing _humanize_column works.
+_humanize_column = _humanize
+
+# Alias for backward compatibility – ensures existing code referencing _humanize_column works.
+_humanize_column = _humanize
+
+# ============================================================
+# FEATURE INTELLIGENCE
+# ============================================================
+
+from dataclasses import dataclass, field
+import pandas as pd
+
+@dataclass(frozen=True)
+class ColumnProfile:
+    """Immutable data class describing the intelligence extracted from a column."""
+    raw_column: str
+    normalized_column: str
+    tokens: list[str]
+    units: list[str]
+    value_type: str | None = None
+    temporal_indicators: list[str] = field(default_factory=list)
+    financial_indicators: list[str] = field(default_factory=list)
+    behavioral_indicators: list[str] = field(default_factory=list)
+    statistical_profile: dict = field(default_factory=dict)
+    detected_features: list[str] = field(default_factory=list)
+    embeddings: None = None
+    subword_ngrams: dict = field(default_factory=dict)
+
+def _tokenize(text: str) -> list[str]:
+    """Simple tokenization: split on whitespace after normalization."""
+    return text.split()
+
+_ABBREV_MAP = {
+    "amt": "amount",
+    "avg": "average",
+    "cnt": "count",
+    "qty": "quantity",
+    "num": "number",
+    "freq": "frequency",
+    "pct": "percent",
+    "yr": "year",
+    "yrs": "years",
+    "mo": "month",
+}
+
+def _expand_abbreviations(tokens: list[str]) -> list[str]:
+    """Expand known abbreviations after tokenization."""
+    return [_ABBREV_MAP.get(t, t) for t in tokens]
+
+def _detect_units(tokens: list[str]) -> list[str]:
+    """Detect unit tokens such as currency symbols, measurements, storage, time, percentage."""
+    unit_keywords = {
+        # currency
+        "usd", "inr", "eur", "gbp", "rs", "$",
+        # measurements
+        "kg", "g", "lb", "km", "m", "cm", "mm", "mi",
+        # storage
+        "kb", "mb", "gb", "tb",
+        # time
+        "sec", "min", "hr", "day", "days", "month", "months", "year", "years",
+        # percentage
+        "%", "percent", "pct",
+    }
+    return [t for t in tokens if t.lower() in unit_keywords]
+
+def _detect_temporal(tokens: list[str]) -> list[str]:
+    temporal_keywords = {
+        "day", "days", "month", "months", "year", "years",
+        "daily", "weekly", "monthly", "quarterly", "annual", "yearly", "hourly", "minute",
+        "date", "timestamp", "time", "since", "duration", "age", "tenure",
+    }
+    return [t for t in tokens if t.lower() in temporal_keywords]
+
+def _detect_financial(tokens: list[str]) -> list[str]:
+    financial_keywords = {
+        "revenue", "income", "cost", "price", "payment", "premium",
+        "balance", "salary", "expense", "charges", "fee", "bill", "invoice",
+        "profit", "loss",
+    }
+    return [t for t in tokens if t.lower() in financial_keywords]
+
+def _detect_behavioral(tokens: list[str]) -> list[str]:
+    behavioral_keywords = {
+        "visit", "usage", "login", "call", "click", "order", "purchase",
+        "activity", "interaction", "engagement", "session",
+    }
+    return [t for t in tokens if t.lower() in behavioral_keywords]
+
+def _infer_value_type(series: pd.Series | None) -> str | None:
+    if series is None:
+        return None
+    if pd.api.types.is_bool_dtype(series):
+        return 'boolean'
+    if pd.api.types.is_numeric_dtype(series):
+        return 'numeric'
+    if pd.api.types.is_datetime64_any_dtype(series):
+        return 'datetime'
+    if pd.api.types.is_string_dtype(series):
+        # Distinguish plain text from categorical codes: simple heuristic – if many unique values > 0.5*count treat as text.
+        uniq = series.nunique(dropna=True)
+        if uniq > 0.5 * len(series):
+            return 'text'
+        return 'categorical'
+    return 'categorical'
+
+def _build_statistical_profile(series: pd.Series | None) -> dict:
+    if series is None:
+        return {}
+    profile = {}
+    profile['count'] = int(series.size)
+    profile['null_count'] = int(series.isna().sum())
+    profile['null_ratio'] = profile['null_count'] / profile['count'] if profile['count'] else 0.0
+    profile['missing_percentage'] = profile['null_ratio'] * 100.0
+    profile['unique_count'] = int(series.nunique(dropna=True))
+    profile['dtype'] = str(series.dtype)
+    if pd.api.types.is_numeric_dtype(series):
+        numeric = series.dropna()
+        if not numeric.empty:
+            profile['mean'] = float(numeric.mean())
+            profile['median'] = float(numeric.median())
+            profile['std'] = float(numeric.std())
+            profile['min'] = float(numeric.min())
+            profile['max'] = float(numeric.max())
+    return profile
+
+def extract_feature_metadata(column_name: str, series: pd.Series | None = None):
+    """Extract all feature metadata without constructing ColumnProfile."""
+    normalized = _humanize(column_name)
+    tokens = _expand_abbreviations(_tokenize(normalized))
+    units = _detect_units(tokens)
+    temporal = _detect_temporal(tokens)
+    financial = _detect_financial(tokens)
+    behavioral = _detect_behavioral(tokens)
+    value_type = _infer_value_type(series)
+    statistical = _build_statistical_profile(series)
+    # Build feature tags
+    tags = []
+    if any(u in {'usd', 'inr', 'eur', 'gbp', 'rs', '$'} for u in units):
+        tags.append('currency')
+    if any(u == '%' or u.lower() in {'percent', 'pct'} for u in units):
+        tags.append('percentage')
+    if temporal:
+        tags.append('temporal')
+    if financial:
+        tags.append('financial')
+    if behavioral:
+        tags.append('behavioral')
+    if value_type == 'numeric':
+        tags.append('numeric')
+    elif value_type == 'boolean':
+        tags.append('boolean')
+    elif value_type == 'categorical':
+        tags.append('categorical')
+    elif value_type == 'text':
+        tags.append('text')
+    elif value_type == 'datetime':
+        tags.append('datetime')
+    return {
+        "raw_column": column_name,
+        "normalized_column": normalized,
+        "tokens": tokens,
+        "units": units,
+        "temporal_indicators": temporal,
+        "financial_indicators": financial,
+        "behavioral_indicators": behavioral,
+        "value_type": value_type,
+        "statistical_profile": statistical,
+        "detected_features": tags,
+    }
+
+def profile_column(column_name: str, series: pd.Series | None = None) -> ColumnProfile:
+    """Public API that builds ColumnProfile from extracted metadata."""
+    meta = extract_feature_metadata(column_name, series)
+    return ColumnProfile(
+        raw_column=meta["raw_column"],
+        normalized_column=meta["normalized_column"],
+        tokens=meta["tokens"],
+        units=meta["units"],
+        value_type=meta["value_type"],
+        temporal_indicators=meta["temporal_indicators"],
+        financial_indicators=meta["financial_indicators"],
+        behavioral_indicators=meta["behavioral_indicators"],
+        statistical_profile=meta["statistical_profile"],
+        detected_features=meta["detected_features"],
+        embeddings=None,
+        subword_ngrams={},
+    )
+
 
 
 # ══════════════════════════════════════════════════════════════════

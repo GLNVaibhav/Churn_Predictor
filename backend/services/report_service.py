@@ -24,8 +24,10 @@ from contextlib import redirect_stdout
 from typing import Any, Optional
 
 from universal_churn.quality_gate import print_quality_report
-from universal_churn.routing import print_routing_decision as _routing_print_routing_decision
-from universal_churn.reporting import generate_prediction_quality_report
+from universal_churn.reporting import (
+    generate_prediction_quality_report,
+    print_routing_decision as _routing_print_routing_decision,
+)
 from universal_churn.business_reasoning_report import generate_business_reasoning_report
 from universal_churn.decision_report import generate_decision_report
 

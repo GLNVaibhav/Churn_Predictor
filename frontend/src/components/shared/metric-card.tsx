@@ -9,6 +9,7 @@ interface MetricCardProps {
   delta?: string;
   deltaDirection?: "up" | "down" | "flat";
   icon?: LucideIcon;
+  sparkline?: number[];
   className?: string;
 }
 
@@ -25,16 +26,33 @@ export function MetricCard({
   delta,
   deltaDirection = "flat",
   icon: Icon,
+  sparkline,
   className,
 }: MetricCardProps) {
   const DeltaIcon = deltaConfig[deltaDirection].icon;
+  const points = sparkline?.length
+    ? sparkline
+        .map((value, index) => {
+          const min = Math.min(...sparkline);
+          const max = Math.max(...sparkline);
+          const range = max - min || 1;
+          const x = (index / Math.max(1, sparkline.length - 1)) * 88 + 6;
+          const y = 34 - ((value - min) / range) * 24;
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        })
+        .join(" ")
+    : null;
 
   return (
-    <Card className={cn("gap-3 py-5", className)}>
+    <Card className={cn("gap-3 py-4 transition-colors hover:ring-2 hover:ring-primary/20", className)}>
       <CardContent className="px-5">
         <div className="flex items-start justify-between">
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
-          {Icon ? <Icon className="h-4 w-4 text-muted-foreground" /> : null}
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+          {Icon ? (
+            <span className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-muted/45">
+              <Icon className="h-4 w-4 text-primary" />
+            </span>
+          ) : null}
         </div>
         <div className="mt-2 flex items-baseline gap-2">
           <span className="text-2xl font-semibold tracking-tight tabular-nums">{value}</span>
@@ -47,6 +65,19 @@ export function MetricCard({
         </div>
         {description ? (
           <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+        ) : null}
+        {points ? (
+          <svg viewBox="0 0 100 40" className="mt-3 h-10 w-full text-primary" aria-hidden="true">
+            <path d="M6 34 H94" className="stroke-border" strokeWidth="1" />
+            <polyline
+              points={points}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         ) : null}
       </CardContent>
     </Card>

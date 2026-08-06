@@ -15,7 +15,6 @@ export type NavItem = {
   label: string;
   description: string;
   icon: LucideIcon;
-  primary?: boolean;
 };
 
 /** Single source of truth for sidebar + topbar navigation. */
@@ -23,20 +22,13 @@ export const NAV_ITEMS: NavItem[] = [
   {
     href: "/dashboard",
     label: "Home",
-    description: "Mission Control — framework health, recent analyses, quick actions",
+    description: "Customer retention overview, recent analyses, and risk signals",
     icon: LayoutDashboard,
-  },
-  {
-    href: "/upload",
-    label: "New Analysis",
-    description: "Upload a dataset and run the intelligence pipeline",
-    icon: PlusCircle,
-    primary: true,
   },
   {
     href: "/workspace",
     label: "Analysis Workspace",
-    description: "Unified view of coverage, quality, routing, prediction, and decision",
+    description: "Explore risk, explanations, decisions, and reports",
     icon: Microscope,
   },
   {
@@ -60,13 +52,13 @@ export const NAV_ITEMS: NavItem[] = [
   {
     href: "/monitoring",
     label: "Monitoring",
-    description: "Framework health, execution trends, and version tracking",
+    description: "Analysis health, activity, and run reliability",
     icon: Activity,
   },
   {
     href: "/settings",
     label: "Settings",
-    description: "API configuration, environment, and framework information",
+    description: "Workspace preferences and account controls",
     icon: Settings,
   },
 ];
@@ -78,25 +70,29 @@ export type WorkspaceSection =
   | "pipeline"
   | "coverage"
   | "quality"
+  | "semantic"
   | "routing"
   | "prediction"
   | "reasoning"
   | "decision"
+  | "cli"
   | "reports";
 
 export const WORKSPACE_SECTIONS: { id: WorkspaceSection; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "pipeline", label: "Pipeline" },
   { id: "coverage", label: "Coverage" },
+  { id: "semantic", label: "Semantic" },
   { id: "quality", label: "Quality" },
   { id: "routing", label: "Routing" },
   { id: "prediction", label: "Prediction" },
   { id: "reasoning", label: "Reasoning" },
   { id: "decision", label: "Decision" },
+  { id: "cli", label: "Run Evidence" },
   { id: "reports", label: "Reports" },
 ];
 
-/** Legacy routes → workspace tab redirects */
+/** Legacy routes to workspace tab redirects */
 export const LEGACY_ROUTE_REDIRECTS: Record<string, string> = {
   "/pipeline": "/workspace?tab=pipeline",
   "/predictions": "/workspace?tab=prediction",
@@ -106,6 +102,14 @@ export const LEGACY_ROUTE_REDIRECTS: Record<string, string> = {
 
 export function resolvePageMeta(pathname: string): NavItem {
   const base = pathname.split("?")[0];
+  if (base === "/upload") {
+    return {
+      href: "/upload",
+      label: "New Run",
+      description: "Upload a dataset and create a churn analysis",
+      icon: PlusCircle,
+    };
+  }
   if (NAV_BY_HREF[base]) return NAV_BY_HREF[base];
   if (base.startsWith("/workspace")) return NAV_BY_HREF["/workspace"];
   return { href: base, label: "Universal Churn", description: "", icon: LayoutDashboard };

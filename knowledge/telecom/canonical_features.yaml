@@ -1,0 +1,77 @@
+CustomerTenure:
+  description: Duration of the customer relationship.
+  required_evidence: [CustomerTenure]
+  optional_evidence: [Lifecycle, ActivityRecency]
+  derivation_strategy: direct_or_mean_numeric
+  confidence_rules: {direct: 1.0, derived: 0.75, minimum: 0.60}
+  supported_raw_concepts: [CustomerTenure, Lifecycle]
+RecurringRevenue:
+  description: Recurring customer revenue or recharge value.
+  required_evidence: [RechargeValue, AverageRevenuePerUser, Revenue]
+  optional_evidence: [RecurringRevenue]
+  derivation_strategy: direct_or_mean_numeric
+  confidence_rules: {direct: 1.0, derived: 0.75, minimum: 0.60}
+  supported_raw_concepts: [RechargeValue, AverageRevenuePerUser, Revenue, RecurringRevenue]
+SupportInteraction:
+  description: Customer support or complaint contact volume.
+  required_evidence: [SupportContacts, SupportUsage, ComplaintHistory]
+  optional_evidence: [Complaint]
+  derivation_strategy: direct_or_mean_numeric
+  confidence_rules: {direct: 1.0, derived: 0.70, minimum: 0.60}
+  supported_raw_concepts: [SupportContacts, SupportUsage, ComplaintHistory, Complaint]
+ActivityRecency:
+  description: Time since the customer last used or recharged a service.
+  required_evidence: [RechargeRecency, ActivityRecency]
+  optional_evidence: [CustomerTenure]
+  derivation_strategy: direct_or_mean_numeric
+  confidence_rules: {direct: 1.0, derived: 0.70, minimum: 0.60}
+  supported_raw_concepts: [RechargeRecency, ActivityRecency]
+VoiceUsage:
+  description: Voice calling consumption.
+  required_evidence: [VoiceUsage]
+  optional_evidence: [CallDuration]
+  derivation_strategy: direct_or_mean_numeric
+  confidence_rules: {direct: 1.0, derived: 0.75, minimum: 0.60}
+  supported_raw_concepts: [VoiceUsage, CallDuration]
+MessagingUsage:
+  description: SMS or messaging consumption.
+  required_evidence: [MessagingUsage]
+  optional_evidence: [DataUsage]
+  derivation_strategy: direct_or_mean_numeric
+  confidence_rules: {direct: 1.0, derived: 0.70, minimum: 0.60}
+  supported_raw_concepts: [MessagingUsage]
+DigitalEngagement:
+  description: Use of digital self-service channels.
+  required_evidence: [DigitalEngagement]
+  optional_evidence: [EngagementVolume]
+  derivation_strategy: direct_or_mean_numeric
+  confidence_rules: {direct: 1.0, derived: 0.65, minimum: 0.60}
+  supported_raw_concepts: [DigitalEngagement, EngagementVolume]
+ServicePortfolio:
+  description: Breadth of subscribed telecom products and services.
+  required_evidence: [BroadbandAdoption, SubscriptionPlan]
+  optional_evidence: [ProductPortfolio]
+  derivation_strategy: categorical_first
+  confidence_rules: {direct: 1.0, derived: 0.65, minimum: 0.60}
+  supported_raw_concepts: [BroadbandAdoption, SubscriptionPlan, ProductPortfolio]
+DataConsumption:
+  description: Mobile or fixed data consumption.
+  required_evidence: [DataUsage]
+  optional_evidence: [DataConsumption]
+  derivation_strategy: direct_or_mean_numeric
+  confidence_rules: {direct: 1.0, derived: 0.75, minimum: 0.60}
+  supported_raw_concepts: [DataUsage, DataConsumption]
+PaymentBehaviour:
+  description: Payment timeliness and payment method behaviour.
+  required_evidence: [PaymentDelay]
+  optional_evidence: [Payment]
+  derivation_strategy: direct_or_mean_numeric
+  confidence_rules: {direct: 1.0, derived: 0.65, minimum: 0.60}
+  supported_raw_concepts: [PaymentDelay, Payment]
+CustomerLoyalty:
+  description: Customer value, loyalty, or port-out risk.
+  required_evidence: [CustomerValue, PortOutRisk]
+  optional_evidence: [Loyalty, Retention]
+  derivation_strategy: direct_or_mean_numeric
+  confidence_rules: {direct: 1.0, derived: 0.65, minimum: 0.60}
+  supported_raw_concepts: [CustomerValue, PortOutRisk, Loyalty, Retention]

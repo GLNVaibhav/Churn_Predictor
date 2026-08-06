@@ -34,6 +34,7 @@ from .config import (
 from .utils import _utc_timestamp, prediction_confidence_label, coverage_confidence_label
 from .quality_gate import print_quality_report
 from .routing import RoutingDecision
+from .coverage import CoverageResult
 
 
 def print_routing_decision(decision: RoutingDecision) -> None:
@@ -52,28 +53,17 @@ def print_routing_decision(decision: RoutingDecision) -> None:
     print(f"\n{sep}")
     print(f"  ROUTING DECISION")
     print(sep)
-    print(f"  Verdict                 : {decision.acceptance_banner}")
-    print(f"  Selected model          : {decision.selected_model.value}")
-    print(f"  Model artifact          : {decision.model_artifact}")
-    print(f"  Coverage band           : {decision.coverage_band}  "
-          f"({decision.coverage_score*100:.1f}%)")
-    print(f"  Quality status          : {decision.quality_status}  "
-          f"({decision.quality_score*100:.1f}%)")
-    print(f"  Concept confidence      : "
-          f"{f'{decision.concept_confidence*100:.1f}%' if decision.concept_confidence is not None else 'N/A'}")
-    print(f"  Prediction reliability  : {decision.reliability.value}")
+    print(f"  Selected pipeline       : {decision.selected_pipeline}")
+    print(f"  Routing confidence      : {decision.confidence:.1%}")
+    print(f"  Fallback used           : {decision.fallback_used}")
     print(f"\n  Reason:")
-    print(f"    {decision.routing_reason}")
-    if decision.warnings:
-        print(f"\n  Warnings:")
-        for w in decision.warnings:
-            print(f"    ⚠ {w}")
+    print(f"    {decision.reasoning}")
     print(sep)
 
 
 def attach_common_metadata(
     results: pd.DataFrame,
-    coverage: dict | None,
+    coverage: CoverageResult | None,
     prediction_model_label: str,
 ) -> pd.DataFrame:
     """
@@ -86,7 +76,7 @@ def attach_common_metadata(
     )
     if coverage is not None:
         results['Coverage_Confidence'] = coverage_confidence_label(
-            coverage['coverage_score']
+            coverage.summary.overall_coverage
         )
 
     results['Prediction_Timestamp']       = _utc_timestamp()
@@ -132,6 +122,29 @@ def generate_prediction_quality_report(
     Build a concise human-readable inference summary.
     All data comes from `results` and `coverage` — no new ML computation.
     """
+    if isinstance(coverage, CoverageResult):
+        lines = ["=" * 56, "PREDICTION QUALITY REPORT", "=" * 56, ""]
+        lines.extend([
+            f"Sector                  : {sector.capitalize()}",
+            f"Prediction Model        : {results['Prediction_Model'].iloc[0]}",
+            f"Prediction Mode         : {results['Prediction_Mode'].iloc[0]}",
+            f"Coverage Score          : {coverage.summary.overall_coverage*100:.1f}%",
+            f"Coverage Status         : {coverage.summary.readiness}",
+            "Coverage Issues:",
+        ])
+        lines.extend(["    None"] if not coverage.assessment.issues else [
+            f"    - [{issue.severity}] {issue.issue_type}: {issue.reason}"
+            for issue in coverage.assessment.issues
+        ])
+        if isinstance(routing_decision, RoutingDecision):
+            lines.extend(["", "Routing Decision:",
+                f"    Selected pipeline  : {routing_decision.selected_pipeline}",
+                f"    Confidence         : {routing_decision.confidence:.1%}",
+                f"    Fallback used      : {routing_decision.fallback_used}",
+                f"    Reason             : {routing_decision.reasoning}"])
+        lines.extend(["", f"Rows predicted          : {len(results)}",
+            f"Predicted churners      : {(results['Predicted_Churn'] == 'Yes').sum()}", "=" * 56])
+        return "\n".join(lines)
     sep   = "=" * 56
     lines = [sep, "PREDICTION QUALITY REPORT", sep, ""]
 
@@ -306,7 +319,8 @@ def _maybe_emit_report(
 
     # Quality/Routing sections (Coverage + Concept Confidence were
     # already printed by coverage.py at scoring time).
-    print_full_diagnostic_report(quality, decision_obj)
+    # Typed Coverage/Routing diagnostics are rendered below.  Avoid the
+    # legacy quality printer, which is not portable to CP1252 terminals.
 
     report_text = generate_prediction_quality_report(
         results, coverage, sector,
@@ -316,9 +330,7 @@ def _maybe_emit_report(
     print("\n" + report_text)
     if args.report_output:
         fmt = 'json' if args.report_output.lower().endswith('.json') else 'txt'
-        extra_json_fields = (
-            {'diagnostics': decision_obj.to_diagnostics_dict()} if decision_obj is not None else None
-        )
+        extra_json_fields = None
         save_prediction_report(
             report_text, args.report_output, fmt=fmt,
             extra_json_fields=extra_json_fields,

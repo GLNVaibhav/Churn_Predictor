@@ -1,791 +1,347 @@
-# Universal Churn Intelligence Framework (UCIF) v8.0 — Project Outline
+# Universal Churn Intelligence Framework - Project Outline
 
-> **Explainable Churn Intelligence Framework for Universal Customer Churn Prediction**
+## Project Identity
 
----
+**Name:** Universal Churn Intelligence Framework (UCIF)
 
-# Project Overview
+**Purpose:** Provide an explainable, sector-aware churn intelligence framework that turns heterogeneous customer datasets into auditable prediction, diagnostic, and decision-support outputs.
 
-## Project Name
-
-**Universal Churn Intelligence Framework (UCIF) v8.0**
-
----
+**Current architecture:** UCIF is now a layered product, not only a script-driven churn predictor. The product flow is `Frontend -> API -> Framework Mapper -> UCIF Framework`. The core framework remains in `universal_churn/`; it is consumed by the API through adapter and mapper boundaries instead of becoming the backend folder itself.
 
 ## Vision
 
-The **Universal Churn Intelligence Framework (UCIF)** is an explainable software framework that enables organizations to analyze customer churn across multiple industries through a unified analytical intelligence pipeline.
+UCIF exists to make churn prediction trustworthy enough for analytical use. Instead of stopping at "will this customer churn?", it asks whether the dataset is understandable, whether enough business evidence exists, whether prediction is reliable, which pipeline should run, why the result was produced, and what the analyst should inspect.
 
-Unlike conventional churn prediction systems that focus solely on predicting whether a customer will churn, UCIF evaluates dataset quality, business concept completeness, prediction reliability, business reasoning, prediction explainability, and business diagnostic insights before presenting transparent analytical evidence that supports informed business decisions.
+The framework follows the principle of diagnostics before decisions. It supports human decision-makers with transparent evidence; it does not make autonomous business decisions.
 
-By integrating semantic dataset understanding, adaptive prediction, explainable AI, and business reasoning within a modular software architecture, UCIF bridges the gap between machine learning models and practical business analytics while preserving human decision authority.
+## Current System Shape
 
----
+```text
+User / analyst
+    |
+    v
+Next.js frontend
+    |
+    v
+FastAPI API layer
+    |
+    v
+FrameworkAdapter and Framework Mapper
+    |
+    v
+Core universal_churn framework
+    |
+    v
+Mapped API contracts and persisted execution record
+    |
+    v
+Dashboards, pipeline views, reports, predictions, and decision intelligence
+```
 
-# Diagnostics Before Decisions
+This split gives UCIF two working interfaces:
 
-A fundamental design philosophy of UCIF is **Diagnostics Before Decisions**.
+- The CLI remains the reference implementation for direct framework execution.
+- The FastAPI API is the web/runtime boundary.
+- The Framework Adapter and Framework Mapper are the controlled bridge into `universal_churn/`.
+- The Next.js platform turns the same framework output into an interactive enterprise workflow.
 
-Rather than autonomously making business decisions, the framework focuses on generating transparent analytical evidence that enables analysts and organizational stakeholders to make informed decisions with greater confidence.
+## Architectural Layers
 
-UCIF achieves this through:
+### 1. Core Intelligence Framework
 
-- Universal Dataset Intelligence
-- Coverage Intelligence
-- Concept Confidence Analysis
-- Data Quality Validation
-- Adaptive Prediction Routing
-- Explainable AI
-- Business Reasoning
-- Business Diagnostic Insights
+Location: `universal_churn/`
 
-Final business decisions always remain under human control.
+This layer owns UCIF's domain behavior. It contains dataset understanding, semantic inference, coverage assessment, data quality checks, routing, prediction, explanation, business reasoning, and enterprise reporting.
 
----
+Key modules:
 
-## Mission
+- `cli.py`: command-line reference implementation.
+- `preprocessing.py`: sector detection and dataset preparation support.
+- `semantic_intelligence/`: evidence extraction, profiling, inference, knowledge loading, validation, governance, and observability.
+- `canonical_feature_builder.py`, `canonical_mapping.py`, `semantic_feature_resolver.py`: canonical field and concept resolution.
+- `coverage.py`: coverage intelligence.
+- `quality_gate.py`: quality and readiness checks.
+- `routing.py`: adaptive prediction routing.
+- `sector_pipeline.py`: sector model execution.
+- `universal_pipeline.py`: universal model execution.
+- `prediction_explanation_report.py`: prediction explanation output.
+- `decision_intelligence.py` and `decision_report.py`: decision-readiness and analyst-facing interpretation.
+- `business_reasoning.py`, `business_meaning.py`, `business_concept_graph.py`: business interpretation and reasoning.
+- `adaptive_business/`: optional external business-context evidence.
+- `prediction_intelligence/`: prediction confidence, assurance, stability, signal intelligence, and consistency engines.
+- `enterprise_reporting.py`: report artifact generation.
+- `udif.py` and `udif_rendering.py`: diagnostic information framework and rendering.
 
-Build a reusable and extensible software framework capable of:
+### 2. Backend API and Runtime
 
-- Understanding heterogeneous customer datasets
-- Automatically identifying business domains
-- Measuring prediction readiness
-- Selecting optimal prediction strategies
-- Producing explainable predictions
-- Delivering evidence-based business diagnostic insights
-- Supporting transparent and trustworthy customer churn analysis across industries
+Location: `backend/`
 
----
+The backend is an orchestration and transport layer. It should not duplicate framework business logic, and `universal_churn/` should not be treated as a replacement backend folder.
 
-# Core Objectives
+Key responsibilities:
 
-The framework addresses several practical challenges commonly encountered in customer churn prediction systems.
+- Accept and profile uploaded CSV files.
+- Start managed analysis executions.
+- Run framework analysis in background tasks.
+- Persist upload metadata and execution records.
+- Map raw framework output into stable API contracts through the framework mapper.
+- Provide UI-ready platform enrichment and summaries.
+- Expose execution, pipeline, prediction, report, event, diagnostics, semantic intelligence, framework mapper, and decision endpoints.
 
----
+Key modules:
+
+- `api/app.py`: FastAPI application factory, middleware, CORS, exception handlers, and router registration.
+- `api/routers/upload.py`: CSV upload and initial profiling.
+- `api/routers/analysis.py`: managed analysis start endpoint.
+- `api/routers/executions.py`: execution-state and result endpoints.
+- `adapters/framework_adapter.py`: anti-corruption layer into `universal_churn`.
+- `services/analysis_service.py`: service orchestrator for one complete analysis.
+- `services/upload_service.py`: upload profiling and metadata creation.
+- `services/report_service.py`: report generation wrapper.
+- `runtime/manager.py`: background execution lifecycle.
+- `runtime/executor.py`: analysis task coroutine and execution-record assembly.
+- `runtime/repository.py`: file-backed JSON repository for uploads and runs.
+- `contracts/`: framework-facing and API-facing typed response objects.
+- `mappers/`: framework-to-platform mapping and enrichment.
+- `presentation/`: UI-facing prediction rollups.
+
+### 3. Frontend Enterprise Console
+
+Location: `frontend/`
+
+The frontend is a Next.js App Router application that presents the framework as a usable platform.
+
+Key responsibilities:
+
+- Upload datasets.
+- Start analyses.
+- Show active and historical executions.
+- Display pipeline state and stage details.
+- Present predictions and customer-level detail.
+- Surface reports and decision intelligence.
+- Provide dashboards, monitoring, workspace, settings, and knowledge views.
+
+Key modules:
+
+- `src/app/`: pages and route structure.
+- `src/app/api/backend/[...path]/route.ts`: same-origin proxy from frontend to FastAPI.
+- `src/lib/api/`: API client, endpoint map, upload, analysis, executions, reports, and view-model utilities.
+- `src/lib/hooks/`: execution and workspace hooks.
+- `src/lib/context/`: execution and dev-mode contexts.
+- `src/components/layout/`: application shell, sidebar, and topbar.
+- `src/components/pipeline/`: pipeline graph and stage detail components.
+- `src/components/predictions/`: prediction table and detail sheet.
+- `src/components/reports/`: report explorer.
+- `src/components/dashboard/`: dashboard tables and summaries.
+- `src/components/charts/`: churn trend, contribution, and concept-confidence charts.
+
+## Runtime Execution Flow
+
+1. The user uploads a CSV from the frontend.
+2. The frontend calls `POST /api/v1/upload` through the backend proxy.
+3. The backend stores the file under `data/uploads/{upload_id}/`.
+4. `UploadService` profiles the dataset, detects sector signals, computes initial metadata, and returns preview information.
+5. The user starts analysis through `POST /api/v1/analyze`.
+6. `ExecutionManager` creates an execution ID and persists a pending/running record.
+7. `run_analysis_task` executes the analysis coroutine.
+8. `AnalysisService` initializes, invokes `FrameworkAdapter`, passes the result through the framework mapper, adds presentation rollups, and optionally generates reports.
+9. `FrameworkAdapter` mirrors CLI control flow and calls the core `universal_churn/` framework exactly once.
+10. The core pipeline detects or uses the sector, builds canonical features, computes coverage, runs quality checks, routes prediction, executes the selected model path, attaches explanations, and attaches decision intelligence.
+11. Backend mappers enrich the response for the platform.
+12. `ExecutionRepository` persists the complete run under `data/runs/{execution_id}.json`.
+13. The frontend reads execution-specific endpoints to render dashboards, reports, prediction tables, events, and decision views.
+
+## Core Pipeline Flow
+
+```text
+Input CSV
+    |
+    v
+Dataset profiling and sector detection
+    |
+    v
+Business meaning and semantic evidence extraction
+    |
+    v
+Canonical mapping and feature reconstruction
+    |
+    v
+Coverage intelligence and concept confidence
+    |
+    v
+Quality gate
+    |
+    v
+Adaptive routing
+    |
+    +--> Sector pipeline
+    |
+    +--> Universal pipeline
+    |
+    +--> Refusal for unreliable prediction
+    |
+    v
+Prediction explanation
+    |
+    v
+Decision intelligence
+    |
+    v
+Reports, persisted execution state, and UI-ready payloads
+```
+
+## Backend API Surface
+
+The FastAPI service registers routers under `/api/v1`.
+
+Primary endpoints:
+
+- `GET /api/v1/health`
+- `POST /api/v1/upload`
+- `POST /api/v1/analyze`
+- `GET /api/v1/executions`
+- `GET /api/v1/analysis/{execution_id}`
+- `GET /api/v1/analysis/{execution_id}/pipeline`
+- `GET /api/v1/analysis/{execution_id}/predictions`
+- `GET /api/v1/analysis/{execution_id}/reports`
+- `GET /api/v1/analysis/{execution_id}/reports/text`
+- `GET /api/v1/analysis/{execution_id}/decision`
+- `GET /api/v1/analysis/{execution_id}/context`
+- `GET /api/v1/analysis/{execution_id}/events`
+- `GET /api/v1/analysis/{execution_id}/diagnostics`
+- `GET /api/v1/analysis/{execution_id}/feature-engineering`
+- `GET /api/v1/analysis/{execution_id}/semantic-intelligence`
+- `GET /api/v1/analysis/{execution_id}/framework-mapper`
+
+Framework and model-discovery routes are provided by `backend/api/routers/framework.py`.
+
+## Data and Persistence
+
+Current persistence is intentionally simple and replaceable:
+
+- Uploaded CSV files are stored under `data/uploads/`.
+- Upload metadata and execution payloads are stored as JSON through `ExecutionRepository`.
+- Execution records are stored under `data/runs/`.
+- The repository implements a protocol-style boundary so a database or queue-backed runtime can replace file storage later.
+
+## Supported Sectors
+
+Current sector coverage:
+
+- Telecom
+- Banking
+- E-commerce
+- Healthcare
+
+Each sector can provide:
+
+- Canonical feature definitions
+- Business concepts
+- Entities
+- Relationships
+- Synonyms
+- Sector-specific datasets
+- Sector-specific model and routing behavior
+
+The knowledge architecture is extensible to additional sectors without changing the API/runtime boundary.
+
+## Project Objectives
 
 ### Universal Dataset Understanding
 
-Accept customer datasets from multiple industries without requiring predefined schemas or fixed column names.
+Accept customer datasets with varying schemas and map them into a shared churn-intelligence vocabulary.
 
----
+### Prediction Readiness
 
-### Intelligent Prediction Routing
+Measure whether the dataset has enough quality, coverage, and concept confidence for prediction.
 
-Automatically determine whether to execute:
+### Adaptive Routing
 
-- Sector Model
-- Universal Model
-- Prediction Refusal
+Choose the appropriate path among sector prediction, universal prediction, and refusal.
 
-based on coverage intelligence, concept confidence, data quality, and prediction reliability.
+### Explainability
 
----
+Attach prediction explanations, business evidence, confidence signals, and warnings.
 
-### Explainable AI
+### Decision Support
 
-Every prediction should provide:
+Turn technical output into readable, auditable decision-intelligence summaries for analysts.
 
-- Business Explanation
-- Supporting Evidence
-- Confidence Metrics
-- Prediction Explanation
-- Investigation Priorities
+### Platform Readiness
 
----
+Expose framework outputs through stable API contracts, persisted execution state, and an interactive frontend.
 
-### Business Decision Support
+## Development Commands
 
-Transform technical prediction outputs into transparent business diagnostic insights that support analysts and organizational decision-makers without replacing human judgement.
+Run the CLI:
 
----
-
-### Currently Supported Industries
-
-The current implementation of UCIF provides specialized analytical support for the following customer churn domains:
-
-- 📞 Telecommunications
-- 🏦 Banking
-- 🛒 E-Commerce
-- ❤️ Healthcare
-
-Each supported industry includes domain-specific knowledge, feature mappings, adaptive routing strategies, and prediction pipelines while sharing the same universal analytical architecture.
-
-### Planned Industry Extensions
-
-The framework has been designed with extensibility as a core architectural principle. Future releases may introduce support for additional domains such as:
-
-- 🛡 Insurance
-- ☁ SaaS
-- 📦 Subscription Services
-- 🏭 Manufacturing
-- 🏬 Retail
-- 🎓 Education
-- 🏨 Hospitality
-- ⚡ Energy
-
-These domains are not part of the current implementation but can be integrated without modifying the core framework architecture.
-
----
-
-# UCIF Architecture
-
-The Universal Churn Intelligence Framework follows a layered intelligence architecture in which each stage performs a dedicated analytical responsibility before passing structured outputs to the next stage.
-
-```text
-Dataset
-    │
-    ▼
-Industry Detection
-    │
-    ▼
-Schema Resolution
-    │
-    ▼
-Feature Engineering
-    │
-    ▼
-Coverage Intelligence
-    │
-    ▼
-Concept Confidence
-    │
-    ▼
-Data Quality Validation
-    │
-    ▼
-Adaptive Routing
-    │
-    ▼
-Prediction Engine
-    │
-    ▼
-Business Reasoning
-    │
-    ▼
-Prediction Explainability
-    │
-    ▼
-Business Diagnostic Insights
-    │
-    ▼
-Reports
+```powershell
+python main.py --input data/telecom/new_telecom_customers.csv --mode auto --explain
 ```
 
-This layered architecture separates semantic understanding, prediction, explainability, and business diagnostics into independent modules, improving transparency, maintainability, and extensibility.
+Run the backend:
 
----
-
-# Repository Structure
-
-```text
-Churn_Predictor/
-│
-├── backend/                 # FastAPI backend orchestration
-│
-├── frontend/                # Next.js enterprise application
-│
-├── universal_churn/         # Core Universal Churn Intelligence Framework
-│
-├── knowledge/               # Business knowledge base
-│
-├── data/                    # Sample datasets
-│
-├── outputs/                 # Generated reports & predictions
-│
-├── scripts/                 # Utility scripts
-│
-├── docs/                    # Documentation (README, SADS, API Guide)
-│
-├── tests/                   # Unit & integration tests
-│
-├── main.py                  # CLI entry point
-│
-├── requirements.txt
-│
-└── README.md
+```powershell
+uvicorn backend.api.app:app --reload --host 0.0.0.0 --port 8000
 ```
 
-The repository is organized using a modular architecture that cleanly separates the analytical framework, backend orchestration, frontend presentation, documentation, and testing components.
-
----
-
-# Framework Components
-
-The Universal Churn Intelligence Framework consists of multiple independent intelligence modules that work together to transform heterogeneous customer datasets into explainable business diagnostic insights.
-
-Each component has a dedicated responsibility, ensuring modularity, transparency, maintainability, and extensibility.
-
----
-
-# 1. Universal Dataset Intelligence
-
-## Purpose
-
-Automatically understand heterogeneous customer datasets without requiring predefined schemas or fixed column names.
-
-## Responsibilities
-
-- Dataset Profiling
-- Schema Inference
-- Canonical Field Resolution
-- Semantic Feature Matching
-- Missing Feature Detection
-- Dataset Understanding
-
-## Outputs
-
-- Dataset Summary
-- Canonical Manifest
-- Feature Resolution Report
-- Schema Intelligence Metadata
-
-This component establishes the semantic foundation for the entire analytical pipeline.
-
----
-
-# 2. Coverage Intelligence
-
-## Purpose
-
-Measure how completely a dataset represents the business concepts required for reliable churn prediction.
-
-Rather than simply counting available columns, Coverage Intelligence evaluates whether sufficient business information exists to support trustworthy analytical outcomes.
-
-## Outputs
-
-- Coverage Score
-- Coverage Band
-- Missing Critical Features
-- Missing High-Impact Features
-- Recovered Features
-- Coverage Explanation
-
-## Coverage Bands
-
-- 🟢 Green
-- 🟡 Yellow
-- 🟠 Orange
-- 🔴 Red
-
-Coverage Intelligence enables the framework to assess prediction readiness before any machine learning model is executed.
-
----
-
-# 3. Concept Confidence Engine
-
-## Purpose
-
-Measure how reliably important business concepts can be reconstructed from heterogeneous datasets.
-
-## Business Concepts
-
-- Customer Loyalty
-- Engagement Level
-- Satisfaction Signals
-- Support Friction
-- Recurring Commitment
-
-## Outputs
-
-- Overall Concept Confidence
-- Per-Concept Confidence Scores
-- Reconstruction Sources
-- Confidence Explanation
-
-Concept Confidence complements Coverage Intelligence by evaluating the quality of semantic business understanding rather than simply measuring data completeness.
-
----
-
-# 4. Data Quality Engine
-
-## Purpose
-
-Validate whether a dataset is technically suitable for prediction.
-
-## Validation Checks
-
-- Target Leakage Detection
-- Missing Value Analysis
-- Duplicate Detection
-- Invalid Columns
-- Constant Features
-- Data Integrity Validation
-
-## Outputs
-
-- Quality Score
-- Validation Report
-- Quality Diagnostics
-- Prediction Readiness Assessment
-
-The Data Quality Engine prevents unreliable datasets from progressing through the analytical pipeline.
-
----
-
-# 5. Adaptive Routing Engine
-
-## Purpose
-
-Automatically select the most appropriate prediction strategy based on the analytical characteristics of the uploaded dataset.
-
-## Possible Decisions
-
-- Full Sector Model
-- Universal Model
-- Prediction Refusal
-
-## Routing Intelligence Considers
-
-- Coverage Intelligence
-- Concept Confidence
-- Data Quality
-- Business Rules
-- Prediction Reliability
-
-## Outputs
-
-- Selected Pipeline
-- Prediction Reliability
-- Routing Confidence
-- Routing Explanation
-
-The Adaptive Routing Engine ensures that every prediction follows the most appropriate analytical pathway while preventing low-confidence predictions from reaching downstream business analysis.
-
----
-
-# 6. Prediction Engine
-
-## Purpose
-
-Generate customer churn predictions using the most appropriate prediction strategy selected by the Adaptive Routing Engine.
-
-Rather than relying on a single predictive model, UCIF dynamically executes the prediction pipeline best suited to the uploaded dataset.
-
-## Prediction Modes
-
-### Auto
-
-Automatically selects the optimal prediction pipeline based on routing intelligence.
-
-### Sector
-
-Executes an industry-specific prediction model optimized for the detected business domain.
-
-### Universal
-
-Executes the Universal Prediction Model when sector-specific execution is not appropriate.
-
-## Outputs
-
-- Churn Prediction
-- Churn Probability
-- Risk Category
-- Prediction Confidence
-- Prediction Metadata
-
-The Prediction Engine serves as the analytical core of UCIF while remaining independent of downstream explainability and business reasoning.
-
----
-
-# 7. Business Reasoning Engine
-
-## Purpose
-
-Translate technical prediction outputs into structured business intelligence using domain knowledge and analytical reasoning.
-
-## Produces
-
-- Business Findings
-- Customer Health Assessment
-- Business Health Assessment
-- Risk Analysis
-- Supporting Business Evidence
-- Investigation Priorities
-
-The Business Reasoning Engine bridges the gap between machine learning predictions and meaningful business interpretation.
-
----
-
-# 8. Explainable AI
-
-## Purpose
-
-Provide transparent explanations that describe why each prediction was generated.
-
-Every prediction is accompanied by interpretable evidence so that analysts can understand the reasoning behind model outputs.
-
-## Explanation Components
-
-- Strongest Business Signals
-- Weakest Business Signals
-- Missing Evidence
-- Business Narrative
-- Prediction Confidence
-- Explanation Summary
-
-The Explainable AI layer increases transparency and supports trustworthy analytical outcomes.
-
----
-
-# 9. Business Diagnostic Insights
-
-## Purpose
-
-Synthesize prediction outcomes, business reasoning, coverage assessment, and data quality evaluation into evidence-based business diagnostic insights.
-
-Rather than recommending business decisions, this component provides transparent analytical evidence that supports analysts and organizational stakeholders.
-
-## Outputs
-
-- Business Diagnostic Report
-- Business Confidence Indicators
-- Technical Confidence
-- Overall Analytical Confidence
-- Evidence Strength
-- Supporting Business Evidence
-- Investigation Priorities
-
-Business Diagnostic Insights represent the final analytical stage of the UCIF pipeline while preserving human decision authority.
-
----
-
-# 10. Reporting Engine
-
-## Purpose
-
-Generate structured reports summarizing every stage of the analytical pipeline.
-
-The Reporting Engine consolidates technical outputs, explainability results, and business diagnostics into reusable artifacts for analysts, stakeholders, and enterprise applications.
-
-## Automatically Generates
-
-- Coverage Report
-- Concept Confidence Report
-- Data Quality Report
-- Routing Report
-- Prediction Quality Report
-- Prediction Explanation Report
-- Business Diagnostic Report
-- Execution Summary
-
-Reports can be generated through:
-
-- Command Line Interface (CLI)
-- REST APIs
-- Enterprise Web Platform
-
-The Reporting Engine provides a consistent presentation layer regardless of how UCIF is deployed.
-
----
-
-# Backend Architecture
-
-The backend orchestrates framework execution while maintaining a clean separation between application orchestration and analytical intelligence.
-
-Business logic remains exclusively inside the Universal Churn Intelligence Framework, while the backend is responsible for execution lifecycle management, API orchestration, response mapping, and persistence.
-
-## Architecture
-
-```text
-FastAPI
-    │
-    ▼
-Analysis Service
-    │
-    ▼
-Execution Manager
-    │
-    ▼
-Framework Adapter
-    │
-    ▼
-Universal Churn Intelligence Framework
-    │
-    ▼
-Execution Result
-    │
-    ▼
-Framework Mapper
-    │
-    ▼
-REST API Response
+Run the frontend:
+
+```powershell
+cd frontend
+npm install
+npm run dev
 ```
 
-## Responsibilities
+Run tests:
 
-- Request Validation
-- Analysis Execution
-- Execution Lifecycle Management
-- Framework Orchestration
-- Response Mapping
-- Report Delivery
-- Persistence
-- REST API Exposure
-
-The backend intentionally avoids implementing business intelligence, ensuring a clean separation of concerns.
-
----
-
-# Enterprise Frontend
-
-The enterprise frontend provides a modern analytical workspace for exploring every stage of the UCIF pipeline.
-
-## Major Modules
-
-- Mission Control Dashboard
-- Upload Wizard
-- Analysis Workspace
-- Pipeline Visualization
-- Coverage Intelligence
-- Quality Assessment
-- Adaptive Routing
-- Prediction Analytics
-- Business Reasoning
-- Business Diagnostic Insights
-- Reports
-- Monitoring
-- Knowledge Base
-- Settings
-
-## Technology
-
-- Next.js 15
-- React
-- TypeScript
-- Tailwind CSS
-- React Query
-
-The frontend presents a unified execution workspace while keeping analytical processing inside the backend and framework.
-
----
-
-# CLI Reference Implementation
-
-The Command Line Interface (CLI) serves as the canonical implementation of the Universal Churn Intelligence Framework.
-
-## Command
-
-```bash
-python main.py --mode auto --input dataset.csv --report
+```powershell
+pytest
+pytest backend/tests
+cd frontend
+npm run lint
+npm run build
 ```
 
-## CLI Pipeline
-
-1. Industry Detection
-2. Coverage Intelligence
-3. Concept Confidence
-4. Data Quality Validation
-5. Adaptive Routing
-6. Prediction Engine
-7. Business Reasoning
-8. Prediction Explainability
-9. Business Diagnostic Report
-10. Execution Summary
-
-The CLI demonstrates the complete UCIF pipeline exactly as implemented within the framework.
-
----
-
-# REST API
-
-The FastAPI backend exposes the framework through RESTful APIs.
-
-## Major Endpoints
-
-- Upload Dataset
-- Execute Analysis
-- Retrieve Analysis
-- Predictions
-- Reports
-- Monitoring
-- Health
-- Framework Metadata
-
-The API layer provides a stable interface while remaining independent of the internal framework implementation.
-
----
-
-# Technology Stack
-
-## Machine Learning
-
-- Scikit-learn
-- XGBoost
-- SHAP
-
-## Backend
-
-- Python
-- FastAPI
-- Pydantic
-
-## Frontend
-
-- Next.js 15
-- React
-- TypeScript
-- Tailwind CSS
-
-## Data Processing
-
-- Pandas
-- NumPy
-
-## Deployment
-
-- Render
-- Vercel
-- GitHub
-
----
-
-# Development Workflow
-
-```text
-Dataset
-    │
-    ▼
-CLI / API Upload
-    │
-    ▼
-Framework Execution
-    │
-    ▼
-Business Diagnostic Insights
-    │
-    ▼
-Reports
-    │
-    ▼
-Enterprise Dashboard
-```
-
----
-
-# Outputs
-
-Generated artifacts include:
-
-- Predictions
-- Business Diagnostic Reports
-- Prediction Explanation Reports
-- Coverage Reports
-- Data Quality Reports
-- Routing Reports
-- Diagnostics
-- Execution Metadata
-- Logs
-
----
-
-# Testing Strategy
-
-Framework validation includes:
-
-- Unit Testing
-- Integration Testing
-- Golden Contract Testing
-- Backend Testing
-- Frontend Build Validation
-- API Validation
-
-The testing strategy ensures analytical correctness, architectural consistency, and deployment readiness.
-
----
-
-# Documentation
-
-The project documentation includes:
-
-- README
-- Project Outline
-- Software Architecture & Design Specification (SADS)
-- Architecture Guide
-- CLI Guide
-- API Reference
-- Frontend Guide
-- Deployment Guide
-
-The SADS serves as the primary architectural reference for UCIF.
-
----
-
-# Future Roadmap
-
-Planned enhancements include:
-
-- Additional Industry Adapters
-- LLM-assisted Business Reasoning
-- Model Registry
-- Drift Detection
-- MLOps Integration
-- Enterprise Authentication
-- Multi-tenant Deployment
-- Cloud-native Execution
-- Real-time Prediction APIs
-
-The modular architecture enables future analytical domains such as Customer Lifetime Value, Fraud Detection, and Risk Assessment to be integrated with minimal architectural changes.
-
----
-
-# Current Status
-
-## Project Version
-
-**Universal Churn Intelligence Framework (UCIF) v8.0**
-
-## Current Status
-
-✅ Universal Multi-sector Prediction
-
-✅ Universal Dataset Intelligence
-
-✅ Coverage Intelligence
-
-✅ Concept Confidence
-
-✅ Data Quality Validation
-
-✅ Adaptive Routing
-
-✅ Explainable AI
-
-✅ Business Reasoning
-
-✅ Business Diagnostic Insights
-
-✅ FastAPI Backend
-
-✅ Enterprise Frontend
-
-✅ CLI Reference Implementation
-
-✅ REST APIs
-
-✅ Multi-sector Knowledge Base
-
----
-
-# Author
-
-**Gollamudi Lakshmi Narasimha Vaibhav**
-
-Computer Science Engineering Student
-
-## Research Interests
-
-- Explainable Artificial Intelligence (XAI)
-- Software Architecture
-- Machine Learning
-- Business Intelligence
-- Customer Analytics
-- Enterprise AI Systems
-
----
-
-**Version:** UCIF v8.0
-
-**Status:** Active Development
-
-**License:** MIT
-
+Some backend integration tests require trained model artifacts under `outputs/`. Missing-artifact tests are skipped where the test suite marks them as optional.
+
+## Engineering Boundaries
+
+The current architecture depends on several important boundaries:
+
+- `universal_churn/` owns intelligence and business behavior.
+- `backend/adapters/framework_adapter.py` is the backend's only direct execution bridge into the framework.
+- `backend/services/analysis_service.py` orchestrates execution but does not make routing or scoring decisions.
+- `backend/mappers/` translates and enriches framework output without changing domain meaning.
+- `backend/runtime/` owns execution lifecycle and persistence.
+- `frontend/` consumes API contracts and should not reproduce framework logic.
+
+These boundaries keep the system testable and make future deployment changes easier.
+
+## Current Deliverables
+
+- CLI reference implementation
+- Core UCIF framework modules
+- Sector knowledge packs and sample datasets
+- FastAPI backend with upload, analysis, execution, and framework routes
+- Background execution manager
+- File-backed run persistence
+- Typed contracts and response mappers
+- Next.js enterprise console
+- Backend and core framework tests
+- Publication and report artifacts
+
+## Future Extension Points
+
+Likely extension areas:
+
+- Database-backed execution repository
+- Queue-backed execution runtime
+- Authentication and tenant-aware storage
+- More sector knowledge packs
+- More trained sector models
+- Richer report export from the web platform
+- More detailed observability and replay tooling
+- Deployment-specific environment configuration
+
+The framework has already been structured so these additions can happen around the current boundaries rather than by rewriting the core pipeline.

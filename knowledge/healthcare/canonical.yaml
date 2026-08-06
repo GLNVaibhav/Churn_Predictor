@@ -1,0 +1,2 @@
+InsuranceCoverage: {canonical: Account, entity: Insurance}
+PatientSatisfaction: {canonical: CustomerExperience, entity: Patient}

@@ -1,0 +1,1 @@
+relationships: [{from: Customer, related_to: Account}, {from: Account, related_to: Product}]

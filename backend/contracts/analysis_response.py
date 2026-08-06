@@ -31,8 +31,8 @@ Section overview
     execution              — run identity/timing (backend-owned)
     dataset                 — what was analyzed (backend + framework)
     pipeline                 — stage-by-stage diagnostics
-    coverage                  — coverage.py's measurement
-    concept_confidence       — concept_confidence.py's measurement
+    coverage                  — typed coverage assessment adapted for API consumers
+    concept_confidence       — business concept confidence derived from coverage
     quality                   — quality_gate.py's measurement
     routing                   — routing.py's decision
     prediction                — the prediction itself (dataset-level roll-up)
@@ -60,7 +60,7 @@ from .metadata import FrameworkMetadata
 
 @dataclass
 class CoverageSummary:
-    """Mirrors ``coverage.compute_coverage_score()``'s return dict."""
+    """API coverage contract adapted from the typed UCIF CoverageResult."""
     coverage_score: float
     status: str
     coverage_band: str
@@ -93,8 +93,7 @@ class CoverageSummary:
 
 @dataclass
 class ConceptConfidenceSummary:
-    """Mirrors ``concept_confidence.ConceptConfidenceReport.to_dict()``,
-    as embedded inside coverage.py's return dict."""
+    """Business concept confidence embedded in the API coverage contract."""
     sector: str = ""
     overall_confidence: float = 0.0
     reconstructable_concepts: int = 0

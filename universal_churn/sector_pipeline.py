@@ -24,17 +24,74 @@ from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from xgboost import XGBClassifier
 from .config import SECTOR_CONFIG, GLOBAL_CONCEPT_MAP
-from .coverage import compute_coverage_score, attempt_feature_recovery
+from .coverage import CoverageResult
 from .quality_gate import run_quality_gate
-from .routing import route, ModelType
+from .routing import RoutingDecision
+from .intelligence_pipeline import infer_intelligence
 from .explainability import write_shap_log, summarize_shap_directions
-from .feature_engineering import build_canonical_dataframe
 from .preprocessing import (
     sanitize_numerical_columns, derive_temporal_features,
     normalize_target, validate_target_types,
 )
 from .reporting import attach_common_metadata
 from .utils import verify_prediction_variance
+from .udif import active_run
+
+
+def _print_telecom_pre_prediction_diagnostics(
+    frame: pd.DataFrame,
+    *,
+    default_features: list[str],
+    raw_feature_sources: dict[str, list[str]],
+    canonical_by_raw_column: dict[str, str],
+) -> None:
+    """Emit observational TelecomPipeline diagnostics immediately before scoring.
+
+    This function intentionally receives the already prepared model frame and
+    never returns a value.  It is diagnostic-only: it cannot alter feature
+    ordering, values, defaults, scaling, or the prediction path.
+    """
+    numeric = frame.select_dtypes(include=[np.number])
+    variance = numeric.var(ddof=0).replace([np.inf, -np.inf], np.nan)
+    constants = [str(column) for column in frame.columns if frame[column].nunique(dropna=False) <= 1]
+    near_constants = [
+        str(column) for column, value in variance.items()
+        if column not in constants and pd.notna(value) and float(value) < 1e-8
+    ]
+    missing_values = int(frame.isna().sum().sum())
+    provenance_rows = []
+    canonical_features = []
+    for feature in frame.columns:
+        sources = raw_feature_sources.get(str(feature), [])
+        concepts = [canonical_by_raw_column[source] for source in sources if source in canonical_by_raw_column]
+        status = "default" if feature in default_features else "source"
+        if concepts:
+            canonical_features.append(str(feature))
+        provenance_rows.append({
+            "feature": str(feature),
+            "status": status,
+            "source_columns": ", ".join(sources) or "—",
+            "canonical_concepts": ", ".join(dict.fromkeys(concepts)) or "—",
+        })
+
+    print("\n[TelecomPipeline pre-prediction diagnostics]")
+    print(f"Final dataframe shape: {frame.shape}")
+    print("Final feature names: " + ", ".join(map(str, frame.columns)))
+    print(f"Constant feature count: {len(constants)}")
+    print(f"Near-constant feature count: {len(near_constants)}")
+    print(f"Missing value count: {missing_values}")
+    print(f"Missing required feature count before defaults: {len(default_features)}")
+    print("Features filled by defaults: " + (", ".join(default_features) or "None"))
+    # The sector model's established preparation path is source-header based;
+    # canonical concepts are not consumed to populate this dataframe.  Keep
+    # that distinction explicit so diagnostics do not imply a behavior change.
+    print("Features resolved from canonical concepts: 0 (not used by SectorPipeline preparation)")
+    print(f"Features with semantic canonical provenance (observational): {len(canonical_features)}")
+    print("Semantic-canonical provenance features: " + (", ".join(canonical_features) or "None"))
+    print("Feature variance table:")
+    print(pd.DataFrame({"feature": variance.index.astype(str), "variance": variance.values}).to_string(index=False))
+    print("Feature provenance:")
+    print(pd.DataFrame(provenance_rows).to_string(index=False))
 
 
 class SectorPipeline:
@@ -204,13 +261,26 @@ class SectorPipeline:
     def _run_sector_model(
         self,
         df_raw: pd.DataFrame,
-        coverage_dict: dict,
+        coverage_dict: CoverageResult,
         quality_dict: dict,
         routing_decision,
         explain: bool,
         explain_output: str | None,
         _prediction_mode: str,
+        _canonical_by_raw_column: dict[str, str] | None = None,
+        _intelligence=None,
     ) -> pd.DataFrame:
+        diagnostic_run = active_run()
+        # Phase 1 of the semantic prediction migration: produce the complete
+        # semantic binding report beside the legacy ABI vector.  This is
+        # intentionally shadow-only until benchmark parity is demonstrated.
+        # The resolver never performs header-to-header matching.
+        semantic_bindings = None
+        if _intelligence is not None:
+            from .semantic_feature_resolver import FeatureResolverPipeline
+            semantic_bindings = FeatureResolverPipeline().run(
+                df_raw, _intelligence, self.feature_names,
+            )
         df_lower = df_raw.copy()
         df_lower.columns = (df_lower.columns.str.lower()
                             .str.replace(' ', '', regex=False)
@@ -250,8 +320,10 @@ class SectorPipeline:
         id_series = next((df_raw[c].copy() for c in df_raw.columns if c in id_cols), None)
         df = self._clean(df_mapped)
         df = self._encode(df, fit=False)
+        default_features: list[str] = []
         for col in self.feature_names:
             if col not in df.columns:
+                default_features.append(col)
                 if hasattr(self.scaler, 'mean_') and col in self.config.get('scale_cols', []):
                     idx = list(self.config['scale_cols']).index(col)
                     df[col] = self.scaler.mean_[idx]
@@ -265,9 +337,44 @@ class SectorPipeline:
         if scale_cols:
             df[scale_cols] = self.scaler.transform(df[scale_cols])
         X = df.values
+        # The standard UDIF model-input capture supplies the final shape,
+        # feature names, missing values, constant/near-constant counts, and
+        # numeric spread when diagnostics are enabled.  The Telecom report
+        # below adds default and source/canonical provenance from this path.
+        if diagnostic_run is not None:
+            diagnostic_run.capture_model_input(X, list(df.columns))
         preds = self.model.predict(X)
+        if self.sector == 'telecom':
+            raw_feature_sources: dict[str, list[str]] = {}
+            for raw_column, target_column in rename_to_target.items():
+                if target_column in self.feature_names:
+                    raw_feature_sources.setdefault(target_column, []).append(raw_column)
+                # One-hot fields originate from the configured categorical
+                # source, even though their final feature name is expanded.
+                for feature in self.feature_names:
+                    if feature.startswith(f"{target_column}_"):
+                        raw_feature_sources.setdefault(feature, []).append(raw_column)
+            _print_telecom_pre_prediction_diagnostics(
+                df,
+                default_features=default_features,
+                raw_feature_sources=raw_feature_sources,
+                canonical_by_raw_column=_canonical_by_raw_column or {},
+            )
         probas = self.model.predict_proba(X)[:, 1]
-        verify_prediction_variance(probas)
+        if diagnostic_run is not None:
+            diagnostic_run.capture_predictions(probas)
+        try:
+            verify_prediction_variance(probas)
+        except Exception as exc:
+            if diagnostic_run is not None:
+                try:
+                    from .udif_rendering import render, render_execution_terminated
+                    render(diagnostic_run)
+                    render_execution_terminated("verify_prediction_variance", exc)
+                except Exception:
+                    # Observability must never replace the prediction guard's error.
+                    pass
+            raise
 
         results = pd.DataFrame()
         results['CustomerID'] = (id_series.values if id_series is not None
@@ -278,16 +385,13 @@ class SectorPipeline:
             [probas >= 0.70, probas >= 0.40], ['High', 'Medium'], default='Low')
         results['Prediction_Model'] = 'Sector XGBoost'
         results['Prediction_Mode'] = _prediction_mode
-        results['Coverage_Score'] = f"{coverage_dict['coverage_score']*100:.1f}%"
-        results['Coverage_Status'] = coverage_dict['status']
+        results['Coverage_Score'] = f"{coverage_dict.summary.overall_coverage*100:.1f}%"
+        results['Coverage_Status'] = coverage_dict.summary.readiness
         results = attach_common_metadata(results, coverage_dict, 'Sector XGBoost')
 
-        # Routing-decision fields, attached uniformly per the architecture
-        # spec (Selected Model, Routing Reason, Quality Score, Reliability,
-        # Concept Confidence, Warnings, etc.) — sourced entirely from the
-        # RoutingDecision object, not recomputed here.
-        for k, v in routing_decision.report_fields().items():
-            results[k] = v
+        results['Routing_Pipeline'] = routing_decision.selected_pipeline
+        results['Routing_Confidence'] = routing_decision.confidence
+        results['Routing_Reason'] = routing_decision.reasoning
 
         explain_summary = None
         if explain:
@@ -299,6 +403,9 @@ class SectorPipeline:
         results.attrs['coverage'] = coverage_dict
         results.attrs['quality'] = quality_dict
         results.attrs['routing_decision'] = routing_decision
+        if semantic_bindings is not None:
+            results.attrs['semantic_feature_bindings'] = semantic_bindings
+            results.attrs['semantic_feature_provenance'] = semantic_bindings.to_dict()
         return results
 
     # ── Public prediction entry point ────────────────────────────
@@ -321,66 +428,29 @@ class SectorPipeline:
         df_raw = sanitize_numerical_columns(df_raw)
         df_raw = derive_temporal_features(df_raw)
 
-        canonical_df, _resolutions, _canonical_manifest = build_canonical_dataframe(df_raw)
-        coverage = compute_coverage_score(
-            canonical_df, self.sector, mode='sector', raw_df=df_raw)
-
-        # Feature recovery is a preprocessing concern, not a routing
-        # decision — it happens here, before the router is ever called,
-        # exactly as it did before the routing refactor. The router only
-        # ever sees the final, post-recovery coverage result.
-        if coverage['prediction_mode'] == 'Fallback':
-            recovered_df = attempt_feature_recovery(df_raw, self.sector)
-            if recovered_df is not None:
-                recovered_canonical_df, _r2, _m2 = build_canonical_dataframe(recovered_df)
-                recovery_coverage = compute_coverage_score(
-                    recovered_canonical_df, self.sector, mode='sector',
-                    _suppress_print=True, raw_df=recovered_df)
-                if recovery_coverage['prediction_mode'] == 'Full':
-                    df_raw = recovered_df
-                    coverage = recovery_coverage
-
+        intelligence = infer_intelligence(df_raw)
+        diagnostic_run = active_run()
+        if diagnostic_run is not None:
+            diagnostic_run.capture_intelligence(df_raw, self.sector, intelligence)
+        coverage = intelligence.coverage
         quality = run_quality_gate(df_raw, target_col=self.config['target_col'])
+        decision = intelligence.routing.decision
 
-        decision = route(
-            mode=_prediction_mode.lower() if _prediction_mode.lower() in
-                 ('sector', 'universal', 'auto') else 'sector',
-            coverage=coverage,
-            quality=quality,
-            sector=self.sector,
-        )
-
-        if decision.selected_model == ModelType.CRITICAL_UNRELIABLE:
-            raise ValueError(
-                f"Prediction refused for sector '{self.sector}': "
-                f"{decision.routing_reason}"
-            )
-
-        if decision.selected_model == ModelType.UNIVERSAL_MODEL:
+        if decision.selected_pipeline != f"{self.sector.capitalize()}Pipeline":
             from .universal_pipeline import predict_universal
             results = predict_universal(
                 input_path=input_csv, force_sector=self.sector,
-                _precomputed_coverage=coverage, _prediction_mode=_prediction_mode)
-            for k, v in decision.report_fields().items():
-                results[k] = v
+                _intelligence=intelligence, _prediction_mode=_prediction_mode)
             results.attrs['coverage'] = coverage
             results.attrs['quality'] = quality
             results.attrs['routing_decision'] = decision
             results.attrs.setdefault('explain_summary', None)
             return results
 
-        if decision.selected_model == ModelType.CORE_MODEL:
-            # Hook point — no CoreModelPipeline exists yet. The router can
-            # select this once core_pipeline.py is implemented; until
-            # then this branch is reachable in principle but route()
-            # never actually returns CORE_MODEL today (see routing.py).
-            raise NotImplementedError(
-                "Routing selected CORE_MODEL, but no core model pipeline "
-                "is implemented yet. This is a future-readiness hook."
-            )
-
-        # FULL_SECTOR_MODEL — the only remaining case
         return self._run_sector_model(
             df_raw, coverage, quality, decision,
             explain, explain_output, _prediction_mode,
+            {str(column): mapping.chosen_concept.name for column, mapping in zip(
+                df_raw.columns, intelligence.canonical_mapping.mappings
+            )}, intelligence,
         )

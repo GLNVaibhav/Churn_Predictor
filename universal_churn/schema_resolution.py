@@ -254,6 +254,23 @@ def resolve_schema(
         was resolved. This list is the input to the Coverage &
         Information Quality Engine's confidence weighting.
     """
+    # V8 is the default semantic fallback only when no legacy resolver was
+    # explicitly supplied.  The recursive deterministic pass is deliberate:
+    # it locks exact/regex results before V8 sees unresolved fields, preserving
+    # the public contract and architectural precedence invariant.
+    if enable_semantic and semantic_resolver is None:
+        deterministic_df, deterministic = resolve_schema(df, enable_semantic=False)
+        try:
+            from .semantic_intelligence.application.online_resolution_service import OnlineResolutionService
+            from .semantic_intelligence.application.legacy_schema_adapter import LegacySchemaAdapter
+            by_column = {item.raw_column: item for item in deterministic}
+            semantic_schema = OnlineResolutionService().resolve_schema(df, by_column)
+            return LegacySchemaAdapter().project(df, semantic_schema)
+        except Exception:
+            # Semantic infrastructure must fail closed: legacy deterministic
+            # behavior is still returned rather than risking a changed schema.
+            return deterministic_df, deterministic
+
     rename_map: dict[str, str] = {}
     resolutions: list[ColumnResolution] = []
 

@@ -1,0 +1,8 @@
+PatientID: {concept: PatientIdentifier, entity: Patient, canonical: Customer, domain: Healthcare, metric: Identifier, dimension: Customer}
+Specialty: {concept: MedicalSpecialty, entity: Provider, canonical: Product, domain: Healthcare, metric: Category, dimension: Provider}
+Insurance_Type: {concept: InsuranceCoverage, entity: Insurance, canonical: Account, domain: Healthcare, metric: Category, dimension: Insurance}
+Visits_Last_Year: {concept: PatientVisits, entity: Patient, canonical: Interaction, domain: Healthcare, metric: Count, dimension: Interaction}
+Missed_Appointments: {concept: AppointmentRisk, entity: Patient, canonical: Interaction, domain: Healthcare, metric: Count, dimension: Interaction}
+Overall_Satisfaction: {concept: PatientSatisfaction, entity: Patient, canonical: CustomerExperience, domain: Healthcare, metric: Score, dimension: CustomerExperience}
+Billing_Issues: {concept: BillingExperience, entity: Billing, canonical: Billing, domain: Healthcare, metric: Count, dimension: CustomerExperience}
+Portal_Usage: {concept: DigitalEngagement, entity: Patient, canonical: Interaction, domain: Healthcare, metric: Count, dimension: Interaction}

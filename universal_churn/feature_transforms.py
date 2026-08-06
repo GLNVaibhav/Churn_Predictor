@@ -965,13 +965,15 @@ def check_feature_sufficiency(
     details : dict
         Breakdown of what was found/missing.
     """
-    # Get canonical field lookup
-    available_canonical = set()
-
-    for raw_col in df.columns:
-        normalized = raw_col.lower().replace('_', '').replace(' ', '')
-        if normalized in _ALIAS_TO_CANONICAL:
-            available_canonical.add(_ALIAS_TO_CANONICAL[normalized])
+    # Delegate availability to the canonical-first preparation path.  This
+    # legacy helper remains for callers, but no longer maintains its own raw
+    # alias interpretation.
+    from .feature_engineering import FeaturePreparationPipeline
+    prepared = FeaturePreparationPipeline().run(df, sector, include_target=False, include_sector=False)
+    # Historical sufficiency semantics count stable neutral features as
+    # available; prediction coverage separately reports whether they were
+    # resolved, compatible, or defaulted.
+    available_canonical = set(prepared.engineered_df.columns) if prepared.resolved_canonical_bindings else set()
 
     # Check high-importance features
     missing_high_importance = HIGH_IMPORTANCE_FEATURES - available_canonical

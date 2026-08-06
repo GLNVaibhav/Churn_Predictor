@@ -17,6 +17,7 @@ from ..contracts.analysis_response import UniversalAnalysisResponse
 from ..contracts.metadata import FrameworkMetadata
 from ..contracts.pipeline import PipelineStageInfo, PipelineSummary
 from ..models.execution_result import ExecutionResult
+from ..presentation import build_prediction_summary
 from ..utils import safe_get, to_serializable
 
 
@@ -50,36 +51,198 @@ def build_framework_metadata(sector: Optional[str] = None) -> FrameworkMetadata:
 
 
 def build_pipeline_summary(result: ExecutionResult) -> PipelineSummary:
-    """Build stage timeline from sections present in ``ExecutionResult``."""
+    """Build the API-visible execution timeline for the new UCIF architecture."""
     stages: List[PipelineStageInfo] = []
+    timings = (result.diagnostics or {}).get("stage_timings") if result.diagnostics else {}
+    timings = timings if isinstance(timings, dict) else {}
 
-    def _stage(name: str, present: bool, desc: str, status: str = "OK") -> None:
+    def _stage(stage_id: str, name: str, present: bool, desc: str, status: str = "OK") -> None:
         if present:
-            stages.append(PipelineStageInfo(name=name, status=status, description=desc))
+            duration = timings.get(stage_id)
+            stages.append(PipelineStageInfo(
+                id=stage_id,
+                name=name,
+                status=status,
+                description=desc,
+                execution_time=round(duration * 1000, 2) if isinstance(duration, (int, float)) else None,
+            ))
 
-    _stage("dataset_loaded", bool(result.metadata.input_path), "Input dataset loaded")
-    _stage(
-        "schema_intelligence",
-        bool(result.diagnostics and result.diagnostics.get("resolutions")),
-        "Schema resolution completed",
-    )
-    _stage(
-        "feature_engineering",
-        bool(result.diagnostics and result.diagnostics.get("manifest")),
-        "Feature engineering manifest produced",
-    )
-    _stage("coverage", result.coverage is not None, _coverage_desc(result.coverage))
-    _stage("quality", result.quality is not None, _quality_desc(result.quality))
-    _stage("routing", result.routing is not None, _routing_desc(result.routing))
+    _stage("frontend_intake", "Frontend Intake", bool(result.metadata.input_path), "Dataset submitted from the web console")
+    _stage("api_contract", "API Contract", True, "FastAPI accepted the request and execution context")
+    _stage("framework_mapper", "Framework Mapper", True, "Framework output mapped into public API sections")
+    _stage("business_meaning", "Business Meaning", "business_meaning" in timings, "Column-level business meanings inferred")
+    _stage("context_validation", "Context Validation", "context_validation" in timings, "Dataset domain context validated")
+    _stage("semantic_graph", "Semantic Graph", "semantic_graph" in timings, "Semantic relationships assembled")
+    _stage("canonical_mapping", "Canonical Mapping", "canonical_mapping" in timings, "Dataset fields mapped to canonical concepts")
+    _stage("coverage", "Coverage Intelligence", result.coverage is not None, _coverage_desc(result.coverage))
+    _stage("quality_gate", "Quality Gate", result.quality is not None, _quality_desc(result.quality))
+    _stage("routing", "Routing Intelligence", result.routing is not None, _routing_desc(result.routing))
     if result.refused:
-        _stage("prediction", False, result.refusal_reason or "Prediction refused", "FAILED")
+        _stage("prediction", "Prediction", False, result.refusal_reason or "Prediction refused", "FAILED")
     else:
-        _stage("prediction", result.results_df is not None, "Prediction completed")
-    _stage("reasoning", result.reasoning is not None, "Business reasoning attached")
-    _stage("decision", result.decision is not None, "Decision intelligence attached")
-    _stage("reports", bool(result.reports), "Reports generated")
+        _stage("prediction", "Prediction", result.results_df is not None, "Prediction completed")
+    _stage("prediction_explanation", "Prediction Explanation", result.reasoning is not None, "Prediction explanation attached")
+    _stage("decision_intelligence", "Decision Intelligence", result.decision is not None, "Decision intelligence attached")
+    _stage("reports", "Reports", bool(result.reports), "Reports generated")
 
     return PipelineSummary.from_stages(stages)
+
+
+def build_semantic_intelligence_section(result: ExecutionResult) -> Optional[Dict[str, Any]]:
+    """Expose typed UCIF intelligence evidence produced before prediction."""
+    intelligence = (result.diagnostics or {}).get("intelligence") if result.diagnostics else None
+    if not isinstance(intelligence, dict):
+        return None
+    return {
+        "business_meanings": intelligence.get("business_meanings") or [],
+        "context_validation": intelligence.get("context"),
+        "semantic_graph": intelligence.get("semantic_graph"),
+        "canonical_mapping": intelligence.get("canonical_mapping"),
+        "coverage_typed": intelligence.get("coverage"),
+        "routing_typed": intelligence.get("routing"),
+        "stage_timings": (result.diagnostics or {}).get("stage_timings") or {},
+    }
+
+
+def build_framework_mapper_section(result: ExecutionResult) -> Dict[str, Any]:
+    """Describe the API mapper boundary for consumers and the frontend."""
+    mapped_sections = [
+        name for name, present in {
+            "coverage": result.coverage is not None,
+            "quality": result.quality is not None,
+            "routing": result.routing is not None,
+            "predictions": result.results_df is not None,
+            "prediction_explanation": result.reasoning is not None,
+            "decision": result.decision is not None,
+            "diagnostics": result.diagnostics is not None,
+        }.items() if present
+    ]
+    return {
+        "boundary": "API -> FrameworkMapper -> UCIF",
+        "source_model": "backend.models.ExecutionResult",
+        "target_contract": "backend.contracts.UniversalAnalysisResponse",
+        "framework_runtime": "universal_churn",
+        "mapped_sections": mapped_sections,
+        "compatibility": {
+            "coverage": "typed CoverageResult adapted to API CoverageSummary",
+            "routing": "typed RoutingDecision adapted to API RoutingSummary",
+            "pipeline": "typed stage timings exposed with stable API stage IDs",
+        },
+    }
+
+
+def build_cli_output_section(result: ExecutionResult, pipeline: PipelineSummary) -> Dict[str, Any]:
+    """Render the CLI-style execution output for API/UI consumers."""
+    dataset_name = result.metadata.input_path or "uploaded dataset"
+    coverage = result.coverage or {}
+    quality = result.quality or {}
+    routing = result.routing
+    prediction_summary = build_prediction_summary(result.results_df)
+    prediction = prediction_summary.to_dict() if prediction_summary else {}
+    decision = to_serializable(result.decision) or {}
+    semantic = build_semantic_intelligence_section(result) or {}
+    context = semantic.get("context_validation") or {}
+    graph = semantic.get("semantic_graph") or {}
+    mapping = semantic.get("canonical_mapping") or {}
+    meanings = semantic.get("business_meanings") or []
+    timings = semantic.get("stage_timings") or {}
+
+    def _pct(value: Any) -> str:
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return "n/a"
+        return f"{number * 100:.1f}%" if number <= 1 else f"{number:.1f}%"
+
+    def _line(label: str, value: Any) -> str:
+        return f"  {label:<30}: {value}"
+
+    def _timing(stage_id: str) -> str:
+        value = timings.get(stage_id)
+        return f"{float(value):.3f} sec" if isinstance(value, (int, float)) else "n/a"
+
+    selected_model = safe_get(routing, "selected_model") if routing else None
+    selected_model = getattr(selected_model, "value", selected_model)
+
+    lines: List[str] = [
+        "=" * 72,
+        "  UNIVERSAL CHURN INTELLIGENCE FRAMEWORK",
+        "=" * 72,
+        _line("Execution Mode", result.mode.upper()),
+        _line("Input Dataset", dataset_name),
+        _line("Detected Sector", str(result.sector or "unknown").upper()),
+        _line("Framework Path", "Frontend -> API -> Framework Mapper -> UCIF"),
+        "",
+        "[1] Data Profiling",
+        _line("Rows Analysed", prediction.get("rows", len(result.results_df) if result.results_df is not None else 0)),
+        _line("Prediction Mode", prediction.get("prediction_mode", result.mode)),
+        "",
+        "[2] Business Meaning Intelligence",
+        _line("Business Concepts Inferred", len(meanings) if isinstance(meanings, list) else 0),
+        _line("Time Taken", _timing("business_meaning")),
+        "",
+        "[3] Context Validation",
+        _line("Dominant Domain", context.get("dataset_domain", "n/a") if isinstance(context, dict) else "n/a"),
+        _line("Agreement", _pct(context.get("consensus_score")) if isinstance(context, dict) else "n/a"),
+        _line("Validation Result", context.get("dataset_health", "n/a") if isinstance(context, dict) else "n/a"),
+        _line("Time Taken", _timing("context_validation")),
+        "",
+        "[4] Semantic Knowledge Graph",
+        _line("Nodes / Edges", f"{graph.get('node_count', 'n/a')} / {graph.get('edge_count', 'n/a')}" if isinstance(graph, dict) else "n/a"),
+        _line("Semantic Consistency", _pct(graph.get("consistency_score")) if isinstance(graph, dict) else "n/a"),
+        _line("Time Taken", _timing("semantic_graph")),
+        "",
+        "[5] Canonical Mapping",
+        _line("Resolved Columns", len(mapping.get("mappings", [])) if isinstance(mapping, dict) else "n/a"),
+        _line("Mapping Quality", _pct(mapping.get("overall_confidence")) if isinstance(mapping, dict) else "n/a"),
+        _line("Time Taken", _timing("canonical_mapping")),
+        "",
+        "[6] Coverage Intelligence",
+        _line("Coverage Score", _pct(coverage.get("coverage_score"))),
+        _line("Coverage Band", coverage.get("coverage_band", coverage.get("status", "n/a"))),
+        _line("Concept Confidence", _pct((coverage.get("concept_confidence") or {}).get("overall_confidence"))),
+        "",
+        "[7] Quality Gate",
+        _line("Overall Passed", quality.get("overall_passed", "n/a")),
+        _line("Leakage Detected", quality.get("leakage_detected", "n/a")),
+        "",
+        "[8] Routing Intelligence",
+        _line("Selected Model", selected_model or "n/a"),
+        _line("Selected Pipeline", safe_get(routing, "selected_pipeline") if routing else "n/a"),
+        _line("Routing Reason", safe_get(routing, "routing_reason") if routing else "n/a"),
+        "",
+        "[9] Prediction Engine",
+        _line("Rows Analysed", prediction.get("rows", len(result.results_df) if result.results_df is not None else 0)),
+        _line("Predicted Churners", prediction.get("predicted_churners", "n/a")),
+        _line("Average Churn Probability", _pct(prediction.get("average_probability"))),
+        "",
+        "[10] Decision Intelligence",
+        _line("Decision Readiness", decision.get("decision_readiness", "n/a") if isinstance(decision, dict) else "n/a"),
+        _line("Overall Confidence", _pct(decision.get("overall_confidence")) if isinstance(decision, dict) else "n/a"),
+        _line("Recommended Action", decision.get("recommended_action", "n/a") if isinstance(decision, dict) else "n/a"),
+        "",
+        "[11] Generated Reports",
+        _line("Reports Generated", len(result.reports or {})),
+        "",
+        "EXECUTION SUMMARY",
+        _line("Framework / Pipeline Version", "UCIF / active API contract"),
+        _line("Dataset / Sector", f"{dataset_name} / {str(result.sector or 'unknown').upper()}"),
+        _line("Pipeline Stages", f"{pipeline.completed}/{pipeline.total_stages} completed"),
+        _line("Overall Status", pipeline.overall_status),
+        "=" * 72,
+    ]
+
+    return {
+        "text": "\n".join(str(line) for line in lines),
+        "stages": [stage.to_dict() for stage in pipeline.stages],
+        "comparison_metrics": {
+            "coverage_score": coverage.get("coverage_score"),
+            "concept_confidence": (coverage.get("concept_confidence") or {}).get("overall_confidence"),
+            "average_churn_probability": prediction.get("average_probability"),
+            "predicted_churners": prediction.get("predicted_churners"),
+            "rows": prediction.get("rows", len(result.results_df) if result.results_df is not None else 0),
+        },
+    }
 
 
 def _coverage_desc(coverage: Optional[dict]) -> str:
@@ -144,6 +307,12 @@ def enrich_platform_payload(
     Additive only — existing response keys are preserved unchanged.
     """
     payload = response.to_dict()
+    dataset = payload.get("dataset") if isinstance(payload.get("dataset"), dict) else {}
+    if isinstance(dataset, dict):
+        dataset["sector"] = dataset.get("sector") or execution_result.sector
+        payload["dataset"] = dataset
+        payload["sector"] = dataset.get("sector")
+        payload["filename"] = dataset.get("filename")
 
     metadata = build_framework_metadata(sector=execution_result.sector)
     payload["metadata"] = metadata.to_dict()
@@ -151,12 +320,21 @@ def enrich_platform_payload(
     pipeline = build_pipeline_summary(execution_result)
     payload["pipeline"] = pipeline.to_dict()
     payload["pipeline_state"] = pipeline.to_dict()
+    payload["cli_output"] = to_serializable(
+        build_cli_output_section(execution_result, pipeline)
+    )
 
     payload["predictions"] = serialize_predictions_df(execution_result.results_df)
 
     payload["report_texts"] = to_serializable(execution_result.reports)
 
     payload["diagnostics"] = to_serializable(execution_result.diagnostics)
+    semantic_section = build_semantic_intelligence_section(execution_result)
+    if semantic_section:
+        payload["semantic_intelligence"] = to_serializable(semantic_section)
+    payload["framework_mapper"] = to_serializable(
+        build_framework_mapper_section(execution_result)
+    )
 
     fe_section = build_feature_engineering_section(execution_result)
     if fe_section:

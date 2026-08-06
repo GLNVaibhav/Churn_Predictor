@@ -1,0 +1,2 @@
+AccountBalance: {canonical: Account, entity: Account}
+CustomerIncome: {canonical: Revenue, entity: Customer}

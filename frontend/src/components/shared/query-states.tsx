@@ -37,13 +37,13 @@ function errorTitle(error: unknown) {
     if (error.kind === "validation") return "Validation error";
     if (error.kind === "network") return "Network error";
     if (error.kind === "execution") return "Execution failure";
-    if (error.kind === "backend_unavailable") return "Backend unavailable";
+    if (error.kind === "backend_unavailable") return "API unavailable";
   }
   return "Unknown error";
 }
 
 export function ErrorBanner({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
-  const message = error instanceof Error ? error.message : "Something went wrong while loading live backend data.";
+  const message = error instanceof Error ? error.message : "Something went wrong while loading live API data.";
   return (
     <Alert variant="destructive">
       <AlertTriangle className="h-4 w-4" />

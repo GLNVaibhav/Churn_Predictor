@@ -2,9 +2,15 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { ApiError } from "@/lib/api/client";
 import { getExecution, isExecutionActive } from "@/lib/api/executions";
 import { useExecutionContext } from "@/lib/context/execution-context";
 import { canonicalPayload } from "@/lib/api/view-models";
+
+function isMissingExecution(error: unknown) {
+  if (error instanceof ApiError && error.status === 404) return true;
+  return error instanceof Error && /execution not found/i.test(error.message);
+}
 
 /**
  * Single-fetch hook for the Analysis Workspace.
@@ -28,6 +34,10 @@ export function useAnalysisWorkspace(executionId?: string | null) {
   });
 
   useEffect(() => {
+    if (isMissingExecution(query.error)) {
+      ctx.clearExecutionContext();
+      return;
+    }
     const payload = canonicalPayload(query.data);
     if (!payload || !id) return;
     const inner = payload.execution as Record<string, unknown> | undefined;
@@ -38,12 +48,15 @@ export function useAnalysisWorkspace(executionId?: string | null) {
       sector: String((payload.dataset as Record<string, unknown> | undefined)?.sector || ctx.sector || ""),
       status: String(inner?.status || payload.status || ctx.status || ""),
     });
-  }, [query.data, id]);
+  }, [query.data, query.error, id, ctx]);
 
   const payload = canonicalPayload(query.data);
+  const missingExecution = isMissingExecution(query.error);
 
   return {
     ...query,
+    error: missingExecution ? null : query.error,
+    isError: missingExecution ? false : query.isError,
     executionId: id,
     payload,
     predictions: (payload?.predictions as Record<string, unknown>[] | undefined) || [],
@@ -58,6 +71,8 @@ export function useAnalysisWorkspace(executionId?: string | null) {
     reports: (payload?.reports as Record<string, unknown>[] | undefined) || [],
     reportTexts: (payload?.report_texts as Record<string, string> | undefined) || {},
     featureEngineering: (payload?.feature_engineering as Record<string, unknown> | undefined) || null,
+    semanticIntelligence: (payload?.semantic_intelligence as Record<string, unknown> | undefined) || null,
+    frameworkMapper: (payload?.framework_mapper as Record<string, unknown> | undefined) || null,
     diagnostics: (payload?.diagnostics as Record<string, unknown> | undefined) || null,
     executionState: (payload?.execution_state as Record<string, unknown> | undefined) || null,
   };

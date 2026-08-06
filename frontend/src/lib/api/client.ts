@@ -21,11 +21,16 @@ export class ApiError extends Error {
 }
 
 function baseUrl() {
-  const url = process.env.NEXT_PUBLIC_API_URL;
-  if (!url) {
-    throw new ApiError("NEXT_PUBLIC_API_URL is not configured.", "configuration");
-  }
-  return url.replace(/\/$/, "");
+  const url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+  if (!url) return "/api/backend";
+
+  const isLocalApi = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(url);
+  const isLocalBrowser =
+    typeof window !== "undefined" &&
+    ["localhost", "127.0.0.1"].includes(window.location.hostname);
+
+  if (isLocalApi && !isLocalBrowser) return "/api/backend";
+  return url;
 }
 
 function classify(status: number): ApiErrorKind {
@@ -63,7 +68,7 @@ export async function apiRequest<T>(
     });
   } catch (error) {
     if (signal?.aborted) throw error;
-    throw new ApiError("Backend unavailable. Check that the FastAPI server is running.", "backend_unavailable");
+    throw new ApiError("API unavailable. Check that the FastAPI contract service is running.", "backend_unavailable");
   }
 
   const body = await parseBody(res);
@@ -116,7 +121,7 @@ export function uploadWithProgress<T>(
     };
     xhr.onerror = () => {
       signal?.removeEventListener("abort", abort);
-      reject(new ApiError("Backend unavailable. Check that the FastAPI server is running.", "backend_unavailable"));
+      reject(new ApiError("API unavailable. Check that the FastAPI contract service is running.", "backend_unavailable"));
     };
     xhr.send(formData);
   });

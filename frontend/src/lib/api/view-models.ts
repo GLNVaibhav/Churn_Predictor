@@ -153,7 +153,7 @@ export function reportItems(payload: Payload | null, backendReports: Record<stri
     ? backendReports
     : reportCategories.map((report) => ({ ...report, id: report.category, title: report.category }));
   return source.map((report, idx) => ({
-    id: String(report.id ?? report.category ?? `report-${idx}`),
+    id: String(report.category ?? report.id ?? `report-${idx}`),
     title: String(report.title ?? report.category),
     sector,
     type: idx === 0 ? "Execution Summary" : idx === 1 ? "Business Reasoning" : "Prediction Explanation",
@@ -165,7 +165,12 @@ export function reportItems(payload: Payload | null, backendReports: Record<stri
 export function reportContent(payload: Payload, category: ReportCategory): ReportViewerContent {
   if (category === "Coverage Report") return mapCoverageReport((payload.coverage || {}) as Payload);
   if (category === "Quality Report") return mapQualityReport((payload.quality || {}) as Payload);
-  if (category === "Decision Intelligence") return mapDecisionIntelligenceReport((payload.decision || payload.routing || {}) as Payload);
+  if (category === "Decision Intelligence") {
+    return mapDecisionIntelligenceReport({
+      ...((payload.decision || {}) as Payload),
+      adaptive_business: payload.adaptive_business,
+    } as Payload);
+  }
   if (category === "Prediction Explanation") return mapPredictionExplanationReport((payload.prediction_explanation || {}) as Payload);
   return mapExecutionSummaryReport(canonicalPipelineStatus(payload) as PipelineStatusResponse);
 }

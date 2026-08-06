@@ -41,8 +41,13 @@ class PipelineStageInfo:
     """
     name: str
     status: str
+    id: str = ""
     description: str = ""
     execution_time: Optional[float] = None
+
+    def __post_init__(self) -> None:
+        if not self.id:
+            self.id = self.name
 
     def to_dict(self) -> dict:
         return to_serializable(self)
@@ -50,6 +55,7 @@ class PipelineStageInfo:
     @classmethod
     def from_dict(cls, d: dict) -> "PipelineStageInfo":
         return cls(
+            id=d.get("id", d.get("name", "unnamed_stage")),
             name=d.get("name", "unnamed_stage"),
             status=d.get("status", "OK"),
             description=d.get("description", ""),

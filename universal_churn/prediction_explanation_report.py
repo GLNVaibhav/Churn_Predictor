@@ -20,6 +20,7 @@ modified — only appended.
 from __future__ import annotations
 
 import pandas as pd
+from .coverage import CoverageResult
 
 from .prediction_explanation import (
     PredictionExplanationBuilder, PredictionExplanationReport,
@@ -228,6 +229,12 @@ def build_and_attach_explanations(
         coverage = results.attrs.get('coverage')
         quality = results.attrs.get('quality')
         routing_decision: RoutingDecision | None = results.attrs.get('routing_decision')
+
+        # The legacy explanation assembler has not yet been migrated to the
+        # typed CoverageResult contract.  Do not adapt it back to a dict:
+        # Decision Intelligence remains the typed reporting consumer.
+        if isinstance(coverage, CoverageResult):
+            return results
 
         builder = PredictionExplanationBuilder()
         report = builder.build(

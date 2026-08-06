@@ -45,6 +45,10 @@ from .preprocessing import (
     sanitize_numerical_columns, normalize_target, derive_temporal_features,
 )
 from .schema_resolution import resolve_schema, resolution_summary, ColumnResolution
+from .canonical_feature_context import (
+    CANONICAL_FIELD_BY_CONCEPT, CanonicalFeatureAccess, CanonicalValueProvenance,
+    FeatureProvenance,
+)
 
 
 FEATURE_ENGINEERING_VERSION = "6.chunk3.shared-preparation"
@@ -66,6 +70,8 @@ class FeaturePreparationContext:
     """
     raw_df: pd.DataFrame
     sector: str
+    canonical_mapping_result: object | None = None
+    coverage_summary: object | None = None
     target_col: str | None = None
     norm_stats: dict | None = None
     canonical_df: pd.DataFrame | None = None
@@ -81,6 +87,8 @@ class FeaturePreparationContext:
     feature_manifest: dict = field(default_factory=dict)
     normalization_manifest: dict = field(default_factory=dict)
     pipeline_manifest: dict = field(default_factory=dict)
+    resolved_canonical_bindings: dict[str, CanonicalValueProvenance] = field(default_factory=dict)
+    feature_provenance: dict[str, FeatureProvenance] = field(default_factory=dict)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -225,6 +233,10 @@ def _norm_max(
         key = f"{sector}.{candidate}"
         if norm_stats is not None and key in norm_stats and norm_stats[key]:
             return float(norm_stats[key])
+        source_column = df.attrs.get('canonical_source_columns', {}).get(candidate)
+        source_key = f"{sector}.{source_column}" if source_column else None
+        if source_key and norm_stats is not None and norm_stats.get(source_key):
+            return float(norm_stats[source_key])
 
     for candidate in candidates:
         if candidate in df.columns:
@@ -497,17 +509,17 @@ def _telecom_features(
     feat = pd.DataFrame(index=canonical_df.index)
     _build_relationship_features(
         feat, canonical_df, 'telecom', norm_stats,
-        ('Tenure_Raw', 'tenure'), ('Recurring_Cost', 'MonthlyCharges')
+        ('CustomerTenure',), ('RecurringCost',)
     )
 
     _build_billing_features(feat, 0, 0)
     feat['satisfaction_score'] = _concept_series(concept_df, 'SATISFACTION_SIGNAL', canonical_df.index, default=0.5)
     _build_recency_features(feat, 0.5, 1)
     _build_engagement_features(feat, _service_breadth_score(raw_df))
-    feat['is_senior_or_high_risk'] = _numeric_series(canonical_df, 'Demographic_Risk', 'SeniorCitizen', default=0.0)
+    feat['is_senior_or_high_risk'] = _numeric_series(canonical_df, 'DemographicRisk', default=0.0)
     feat['has_support'] = _boolean_from_text(_text_series(raw_df, 'TechSupport', default='No'), {'yes'})
-    feat['contract_stability'] = _contract_stability_score(_text_series(canonical_df, 'Contract_Commitment', 'Contract', default=''))
-    payment_series = _first_series(canonical_df, 'Auto_Payment_Flag', 'PaymentMethod', default='')
+    feat['contract_stability'] = _contract_stability_score(_text_series(canonical_df, 'ContractCommitment', default=''))
+    payment_series = _first_series(canonical_df, 'AutoPayment', default='')
     _build_payment_feature(
         feat,
         _text_series(pd.DataFrame({'payment': payment_series}), 'payment', default=''),
@@ -533,39 +545,39 @@ def _ecommerce_features(
     feat = pd.DataFrame(index=canonical_df.index)
     _build_relationship_features(
         feat, canonical_df, 'ecommerce', norm_stats,
-        ('Tenure_Raw', 'Tenure'), ('Recurring_Cost', 'CashbackAmount')
+        ('CustomerTenure',), ('RecurringCost',)
     )
     has_complaint = _legacy_max_normalized_feature(
-        canonical_df, 'ecommerce', norm_stats, 'Support_Contacts', 'Complain', default=0.0, clip=True
+        canonical_df, 'ecommerce', norm_stats, 'SupportContacts', default=0.0, clip=True
     )
     _build_billing_features(feat, has_complaint)
-    _build_satisfaction_features(feat, canonical_df, 'ecommerce', norm_stats, ('Satisfaction_Raw', 'SatisfactionScore'))
+    _build_satisfaction_features(feat, canonical_df, 'ecommerce', norm_stats, ('Satisfaction',))
 
-    is_active_raw = _first_series(canonical_df, 'Activity_Recency', 'DaySinceLastOrder', default=0.0)
+    is_active_raw = _first_series(canonical_df, 'ActivityRecency', default=0.0)
     is_active = (pd.to_numeric(is_active_raw, errors='coerce') <= 7).astype(int)
     recency_score = _legacy_max_normalized_feature(
-        canonical_df, 'ecommerce', norm_stats, 'Activity_Recency', 'DaySinceLastOrder', default=0.5
+        canonical_df, 'ecommerce', norm_stats, 'ActivityRecency', default=0.5
     )
     _build_recency_features(feat, recency_score, is_active)
     engagement = _legacy_max_normalized_feature(
-        canonical_df, 'ecommerce', norm_stats, 'Engagement_Volume', 'OrderCount', default=0.0
+        canonical_df, 'ecommerce', norm_stats, 'EngagementVolume', default=0.0
     )
     _build_engagement_features(feat, engagement)
     feat['is_senior_or_high_risk'] = 0
     feat['has_support'] = 0
     feat['contract_stability'] = 0
-    payment_series = _first_series(canonical_df, 'Auto_Payment_Flag', 'PreferredPaymentMode', default='')
+    payment_series = _first_series(canonical_df, 'AutoPayment', default='')
     _build_payment_feature(
         feat,
         _text_series(pd.DataFrame({'payment': payment_series}), 'payment', default=''),
         mode='preferred_ecommerce',
     )
     feat['coupon_dependency'] = _legacy_max_normalized_feature(
-        canonical_df, 'ecommerce', norm_stats, 'CouponUsed', default=0.0
+        canonical_df, 'ecommerce', norm_stats, 'CouponDependency', default=0.0
     )
     feat['cashback_engagement'] = feat['charge_normalized']
     convenience_score = 1 - _legacy_max_normalized_feature(
-        canonical_df, 'ecommerce', norm_stats, 'WarehouseToHome', default=0.5, clip=True
+        canonical_df, 'ecommerce', norm_stats, 'ConvenienceDistance', default=0.5, clip=True
     )
     _build_accessibility_features(feat, convenience_score)
     feat['dormant_loyalty_risk'] = feat['tenure_normalized'] * feat['recency_score']
@@ -585,21 +597,21 @@ def _banking_features(
     feat = pd.DataFrame(index=canonical_df.index)
     _build_relationship_features(
         feat, canonical_df, 'banking', norm_stats,
-        ('Tenure_Raw', 'Tenure'), ('Total_Spend', 'Balance')
+        ('CustomerTenure',), ('RelationshipValue',)
     )
     _build_billing_features(feat, 0, 0)
-    _build_satisfaction_features(feat, canonical_df, 'banking', norm_stats, ('Satisfaction_Raw', 'CreditScore'))
+    _build_satisfaction_features(feat, canonical_df, 'banking', norm_stats, ('Satisfaction',))
     is_active = _legacy_max_normalized_feature(
-        canonical_df, 'banking', norm_stats, 'Active_Status', 'IsActiveMember', default=0.5, clip=True
+        canonical_df, 'banking', norm_stats, 'ActiveStatus', default=0.5, clip=True
     )
     _build_recency_features(feat, is_active, is_active)
     engagement = _legacy_max_normalized_feature(
-        canonical_df, 'banking', norm_stats, 'Engagement_Volume', 'NumOfProducts', default=0.0
+        canonical_df, 'banking', norm_stats, 'EngagementVolume', default=0.0
     ) / 4.0
     _build_engagement_features(feat, engagement)
-    feat['is_senior_or_high_risk'] = (_numeric_series(canonical_df, 'Demographic_Risk', 'Age', default=0.0) > 55).astype(int)
+    feat['is_senior_or_high_risk'] = (_numeric_series(canonical_df, 'DemographicRisk', default=0.0) > 55).astype(int)
     feat['has_support'] = _legacy_max_normalized_feature(
-        canonical_df, 'banking', norm_stats, 'Auto_Payment_Flag', 'HasCrCard', default=0.0, clip=True
+        canonical_df, 'banking', norm_stats, 'AutoPayment', default=0.0, clip=True
     )
     feat['contract_stability'] = feat['tenure_normalized']
     _build_payment_feature(feat, 0.5)
@@ -623,50 +635,49 @@ def _healthcare_features(
     feat = pd.DataFrame(index=canonical_df.index)
     _build_relationship_features(
         feat, canonical_df, 'healthcare', norm_stats,
-        ('Tenure_Raw', 'Tenure_Months'),
-        ('Recurring_Cost', 'Avg_Out_Of_Pocket_Cost', 'MonthlyPremium'),
+        ('CustomerTenure',), ('RecurringCost',),
         tenure_default=0.5,
     )
 
-    billing_series = _numeric_series(canonical_df, 'Support_Contacts', 'Billing_Issues', default=0.0)
+    billing_series = _numeric_series(canonical_df, 'SupportContacts', default=0.0)
     has_complaint = (billing_series > 0).astype(int)
     _build_billing_features(feat, has_complaint, _zero_series(canonical_df.index))
-    _build_satisfaction_features(feat, canonical_df, 'healthcare', norm_stats, ('Satisfaction_Raw', 'Overall_Satisfaction'))
+    _build_satisfaction_features(feat, canonical_df, 'healthcare', norm_stats, ('Satisfaction',))
 
-    is_active = (_numeric_series(canonical_df, 'Activity_Recency', 'Days_Since_Last_Visit', default=0.0) <= 90).astype(int)
+    is_active = (_numeric_series(canonical_df, 'ActivityRecency', default=0.0) <= 90).astype(int)
     recency_score = 1 - _legacy_max_normalized_feature(
-        canonical_df, 'healthcare', norm_stats, 'Activity_Recency', 'Days_Since_Last_Visit', default=0.5, clip=True
+        canonical_df, 'healthcare', norm_stats, 'ActivityRecency', default=0.5, clip=True
     )
     _build_recency_features(feat, recency_score, is_active)
     engagement = _legacy_max_normalized_feature(
-        canonical_df, 'healthcare', norm_stats, 'Engagement_Volume', 'Visits_Last_Year', 'FrequencyOfVisits', default=0.5
+        canonical_df, 'healthcare', norm_stats, 'EngagementVolume', default=0.5
     )
     _build_engagement_features(feat, engagement)
-    feat['is_senior_or_high_risk'] = (_numeric_series(canonical_df, 'Demographic_Risk', 'Age', default=0.0) > 65).astype(int)
-    feat['has_support'] = _numeric_series(canonical_df, 'Portal_Usage', default=0.0)
+    feat['is_senior_or_high_risk'] = (_numeric_series(canonical_df, 'DemographicRisk', default=0.0) > 65).astype(int)
+    feat['has_support'] = _numeric_series(canonical_df, 'PortalUsage', default=0.0)
     feat['contract_stability'] = feat['tenure_normalized']
     _build_payment_feature(feat, 0.5)
     feat['coupon_dependency'] = 0
     feat['cashback_engagement'] = 0
     dist_norm = _legacy_max_normalized_feature(
-        canonical_df, 'healthcare', norm_stats, 'Distance_To_Facility_Miles', default=0.5, clip=True
+        canonical_df, 'healthcare', norm_stats, 'ConvenienceDistance', default=0.5, clip=True
     )
     portal_norm = _legacy_max_normalized_feature(
-        canonical_df, 'healthcare', norm_stats, 'Portal_Usage', default=0.0, clip=True
+        canonical_df, 'healthcare', norm_stats, 'PortalUsage', default=0.0, clip=True
     )
     _build_accessibility_features(feat, ((1 - dist_norm) + portal_norm).clip(0, 1), 0.5)
     feat['dormant_loyalty_risk'] = feat['tenure_normalized'] * (1 - feat['is_active'])
     feat['lockin_risk'] = 0
 
     feat['missed_appt_rate'] = (
-        _legacy_max_normalized_feature(canonical_df, 'healthcare', norm_stats, 'Missed_Appointments', default=0.0, clip=True)
+        _legacy_max_normalized_feature(canonical_df, 'healthcare', norm_stats, 'MissedAppointments', default=0.0, clip=True)
         if 'Missed_Appointments' in raw_df.columns or 'Missed_Appointments' in canonical_df.columns
         else pd.Series(0.0, index=canonical_df.index)
     )
-    visits_series = _numeric_series(canonical_df, 'Engagement_Volume', 'Visits_Last_Year', 'FrequencyOfVisits', default=np.nan)
+    visits_series = _numeric_series(canonical_df, 'EngagementVolume', default=np.nan)
     if 'Missed_Appointments' in canonical_df.columns and visits_series.notna().any():
         feat['missed_appt_rate'] = _ratio_feature(
-            _numeric_series(canonical_df, 'Missed_Appointments', default=0.0),
+            _numeric_series(canonical_df, 'MissedAppointments', default=0.0),
             visits_series,
         )
 
@@ -681,18 +692,18 @@ def _healthcare_features(
         total_visits = visits_series.replace(0, np.nan)
         if total_visits.notna().any():
             feat['billing_friction'] = _ratio_feature(
-                _numeric_series(canonical_df, 'Billing_Issues', default=0.0),
+                _numeric_series(canonical_df, 'SupportContacts', default=0.0),
                 visits_series,
             )
         else:
             feat['billing_friction'] = _legacy_max_normalized_feature(
-                canonical_df, 'healthcare', norm_stats, 'Billing_Issues', default=0.0, clip=True
+                canonical_df, 'healthcare', norm_stats, 'SupportContacts', default=0.0, clip=True
             )
     else:
         feat['billing_friction'] = pd.Series(0.0, index=canonical_df.index)
 
     referral_norm = _legacy_max_normalized_feature(
-        canonical_df, 'healthcare', norm_stats, 'Referrals_Made', default=0.0, clip=True
+        canonical_df, 'healthcare', norm_stats, 'ReferralVolume', default=0.0, clip=True
     )
     feat['referral_engagement'] = referral_norm
     return feat
@@ -704,22 +715,59 @@ def derive_engineered_features(
     sector: str,
     norm_stats: dict | None = None,
     concept_df: pd.DataFrame | None = None,
+    canonical_bindings: dict[str, CanonicalValueProvenance] | None = None,
 ) -> pd.DataFrame:
     """Canonical fields + business concepts -> stable universal feature matrix."""
+    # Builders receive a canonical business-identity view.  Raw CSV names are
+    # never exposed here; any unavoidable historical lookup is isolated in
+    # CanonicalFeatureAccess.
+    access = CanonicalFeatureAccess(canonical_df, raw_df, canonical_bindings or {})
+    canonical_view = canonical_df.copy()
+    for concept in (*CANONICAL_FIELD_BY_CONCEPT, 'CouponDependency', 'ConvenienceDistance', 'MissedAppointments', 'ReferralVolume', 'PortalUsage', 'ServicePortfolio', 'CompositeSatisfaction'):
+        canonical_view[concept] = access.require(concept)
+    canonical_view.attrs['canonical_source_columns'] = {
+        concept: provenance.source_column
+        for concept, provenance in access.used.items() if provenance.source_column
+    }
     if sector == 'telecom':
-        feat = _telecom_features(canonical_df, raw_df, norm_stats, concept_df)
+        feat = _telecom_features(canonical_view, raw_df, norm_stats, concept_df)
     elif sector == 'ecommerce':
-        feat = _ecommerce_features(canonical_df, raw_df, norm_stats, concept_df)
+        feat = _ecommerce_features(canonical_view, raw_df, norm_stats, concept_df)
     elif sector == 'banking':
-        feat = _banking_features(canonical_df, raw_df, norm_stats, concept_df)
+        feat = _banking_features(canonical_view, raw_df, norm_stats, concept_df)
     elif sector == 'healthcare':
-        feat = _healthcare_features(canonical_df, raw_df, norm_stats, concept_df)
+        feat = _healthcare_features(canonical_view, raw_df, norm_stats, concept_df)
     else:
         feat = pd.DataFrame(index=canonical_df.index)
         for col in UNIVERSAL_FEATURES:
             feat[col] = 0.5
 
-    return _finalize_universal_features(feat)
+    feat = _finalize_universal_features(feat)
+    feature_concepts = {
+        'tenure_normalized': ('CustomerTenure',), 'charge_normalized': ('RecurringCost', 'RelationshipValue'),
+        'has_complaint': ('SupportContacts',), 'satisfaction_score': ('Satisfaction',),
+        'is_active': ('ActivityRecency', 'ActiveStatus'), 'num_products_services': ('EngagementVolume', 'ServicePortfolio'),
+        'is_senior_or_high_risk': ('DemographicRisk',), 'has_support': ('PortalUsage', 'ServicePortfolio'),
+        'contract_stability': ('ContractCommitment', 'CustomerTenure'), 'payment_auto': ('AutoPayment',),
+        'engagement_score': ('EngagementVolume',), 'coupon_dependency': ('CouponDependency',),
+        'cashback_engagement': ('RecurringCost',), 'recency_score': ('ActivityRecency', 'ActiveStatus'),
+        'convenience_score': ('ConvenienceDistance', 'PortalUsage'), 'lockin_risk': ('ContractCommitment', 'CustomerTenure'),
+        'dormant_loyalty_risk': ('CustomerTenure', 'ActivityRecency', 'ActiveStatus'),
+        'missed_appt_rate': ('MissedAppointments', 'EngagementVolume'), 'composite_satisfaction': ('Satisfaction', 'CompositeSatisfaction'),
+        'billing_friction': ('SupportContacts', 'EngagementVolume'), 'care_accessibility': ('ConvenienceDistance', 'PortalUsage'),
+        'referral_engagement': ('ReferralVolume',),
+    }
+    provenance = {}
+    for feature, concepts in feature_concepts.items():
+        sources = tuple(access.used.get(c, CanonicalValueProvenance(c, None, 'intentional-neutral', 1.0)) for c in concepts)
+        if all(source.default_used for source in sources): status = 'Default'
+        elif any(source.resolution_type == 'compatibility' for source in sources): status = 'Compatibility'
+        elif not sources: status = 'Intentional Neutral'
+        elif len(concepts) > 1: status = 'Derived'
+        else: status = 'Resolved'
+        provenance[feature] = FeatureProvenance(feature, concepts, 'sector feature builder', status, sources)
+    feat.attrs['feature_provenance'] = provenance
+    return feat
 
 
 def normalize_features(context: FeaturePreparationContext) -> FeaturePreparationContext:
@@ -772,6 +820,8 @@ def _build_feature_preparation_manifest(context: FeaturePreparationContext) -> d
     feature_count = int(context.normalized_df.shape[1]) if context.normalized_df is not None else 0
     canonical_field_count = int(context.canonical_df.columns.nunique()) if context.canonical_df is not None else 0
     concept_count = int(context.concept_df.shape[1]) if context.concept_df is not None else 0
+    statuses = [item.status for item in context.feature_provenance.values()]
+    prediction_coverage = sum(status in {'Resolved', 'Derived'} for status in statuses) / len(statuses) if statuses else 0.0
     return {
         'pipeline_version': FEATURE_PREPARATION_PIPELINE_VERSION,
         'schema_version': SCHEMA_PIPELINE_VERSION,
@@ -797,6 +847,9 @@ def _build_feature_preparation_manifest(context: FeaturePreparationContext) -> d
         'number_of_business_concepts': concept_count,
         'number_of_engineered_features': feature_count,
         'duplicate_columns_resolved': duplicate_columns_resolved,
+        'canonical_bindings': context.resolved_canonical_bindings,
+        'feature_provenance': context.feature_provenance,
+        'prediction_coverage': prediction_coverage,
     }
 
 
@@ -812,6 +865,8 @@ class FeaturePreparationPipeline:
         norm_stats: dict | None = None,
         include_target: bool = False,
         include_sector: bool = False,
+        canonical_mapping_result: object | None = None,
+        coverage_summary: object | None = None,
     ) -> FeaturePreparationContext:
         """Execute all shared preparation stages and return the populated context."""
         context = FeaturePreparationContext(
@@ -819,6 +874,8 @@ class FeaturePreparationPipeline:
             sector=sector,
             target_col=target_col,
             norm_stats=norm_stats,
+            canonical_mapping_result=canonical_mapping_result,
+            coverage_summary=coverage_summary,
         )
         self._build_canonical(context)
         self._compute_concepts(context)
@@ -836,6 +893,25 @@ class FeaturePreparationPipeline:
         context.canonical_df = canonical_df
         context.resolutions = resolutions
         context.schema_manifest = schema_manifest
+        semantic_by_raw = {}
+        if context.canonical_mapping_result is not None:
+            # MappingResult is positional by design; preserve that association
+            # with the schema resolver's source-column record.
+            semantic_by_raw = {
+                raw: mapping for raw, mapping in zip(context.raw_df.columns, context.canonical_mapping_result.mappings)
+            }
+        for resolution in resolutions:
+            if not resolution.canonical_field:
+                continue
+            for concept, field in CANONICAL_FIELD_BY_CONCEPT.items():
+                if field != resolution.canonical_field or concept in context.resolved_canonical_bindings:
+                    continue
+                semantic = semantic_by_raw.get(resolution.raw_column)
+                context.resolved_canonical_bindings[concept] = CanonicalValueProvenance(
+                    concept=concept, source_column=resolution.raw_column,
+                    resolution_type=resolution.method,
+                    confidence=float(getattr(semantic, 'confidence', resolution.confidence)),
+                )
 
     def _compute_concepts(self, context: FeaturePreparationContext) -> None:
         if context.canonical_df is None:
@@ -857,7 +933,11 @@ class FeaturePreparationPipeline:
             sector=context.sector,
             norm_stats=context.norm_stats,
             concept_df=context.concept_df,
+            canonical_bindings=context.resolved_canonical_bindings,
         )
+        # A feature record is always emitted; this supplies prediction coverage
+        # even for neutral cross-sector features.
+        context.feature_provenance = context.engineered_df.attrs.get('feature_provenance', {})
         context.feature_manifest = {
             'feature_engineering_version': FEATURE_ENGINEERING_VERSION,
             'feature_count': int(context.engineered_df.shape[1]),
@@ -924,7 +1004,10 @@ def prepare_training_features(
     return context.model_input_df
 
 
-def prepare_prediction_features(df: pd.DataFrame, sector: str) -> pd.DataFrame:
+def prepare_prediction_features(
+    df: pd.DataFrame, sector: str, *, canonical_mapping_result: object | None = None,
+    coverage_summary: object | None = None,
+) -> pd.DataFrame:
     """Prepare universal prediction features through the shared pipeline."""
     prepared_df = _prepare_prediction_dataframe(df, sector)
     norm_stats = joblib.load(UNIVERSAL_NORM_STATS_PATH) if UNIVERSAL_NORM_STATS_PATH.exists() else None
@@ -936,6 +1019,8 @@ def prepare_prediction_features(df: pd.DataFrame, sector: str) -> pd.DataFrame:
         norm_stats=norm_stats,
         include_target=True,
         include_sector=True,
+        canonical_mapping_result=canonical_mapping_result,
+        coverage_summary=coverage_summary,
     )
     if context.model_input_df is None:
         raise RuntimeError("Feature preparation did not produce prediction model input.")
@@ -987,10 +1072,16 @@ def extract_universal_features(
     return context.model_input_df
 
 
-def transform_features_by_sector(df: pd.DataFrame, sector: str) -> pd.DataFrame:
+def transform_features_by_sector(
+    df: pd.DataFrame, sector: str, *, canonical_mapping_result: object | None = None,
+    coverage_summary: object | None = None,
+) -> pd.DataFrame:
     """
     Convert an inference DataFrame to the universal model feature matrix.
     Used exclusively by predict_universal() — mirrors extract_universal_features()
     but operates on already-read inference data (no target required).
     """
-    return prepare_prediction_features(df, sector)
+    return prepare_prediction_features(
+        df, sector, canonical_mapping_result=canonical_mapping_result,
+        coverage_summary=coverage_summary,
+    )

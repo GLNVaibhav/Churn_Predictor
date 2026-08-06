@@ -1,10 +1,10 @@
-// Generic proxy for browser-side calls into the FastAPI backend.
+// Generic proxy for browser-side calls into the FastAPI API contract.
 //
 // The browser (running inside the Replit preview iframe) cannot reach
-// the backend's port directly, so client components route through this
+// the API service port directly, so client components route through this
 // same-origin Next.js API route, which forwards the request to the
-// backend process over the container's localhost network. Server
-// Components fetch the backend directly (see lib/api/backend.ts) and
+// API process over the container's localhost network. Server
+// Components fetch the API directly and
 // never need this proxy.
 
 import { NextRequest, NextResponse } from "next/server";
@@ -37,7 +37,7 @@ async function proxy(req: NextRequest, path: string[]) {
       },
     });
   } catch {
-    return NextResponse.json({ detail: "Backend unavailable" }, { status: 503 });
+    return NextResponse.json({ detail: "API unavailable" }, { status: 503 });
   }
 }
 

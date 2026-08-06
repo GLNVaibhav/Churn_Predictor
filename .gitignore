@@ -70,6 +70,31 @@ node_modules/
 !.env.example
 
 ########################################
+# Local Data, Reports, and Outputs
+########################################
+data/runs/*
+!data/runs/.gitkeep
+outputs/results/*
+outputs/shap_logs/*
+outputs/reports/*
+outputs/predictions/*
+!outputs/results/.gitkeep
+!outputs/shap_logs/.gitkeep
+!outputs/reports/.gitkeep
+!outputs/predictions/.gitkeep
+
+########################################
+# Sensitive / Non-source Documents
+########################################
+*.pdf
+*.docx
+*.pptx
+*.zip
+*.tar
+*.gz
+*.7z
+
+########################################
 # IDE
 ########################################
 .vscode/

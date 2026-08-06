@@ -1,0 +1,11 @@
+operator,customer_id,plan_type,tenure_months,circle,monthly_spend_inr,data_gb_used,voice_minutes,complaints_6m,support_tickets_6m,dropped_calls_6m,network_quality_score,port_out_count_6m,payment_delay_6m,high_value_user,churn
+Airtel,A1,Prepaid,18,Andhra Pradesh,98,12,4,1,2,1,8,1,0,0,0
+Airtel,A2,Postpaid,42,Karnataka,210,28,6,4,5,3,24,0,1,0,0
+Airtel,A3,Postpaid,7,Tamil Nadu,65,6,2,0,1,0,5,2,0,1,1
+Airtel,A4,Prepaid,31,Maharashtra,145,18,5,2,3,2,15,0,0,0,0
+Airtel,A5,Postpaid,54,Delhi,260,34,7,5,6,4,29,0,1,0,0
+Jio,J1,Prepaid,12,Andhra Pradesh,88,10,3,1,2,1,7,1,0,1,1
+Jio,J2,Prepaid,26,Karnataka,132,16,4,2,3,2,14,0,0,0,0
+Jio,J3,Postpaid,39,Tamil Nadu,190,25,5,3,4,2,20,0,1,0,0
+Jio,J4,Prepaid,9,Maharashtra,74,8,2,1,1,1,6,2,0,1,1
+Jio,J5,Postpaid,47,Delhi,240,31,6,4,5,3,27,0,1,0,0

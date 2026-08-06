@@ -40,17 +40,18 @@ from .config import (
 )
 from .feature_engineering import (
     extract_universal_features, transform_features_by_sector, compute_norm_stats,
-    build_canonical_dataframe,
 )
+from .udif import active_run
 from .preprocessing import (
     sanitize_numerical_columns, derive_temporal_features, detect_sector,
     normalize_target, validate_target_types,
 )
 from .reporting import attach_common_metadata
 from .utils import verify_prediction_variance
-from .coverage import compute_coverage_score
 from .quality_gate import run_quality_gate
-from .routing import route, ModelType
+from .coverage import CoverageResult
+from .routing import RoutingDecision
+from .intelligence_pipeline import IntelligenceResult, infer_intelligence
 from .explainability import write_shap_log, summarize_shap_directions
 
 
@@ -169,7 +170,7 @@ def predict_universal(
     explain: bool = False,
     explain_output: str | None = None,
     _prediction_mode: str = 'Universal',
-    _precomputed_coverage: dict | None = None,
+    _intelligence: IntelligenceResult | None = None,
 ) -> pd.DataFrame:
     """
     Predict churn using the universal cross-sector model.
@@ -187,26 +188,14 @@ def predict_universal(
     df_raw = sanitize_numerical_columns(df_raw)
     df_raw = derive_temporal_features(df_raw)
     sector = force_sector or detect_sector(df_raw)
-    print(f"  Auto-detected sector: {sector}")
 
-    routing_decision = None
-    canonical_manifest = None
-    if _precomputed_coverage is not None:
-        _coverage = _precomputed_coverage
-        _quality  = None  # already evaluated by the caller's route() call
-    else:
-        canonical_df, _resolutions, canonical_manifest = build_canonical_dataframe(df_raw)
-        _coverage = compute_coverage_score(
-            df_input=canonical_df, sector=sector, mode='universal', raw_df=df_raw)
-        _quality  = run_quality_gate(df_raw, target_col=SECTOR_CONFIG[sector]['target_col'])
-        routing_decision = route(
-            mode='universal', coverage=_coverage, quality=_quality, sector=sector,
-        )
-        if routing_decision.selected_model == ModelType.CRITICAL_UNRELIABLE:
-            raise ValueError(
-                f"Prediction refused for sector '{sector}': "
-                f"{routing_decision.routing_reason}"
-            )
+    intelligence = _intelligence or infer_intelligence(df_raw)
+    diagnostic_run = active_run()
+    if diagnostic_run is not None:
+        diagnostic_run.capture_intelligence(df_raw, sector, intelligence)
+    _coverage: CoverageResult = intelligence.coverage
+    routing_decision: RoutingDecision = intelligence.routing.decision
+    _quality = run_quality_gate(df_raw, target_col=SECTOR_CONFIG[sector]['target_col'])
 
     df_lower = df_raw.copy()
     df_lower.columns = (df_lower.columns.str.lower()
@@ -232,7 +221,22 @@ def predict_universal(
         if not matched:
             rename_to_target[col_name] = col_name
     df_mapped = df_raw.rename(columns=rename_to_target)
-    X_processed = transform_features_by_sector(df_mapped, sector)
+    X_processed = transform_features_by_sector(
+        df_mapped, sector,
+        canonical_mapping_result=intelligence.canonical_mapping,
+        coverage_summary=intelligence.coverage.summary,
+    )
+    # Shadow semantic resolver report.  Universal preparation already uses
+    # canonical fields; this report makes the intelligence-to-feature bridge
+    # explicit and comparable with the sector-model migration path.
+    from .semantic_feature_resolver import FeatureResolverPipeline
+    semantic_bindings = FeatureResolverPipeline().run(
+        df_raw, intelligence, list(X_processed.columns),
+    )
+    if diagnostic_run is not None:
+        diagnostic_run.capture_feature_preparation(
+            X_processed.attrs.get('feature_engineering_manifest', {})
+        )
     scaler = joblib.load(str(UNIVERSAL_SCALER_PATH))
     model = joblib.load(str(UNIVERSAL_MODEL_PATH))
     if hasattr(scaler, 'feature_names_in_'):
@@ -244,9 +248,24 @@ def predict_universal(
         X_scaled = scaler.transform(X_processed)
     else:
         X_scaled = scaler.transform(X_processed.values)
+    if diagnostic_run is not None:
+        diagnostic_run.capture_model_input(X_scaled, list(X_processed.columns))
     probas = model.predict_proba(X_scaled)[:, 1]
+    if diagnostic_run is not None:
+        diagnostic_run.capture_predictions(probas)
     preds = model.predict(X_scaled)
-    verify_prediction_variance(probas)
+    try:
+        verify_prediction_variance(probas)
+    except Exception as exc:
+        if diagnostic_run is not None:
+            try:
+                from .udif_rendering import render, render_execution_terminated
+                render(diagnostic_run)
+                render_execution_terminated("verify_prediction_variance", exc)
+            except Exception:
+                # Observability must never replace the prediction guard's error.
+                pass
+        raise
     results = pd.DataFrame()
     id_cols = ['customerID', 'CustomerID', 'Customer ID',
                'CustomerId', 'PatientID', 'patientid']
@@ -264,13 +283,13 @@ def predict_universal(
     results['Sector'] = sector.capitalize()
     results['Prediction_Model'] = 'Universal XGBoost'
     results['Prediction_Mode'] = _prediction_mode
-    results['Coverage_Score'] = f"{_coverage['coverage_score']*100:.1f}%"
-    results['Coverage_Status'] = _coverage['status']
+    results['Coverage_Score'] = f"{_coverage.summary.overall_coverage*100:.1f}%"
+    results['Coverage_Status'] = _coverage.summary.readiness
     results = attach_common_metadata(results, _coverage, 'Universal XGBoost')
 
-    if routing_decision is not None:
-        for k, v in routing_decision.report_fields().items():
-            results[k] = v
+    results['Routing_Pipeline'] = routing_decision.selected_pipeline
+    results['Routing_Confidence'] = routing_decision.confidence
+    results['Routing_Reason'] = routing_decision.reasoning
 
     explain_summary = None
     if explain:
@@ -280,8 +299,10 @@ def predict_universal(
         explain_summary = summarize_shap_directions(
             model, X_processed, list(X_processed.columns))
     results.attrs['explain_summary'] = explain_summary
-    results.attrs['canonical_manifest'] = canonical_manifest
+    results.attrs['intelligence'] = intelligence
     results.attrs['coverage'] = _coverage
     results.attrs['quality'] = _quality
     results.attrs['routing_decision'] = routing_decision
+    results.attrs['semantic_feature_bindings'] = semantic_bindings
+    results.attrs['semantic_feature_provenance'] = semantic_bindings.to_dict()
     return results

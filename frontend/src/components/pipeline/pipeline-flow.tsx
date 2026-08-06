@@ -73,7 +73,7 @@ export function PipelineFlow({ stages }: { stages: PipelineStage[] }) {
     <div>
       <div className="mb-3 flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          Drag to pan, scroll to zoom, click any stage for its execution detail.
+          Follow the analysis from upload through readiness checks, risk scoring, and decision support.
         </p>
       </div>
       <div className="h-[620px] w-full overflow-hidden rounded-lg border border-border/60 bg-muted/10">

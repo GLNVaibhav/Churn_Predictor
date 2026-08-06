@@ -1,0 +1,2 @@
+DeliveryDistance: {aliases: [warehouse_to_home, delivery_distance]}
+PaymentMethod: {aliases: [payment_mode, preferred_payment_mode]}

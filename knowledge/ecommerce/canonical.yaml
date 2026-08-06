@@ -1,0 +1,2 @@
+PaymentMethod: {canonical: Payment, entity: Payment}
+CustomerSatisfaction: {canonical: CustomerExperience, entity: Customer}

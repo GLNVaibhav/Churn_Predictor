@@ -9,4 +9,7 @@ export const API = {
   decision: (executionId: string) => `/api/v1/analysis/${executionId}/decision`,
   context: (executionId: string) => `/api/v1/analysis/${executionId}/context`,
   events: (executionId: string) => `/api/v1/analysis/${executionId}/events`,
+  cliOutput: (executionId: string) => `/api/v1/analysis/${executionId}/cli-output`,
+  semanticIntelligence: (executionId: string) => `/api/v1/analysis/${executionId}/semantic-intelligence`,
+  frameworkMapper: (executionId: string) => `/api/v1/analysis/${executionId}/framework-mapper`,
 } as const;

@@ -1,0 +1,8 @@
+CustomerID: {concept: CustomerIdentifier, entity: Customer, canonical: Customer, domain: Retail, metric: Identifier, dimension: Customer}
+WarehouseToHome: {concept: DeliveryDistance, entity: Order, canonical: Interaction, domain: Retail, metric: Duration, dimension: Delivery}
+HourSpendOnApp: {concept: CustomerEngagement, entity: Customer, canonical: Interaction, domain: Retail, metric: Duration, dimension: Interaction}
+PreferredPaymentMode: {concept: PaymentMethod, entity: Payment, canonical: Payment, domain: Retail, metric: Category, dimension: Payment}
+NumberOfDeviceRegistered: {concept: DeviceProfile, entity: Customer, canonical: Product, domain: Retail, metric: Count, dimension: Product}
+SatisfactionScore: {concept: CustomerSatisfaction, entity: Customer, canonical: CustomerExperience, domain: Retail, metric: Score, dimension: CustomerExperience}
+OrderAmountHikeFromlastYear: {concept: PurchaseGrowth, entity: Order, canonical: Revenue, domain: Retail, metric: Score, dimension: Marketing}
+OrderCount: {concept: OrderHistory, entity: Order, canonical: Interaction, domain: Retail, metric: Count, dimension: Shopping}

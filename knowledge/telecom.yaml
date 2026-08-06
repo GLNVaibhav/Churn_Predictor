@@ -1,0 +1,17 @@
+concepts:
+  operator: {concept: Operator, domain: Telecom, metric: Category, dimension: Service, canonical: Network, aliases: [carrier, telecom_operator]}
+  customer_id: {concept: CustomerIdentifier, domain: Telecom, metric: Identifier, dimension: Customer, canonical: Customer, aliases: [customerid, subscriber_id]}
+  plan_type: {concept: SubscriptionPlan, domain: Telecom, metric: Category, dimension: Product, canonical: Subscription, aliases: [plan, tariff_plan]}
+  tenure_months: {concept: CustomerTenure, domain: Telecom, metric: Duration, dimension: Lifecycle, canonical: Lifecycle, aliases: [tenure, tenure_month]}
+  circle: {concept: ServiceRegion, domain: Telecom, metric: Category, dimension: Service, canonical: Network, aliases: [region, service_area]}
+  monthly_spend_inr: {concept: Revenue, domain: Telecom, metric: Money, dimension: Billing, canonical: Revenue, aliases: [monthlycharges, monthly_spend, monthly_charge]}
+  data_gb_used: {concept: DataUsage, domain: Telecom, metric: Usage, dimension: Service, canonical: Usage, aliases: [data_usage, data_used]}
+  voice_minutes: {concept: VoiceUsage, domain: Telecom, metric: Duration, dimension: Service, canonical: Usage, aliases: [call_minutes, voice_usage]}
+  complaints_6m: {concept: ComplaintHistory, domain: Telecom, metric: Count, dimension: CustomerSupport, canonical: Complaint, aliases: [complaints, complaint_count]}
+  support_tickets_6m: {concept: SupportUsage, domain: Telecom, metric: Count, dimension: CustomerSupport, canonical: Support, aliases: [support_tickets, tickets]}
+  dropped_calls_6m: {concept: CallQuality, domain: Telecom, metric: Count, dimension: ServiceQuality, canonical: ServiceQuality, aliases: [dropped_calls]}
+  network_quality_score: {concept: NetworkQuality, domain: Telecom, metric: Score, dimension: ServiceQuality, canonical: ServiceQuality, aliases: [network_quality]}
+  port_out_count_6m: {concept: PortOutRisk, domain: Telecom, metric: Count, dimension: Retention, canonical: Retention, aliases: [port_out_count, portout]}
+  payment_delay_6m: {concept: PaymentDelay, domain: Telecom, metric: Count, dimension: Billing, canonical: Payment, aliases: [payment_delay]}
+  high_value_user: {concept: CustomerValue, domain: Telecom, metric: Score, dimension: Loyalty, canonical: Loyalty, aliases: [high_value]}
+  churn: {concept: ChurnRisk, domain: Telecom, metric: Score, dimension: Risk, canonical: Risk, aliases: [attrition]}

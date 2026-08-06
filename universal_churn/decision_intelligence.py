@@ -26,7 +26,7 @@ already produced elsewhere:
 
     Prediction results          (pd.DataFrame — Predicted_Churn,
                                   Churn_Probability, Risk_Level, ...)
-    Coverage Result              (coverage.py's dict, or the value
+    Coverage Result              (coverage.py's CoverageResult, or the value
                                   already attached to
                                   results.attrs['coverage'])
     Quality Result                (quality_gate.py's dict, or the value
@@ -36,7 +36,7 @@ already produced elsewhere:
                                   value already attached to
                                   results.attrs['routing_decision'])
     Concept Confidence Report    (concept_confidence.py's report,
-                                  embedded inside the coverage dict by
+                                  embedded inside CoverageResult.summary by
                                   coverage.py — read from there, never
                                   recomputed here)
     Reasoning Report              (business_reasoning.ReasoningReport —
@@ -79,11 +79,12 @@ from enum import Enum
 
 import pandas as pd
 
-from .routing import RoutingDecision, ReliabilityLevel
+from .routing import RoutingDecision
 from .business_reasoning import ReasoningReport
 from .concept_confidence import MIN_RECONSTRUCTABLE_OVERALL_CONFIDENCE
 from .knowledge_base import KnowledgeBase
 from .knowledge_loader import get_default_knowledge_base
+from .coverage import CoverageResult
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -104,14 +105,7 @@ MIN_CONCEPT_CONFIDENCE_FOR_EVIDENCE: float = MIN_RECONSTRUCTABLE_OVERALL_CONFIDE
 #: on automatically", per the Chunk 1 spec's READY rule.
 READY_CONCEPT_CONFIDENCE_MIN: float = 0.40
 
-#: Reliability -> point mapping used by the Technical Confidence score.
-_RELIABILITY_POINTS: dict[str, float] = {
-    ReliabilityLevel.VERY_HIGH.value: 1.00,
-    ReliabilityLevel.HIGH.value: 0.80,
-    ReliabilityLevel.MODERATE.value: 0.55,
-    ReliabilityLevel.LOW.value: 0.30,
-    ReliabilityLevel.VERY_LOW.value: 0.00,
-}
+
 
 _SEVERITY_RANK: dict[str, int] = {'LOW': 0, 'MEDIUM': 1, 'HIGH': 2, 'CRITICAL': 3}
 _HEALTH_POINTS: dict[str, float] = {'LOW': 0.0, 'MEDIUM': 0.5, 'HIGH': 1.0, 'Unknown': 0.5}
@@ -280,25 +274,23 @@ class DecisionAssessment:
 # neutral 0.5 default when that number is unavailable) — none of them
 # write back to, or alter, the object they read from.
 
-def _coverage_component(coverage: dict | None) -> float:
-    """coverage_score is already a [0,1] float in coverage.py's dict —
-    used as-is, never recomputed."""
+def _coverage_component(coverage: CoverageResult | None) -> float:
+    """Read overall coverage score from CoverageResult summary."""
     if coverage is None:
         return 0.5
-    return float(coverage.get('coverage_score', 0.5))
+    # overall_coverage represents the aggregated coverage score in [0,1]
+    return float(coverage.summary.overall_coverage)
 
 
-def _concept_confidence_value(coverage: dict | None) -> float | None:
-    """Read concept_confidence.py's overall_confidence straight out of
-    the coverage dict coverage.py already embedded it in — returns
-    None (not 0.0) when unavailable, so callers can distinguish 'no
-    data' from 'zero confidence'."""
+
+def _concept_confidence_value(coverage: CoverageResult | None) -> float | None:
+    """Read concept confidence (overall) from CoverageResult summary.
+    Returns None if unavailable."""
     if not coverage:
         return None
-    concept_data = coverage.get('concept_confidence')
-    if not concept_data:
-        return None
-    return concept_data.get('overall_confidence')
+    # confidence_coverage field holds the overall concept confidence
+    return coverage.summary.confidence_coverage
+    
 
 
 def _quality_component(quality_status: str) -> float:
@@ -308,7 +300,8 @@ def _quality_component(quality_status: str) -> float:
 def _routing_component(routing_decision: RoutingDecision | None) -> float:
     if routing_decision is None:
         return 0.5
-    return _RELIABILITY_POINTS.get(routing_decision.reliability.value, 0.5)
+    # Use the numeric confidence directly; clamp to [0,1]
+    return max(0.0, min(1.0, routing_decision.confidence))
 
 
 def _reasoning_component(reasoning_report: ReasoningReport | None) -> float:
@@ -342,7 +335,7 @@ _EVIDENCE_WEIGHTS: dict[str, float] = {
 
 
 def _compute_evidence_strength(
-    coverage: dict | None,
+    coverage: CoverageResult | None,
     quality_status: str,
     routing_decision: RoutingDecision | None,
     reasoning_report: ReasoningReport | None,
@@ -372,7 +365,7 @@ def _compute_evidence_strength(
 # ══════════════════════════════════════════════════════════════════
 
 def _compute_business_confidence(
-    coverage: dict | None,
+    coverage: CoverageResult | None,
     reasoning_report: ReasoningReport | None,
 ) -> float:
     """
@@ -393,16 +386,13 @@ def _compute_business_confidence(
 
 
 def _compute_technical_confidence(
-    coverage: dict | None,
+    coverage: CoverageResult | None,
     quality_status: str,
     routing_decision: RoutingDecision | None,
 ) -> float:
     """
-    Derived ONLY from Coverage, Quality, and Routing — mirrors
-    routing.py's own `_derive_reliability()` point scoring in spirit,
-    expressed as a continuous [0, 1] score rather than a five-band
-    label (ReliabilityLevel already exists for the label; this is the
-    numeric counterpart Decision Intelligence needs for averaging).
+    Derived ONLY from Coverage, Quality, and Routing. Expressed as a 
+    continuous [0, 1] score.
     """
     components = [
         _coverage_component(coverage),
@@ -417,7 +407,7 @@ def _compute_technical_confidence(
 # ══════════════════════════════════════════════════════════════════
 
 def _derive_decision_readiness(
-    coverage_band: str,
+    coverage_readiness: str,
     quality_status: str,
     concept_confidence: float | None,
 ) -> DecisionReadiness:
@@ -440,6 +430,16 @@ def _derive_decision_readiness(
            that doesn't cleanly match rows 1-3, e.g. Yellow coverage
            combined with WARN quality).
     """
+    # Map new readiness levels to legacy bands for policy evaluation
+    # READY -> Green, MOSTLY_READY / PARTIALLY_READY -> Yellow, NOT_READY -> Red
+    readiness_map = {
+        'READY': 'Green',
+        'MOSTLY_READY': 'Yellow',
+        'PARTIALLY_READY': 'Yellow',
+        'NOT_READY': 'Red',
+    }
+    coverage_band = readiness_map.get(coverage_readiness, 'Unknown')
+
     if quality_status == 'FAIL':
         return DecisionReadiness.INSUFFICIENT_EVIDENCE
     if concept_confidence is None or concept_confidence < MIN_CONCEPT_CONFIDENCE_FOR_EVIDENCE:
@@ -554,8 +554,7 @@ def _collect_warnings(
         warnings.append("Data quality gate returned WARN — see the Quality Report for detail.")
     if quality_status == 'FAIL':
         warnings.append("Data quality gate FAILED (target leakage detected) — evidence is unreliable.")
-    if routing_decision is not None:
-        warnings.extend(routing_decision.warnings)
+    # RoutingDecision no longer provides warnings; they are assembled elsewhere.
     if concept_confidence is not None and concept_confidence < READY_CONCEPT_CONFIDENCE_MIN:
         warnings.append(
             f"Concept confidence is {concept_confidence*100:.1f}%, below the "
@@ -575,14 +574,14 @@ def _collect_warnings(
 
 
 def _collect_evidence(
-    coverage: dict | None,
+    coverage: CoverageResult | None,
     quality_status: str,
     routing_decision: RoutingDecision | None,
     reasoning_report: ReasoningReport | None,
 ) -> tuple[DecisionEvidenceItem, ...]:
     items: list[DecisionEvidenceItem] = []
     coverage_score = _coverage_component(coverage)
-    coverage_band = coverage.get('status', 'Unknown') if coverage else 'Unknown'
+    coverage_band = coverage.summary.readiness if coverage else 'Unknown'
     concept_conf = _concept_confidence_value(coverage)
 
     items.append(DecisionEvidenceItem(
@@ -601,11 +600,13 @@ def _collect_evidence(
     ))
     if routing_decision is not None:
         items.append(DecisionEvidenceItem(
-            name="Selected Model", value=routing_decision.selected_model.value,
+            name="Selected Pipeline",
+            value=routing_decision.selected_pipeline,
             source="RoutingDecision",
         ))
         items.append(DecisionEvidenceItem(
-            name="Prediction Reliability", value=routing_decision.reliability.value,
+            name="Routing Confidence",
+            value=f"{routing_decision.confidence:.2f}",
             source="RoutingDecision",
         ))
     if reasoning_report is not None:
@@ -627,17 +628,11 @@ def _collect_evidence(
 
 def _quality_status_from(
     quality: dict | None,
-    routing_decision: RoutingDecision | None,
 ) -> str:
     """
     Mirrors routing.QualityResult.from_quality_dict()'s GOOD/WARN/FAIL
     derivation (reading the same quality_gate.py dict shape it does)
-    without importing that adapter's dataclass machinery. Falls back
-    to the already-computed RoutingDecision.quality_status when no raw
-    quality dict is available (e.g. a universal-mode fallback call
-    that only received `_precomputed_coverage`), and finally to
-    'Unknown' if neither is available. Never recomputes quality_gate.py's
-    underlying checks — only reads its dict output.
+    without importing that adapter's dataclass machinery.
     """
     if quality is not None:
         leakage_detected = quality.get('leakage_detected', False)
@@ -650,8 +645,6 @@ def _quality_status_from(
         if non_leakage_failures or leakage_warned:
             return 'WARN'
         return 'GOOD'
-    if routing_decision is not None:
-        return routing_decision.quality_status
     return 'Unknown'
 
 
@@ -678,7 +671,7 @@ class DecisionIntelligenceEngine:
         self,
         sector: str,
         results: pd.DataFrame | None = None,
-        coverage: dict | None = None,
+        coverage: CoverageResult | None = None,
         quality: dict | None = None,
         routing_decision: RoutingDecision | None = None,
         reasoning_report: ReasoningReport | None = None,
@@ -692,14 +685,10 @@ class DecisionIntelligenceEngine:
         (matching routing.py's own handling of missing concept-
         confidence data). Does not mutate any argument.
         """
-        quality_status = _quality_status_from(quality, routing_decision)
-        coverage_band = (
-            coverage.get('status', 'Unknown') if coverage
-            else (routing_decision.coverage_band if routing_decision else 'Unknown')
-        )
+        quality_status = _quality_status_from(quality)
+        coverage_band = coverage.summary.readiness if coverage else 'Unknown'
         concept_confidence = _concept_confidence_value(coverage)
-        if concept_confidence is None and routing_decision is not None:
-            concept_confidence = routing_decision.concept_confidence
+        # No fallback to routing_decision for concept confidence; it is solely from CoverageResult.
 
         evidence_strength = _compute_evidence_strength(
             coverage, quality_status, routing_decision, reasoning_report)
@@ -735,7 +724,7 @@ class DecisionIntelligenceEngine:
 def run_decision_intelligence(
     sector: str,
     results: pd.DataFrame | None = None,
-    coverage: dict | None = None,
+    coverage: CoverageResult | None = None,
     quality: dict | None = None,
     routing_decision: RoutingDecision | None = None,
     reasoning_report: ReasoningReport | None = None,

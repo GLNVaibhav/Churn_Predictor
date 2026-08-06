@@ -1,0 +1,501 @@
+Patient_ID,Age,Gender,City,Department,Doctor_Speciality,Visit_Frequency_6M,Missed_Appointments,Avg_Wait_Time_Min,Insurance_Provider,Insurance_Coverage,Outstanding_Bill,Total_Medical_Spend,Chronic_Disease,Admission_Count,Emergency_Visits,Lab_Tests_Count,Pharmacy_Spend,Telemedicine_Usage,App_Login_Frequency,Feedback_Rating,Complaint_Count,Distance_From_Hospital,Loyalty_Program,Churn
+AP0001,49,M,Bengaluru,Oncology,Oncology,4,5,24,ICICI Lombard,42,48598,12811,Yes,1,1,16,19726,0,35,1,1,70,No,1
+AP0002,38,F,Chennai,ENT,Orthopedics,0,1,67,HDFC Ergo,88,18231,93236,Yes,0,3,3,11763,5,38,5,2,6,No,0
+AP0003,55,F,Bengaluru,Oncology,Cardiology,8,4,25,HDFC Ergo,89,5164,80861,Yes,1,0,12,9108,7,40,4,2,21,No,0
+AP0004,27,M,Bengaluru,Orthopedics,Pediatrics,10,2,36,ICICI Lombard,57,45994,247585,Yes,2,0,7,26928,0,51,3,2,52,No,0
+AP0005,45,F,Vijayawada,Pediatrics,Orthopedics,5,0,37,Niva Bupa,48,57433,69651,No,4,3,18,13087,5,14,5,1,66,No,0
+AP0006,37,M,Vijayawada,Oncology,Dermatology,1,0,106,ICICI Lombard,78,56433,127696,No,4,0,3,22338,8,48,1,2,44,Yes,1
+AP0007,51,M,Hyderabad,ENT,Neurology,0,2,65,HDFC Ergo,63,29735,204887,Yes,4,4,0,19626,5,31,2,0,15,No,1
+AP0008,28,M,Vijayawada,Oncology,Orthopedics,9,2,40,HDFC Ergo,82,15785,129592,Yes,2,4,19,13865,3,59,1,4,26,No,0
+AP0009,75,M,Bengaluru,Neurology,Oncology,8,3,95,Niva Bupa,41,28711,159221,Yes,4,1,0,2326,11,40,3,0,30,Yes,1
+AP0010,48,F,Vijayawada,Neurology,Orthopedics,8,0,120,ICICI Lombard,55,4643,210683,No,3,1,3,3176,10,27,3,2,55,No,0
+AP0011,30,M,Vijayawada,General Medicine,Oncology,10,3,120,HDFC Ergo,52,44129,54862,No,1,3,5,9127,7,15,1,0,57,Yes,1
+AP0012,29,M,Bengaluru,Dermatology,Pediatrics,0,0,93,ICICI Lombard,53,54789,231662,No,0,1,12,70,6,16,5,3,37,No,1
+AP0013,37,M,Chennai,Neurology,Cardiology,7,5,103,Star,87,43376,87209,Yes,0,4,15,16477,8,10,5,0,66,Yes,1
+AP0014,48,F,Hyderabad,Neurology,Cardiology,10,1,18,Star,66,4453,177326,No,2,1,10,7821,4,25,5,1,39,No,0
+AP0015,30,M,Bengaluru,ENT,Orthopedics,7,2,106,Niva Bupa,96,610,23033,Yes,2,2,5,14358,8,45,1,2,79,Yes,0
+AP0016,31,M,Chennai,Oncology,Oncology,10,5,114,HDFC Ergo,57,19620,78860,Yes,2,1,20,27948,4,32,5,3,33,Yes,0
+AP0017,23,M,Chennai,Orthopedics,ENT,4,0,91,HDFC Ergo,87,54352,120824,No,4,0,3,2465,11,57,4,1,70,Yes,0
+AP0018,34,M,Chennai,General Medicine,Cardiology,6,2,84,Niva Bupa,53,9705,183799,Yes,0,2,17,28971,6,39,5,5,20,Yes,0
+AP0019,21,M,Chennai,Dermatology,Neurology,6,1,112,Niva Bupa,50,57764,211405,Yes,3,0,15,7288,3,52,2,3,45,No,1
+AP0020,69,F,Chennai,Oncology,ENT,3,1,38,Niva Bupa,81,43255,138537,No,4,2,0,3779,4,11,1,4,34,Yes,0
+AP0021,73,M,Vijayawada,Neurology,ENT,5,0,86,Star,85,22654,119309,Yes,4,4,6,11934,6,4,4,5,43,No,0
+AP0022,82,F,Vijayawada,General Medicine,Dermatology,4,5,118,Niva Bupa,75,47169,38367,Yes,3,5,12,22194,11,57,1,1,79,No,1
+AP0023,44,F,Chennai,Pediatrics,Pediatrics,4,3,80,ICICI Lombard,83,19914,61020,No,1,5,2,9299,8,42,1,5,80,No,1
+AP0024,46,M,Bengaluru,Cardiology,Cardiology,4,0,114,HDFC Ergo,70,44092,165241,Yes,3,3,20,18863,3,45,2,5,50,No,1
+AP0025,31,F,Bengaluru,Orthopedics,Pediatrics,0,3,41,Star,75,42995,70325,Yes,3,1,14,21875,8,35,2,4,41,No,1
+AP0026,75,M,Vijayawada,Pediatrics,ENT,8,4,114,HDFC Ergo,93,27966,172159,No,4,3,20,7839,4,28,5,0,37,Yes,1
+AP0027,28,M,Bengaluru,Neurology,Dermatology,8,2,52,HDFC Ergo,85,58525,61086,Yes,3,3,10,17780,7,26,3,0,27,No,0
+AP0028,66,F,Hyderabad,General Medicine,ENT,0,3,108,ICICI Lombard,94,45581,238738,No,4,5,17,26210,9,57,5,1,63,Yes,1
+AP0029,61,F,Bengaluru,Pediatrics,Orthopedics,6,2,65,Star,98,1902,108290,Yes,0,5,13,4446,7,11,4,0,34,No,0
+AP0030,66,F,Vijayawada,ENT,Oncology,5,2,37,ICICI Lombard,41,21420,201352,Yes,2,1,20,2248,12,41,4,0,4,Yes,0
+AP0031,48,M,Vijayawada,Oncology,Neurology,2,1,117,ICICI Lombard,84,40719,72172,No,1,4,19,24508,11,7,1,1,40,Yes,1
+AP0032,66,F,Bengaluru,Oncology,Neurology,10,4,13,Star,84,37735,207501,No,4,0,18,25645,0,22,3,4,55,No,0
+AP0033,80,M,Vijayawada,General Medicine,Pediatrics,6,0,74,HDFC Ergo,67,829,51173,No,4,4,15,15232,6,52,3,5,76,No,0
+AP0034,53,F,Bengaluru,Pediatrics,Dermatology,1,2,119,Niva Bupa,41,54442,134579,No,1,3,6,11626,12,16,2,2,36,No,1
+AP0035,48,F,Vijayawada,Neurology,Pediatrics,1,4,11,ICICI Lombard,68,12521,212862,Yes,0,2,7,13251,11,15,5,2,75,No,0
+AP0036,60,F,Vijayawada,ENT,ENT,6,3,80,Niva Bupa,54,22528,36629,Yes,2,0,17,24975,11,11,5,1,28,No,0
+AP0037,54,M,Bengaluru,ENT,Neurology,8,2,102,Niva Bupa,51,49820,84237,Yes,4,1,8,1491,0,35,5,2,17,No,0
+AP0038,79,F,Chennai,Orthopedics,Cardiology,7,0,11,Niva Bupa,100,18634,230895,No,0,0,12,16113,1,36,5,5,7,Yes,0
+AP0039,49,M,Vijayawada,Neurology,Dermatology,1,1,113,ICICI Lombard,98,19912,121056,No,4,3,9,18632,9,3,5,4,13,Yes,0
+AP0040,38,M,Bengaluru,Oncology,Orthopedics,1,5,37,Star,66,43281,123096,No,2,0,7,9440,11,18,3,5,59,Yes,1
+AP0041,43,F,Hyderabad,Neurology,Orthopedics,10,5,39,Niva Bupa,92,51631,42286,Yes,0,1,9,19498,11,52,3,4,37,No,0
+AP0042,52,F,Vijayawada,Oncology,Cardiology,6,0,69,ICICI Lombard,87,45857,89494,No,0,0,7,22095,9,37,3,0,35,Yes,0
+AP0043,53,M,Vijayawada,Pediatrics,Oncology,7,1,70,ICICI Lombard,62,42697,112046,No,2,5,3,28106,2,21,5,3,64,No,0
+AP0044,29,F,Chennai,General Medicine,Oncology,7,5,61,ICICI Lombard,95,2404,139898,Yes,4,3,13,1776,3,33,5,2,80,No,0
+AP0045,34,F,Vijayawada,Pediatrics,Oncology,4,5,66,Star,80,13340,164612,Yes,1,2,17,448,8,26,1,0,29,Yes,1
+AP0046,83,F,Vijayawada,Pediatrics,Pediatrics,4,3,25,HDFC Ergo,69,32661,149510,Yes,3,1,19,16654,11,56,2,1,9,No,1
+AP0047,54,F,Vijayawada,Orthopedics,Pediatrics,0,3,53,ICICI Lombard,62,17509,92147,No,3,2,6,22855,3,36,5,3,30,No,0
+AP0048,67,M,Vijayawada,Cardiology,Orthopedics,6,0,50,Niva Bupa,95,46217,31309,No,0,4,14,502,11,9,4,3,20,Yes,0
+AP0049,68,M,Chennai,Dermatology,General Medicine,9,3,110,ICICI Lombard,95,22187,146824,Yes,4,0,7,20681,10,58,3,2,30,Yes,0
+AP0050,56,M,Hyderabad,General Medicine,Cardiology,2,3,22,Niva Bupa,62,29076,103262,No,1,1,16,13502,9,43,1,1,22,Yes,1
+AP0051,48,F,Bengaluru,Neurology,Pediatrics,10,0,88,Niva Bupa,69,40613,71932,Yes,3,2,17,5176,1,28,4,2,76,No,0
+AP0052,43,F,Vijayawada,Oncology,Neurology,4,5,64,ICICI Lombard,76,29939,99098,No,2,0,12,8994,0,36,3,5,7,No,1
+AP0053,46,M,Chennai,Orthopedics,Oncology,5,2,109,Star,59,39784,211729,No,0,4,11,23997,2,5,2,2,42,No,1
+AP0054,64,F,Bengaluru,ENT,Pediatrics,8,1,35,Niva Bupa,87,51544,233169,No,0,3,2,4612,12,14,2,5,51,No,0
+AP0055,33,F,Chennai,ENT,Dermatology,4,0,111,Niva Bupa,46,912,181904,Yes,3,0,19,28974,8,20,4,4,29,Yes,0
+AP0056,70,M,Bengaluru,Cardiology,Cardiology,4,5,115,Niva Bupa,71,59597,35440,Yes,1,4,4,12735,7,23,4,5,70,No,1
+AP0057,30,F,Vijayawada,ENT,Cardiology,6,4,105,Niva Bupa,53,58026,121230,No,1,2,3,22468,5,34,2,5,46,Yes,1
+AP0058,29,M,Hyderabad,Cardiology,General Medicine,7,3,45,HDFC Ergo,48,8005,211301,Yes,0,4,6,19214,3,52,2,1,43,Yes,0
+AP0059,34,F,Bengaluru,Oncology,Cardiology,2,4,10,HDFC Ergo,40,56256,98911,Yes,4,2,0,5709,4,3,3,1,54,Yes,0
+AP0060,83,M,Vijayawada,Neurology,Cardiology,5,5,18,Niva Bupa,69,29378,173647,Yes,0,3,12,13968,10,6,4,3,57,Yes,0
+AP0061,34,F,Chennai,Dermatology,ENT,1,0,51,ICICI Lombard,72,9721,163709,No,0,5,3,27944,10,41,5,4,28,No,0
+AP0062,69,F,Hyderabad,General Medicine,Dermatology,7,3,39,Niva Bupa,82,22212,71817,No,1,5,15,2199,1,53,4,0,12,No,0
+AP0063,25,F,Hyderabad,Dermatology,General Medicine,2,0,105,ICICI Lombard,95,53200,245082,Yes,2,4,9,11522,1,36,3,4,28,Yes,0
+AP0064,62,F,Hyderabad,ENT,Neurology,1,5,71,ICICI Lombard,94,55527,152053,Yes,4,5,8,948,2,17,2,5,40,No,1
+AP0065,69,M,Bengaluru,Cardiology,Oncology,2,2,10,HDFC Ergo,64,57007,115056,No,2,1,11,10211,11,20,2,4,77,Yes,0
+AP0066,24,M,Chennai,Pediatrics,Dermatology,9,0,29,ICICI Lombard,78,49442,120879,No,2,1,16,3729,5,27,2,0,37,No,0
+AP0067,68,M,Hyderabad,Neurology,ENT,3,4,95,HDFC Ergo,89,2976,40975,No,2,2,3,253,7,47,3,3,23,Yes,0
+AP0068,63,M,Vijayawada,Cardiology,Dermatology,8,3,78,Star,69,32785,246477,Yes,2,4,13,18789,6,45,2,5,54,No,1
+AP0069,76,F,Hyderabad,Dermatology,Oncology,2,0,61,HDFC Ergo,67,21284,159369,No,4,0,12,28525,4,47,1,2,29,No,0
+AP0070,85,M,Chennai,General Medicine,Orthopedics,1,1,19,HDFC Ergo,46,41499,43389,No,1,1,19,5009,12,48,5,5,10,Yes,0
+AP0071,75,F,Chennai,Orthopedics,Pediatrics,9,5,73,Star,70,49443,120922,No,2,4,1,11532,8,4,4,2,60,No,1
+AP0072,27,M,Vijayawada,Pediatrics,Cardiology,4,0,17,ICICI Lombard,98,54506,217288,Yes,2,4,15,16428,2,3,3,3,14,No,0
+AP0073,23,M,Vijayawada,Pediatrics,Orthopedics,2,5,20,Niva Bupa,63,42344,245631,No,3,3,10,22246,9,3,5,5,43,Yes,0
+AP0074,54,F,Bengaluru,General Medicine,Oncology,6,2,22,HDFC Ergo,98,44458,96703,No,3,1,19,23227,1,19,5,4,49,No,0
+AP0075,72,F,Hyderabad,General Medicine,ENT,10,1,95,HDFC Ergo,100,6124,61149,No,3,1,7,4507,2,4,5,2,13,Yes,0
+AP0076,66,M,Bengaluru,Orthopedics,Orthopedics,9,5,53,ICICI Lombard,42,8588,112704,No,1,3,19,9336,12,47,5,3,30,Yes,0
+AP0077,65,F,Vijayawada,ENT,Dermatology,3,2,113,ICICI Lombard,50,59242,219143,Yes,4,1,8,1709,10,30,4,2,71,Yes,0
+AP0078,54,M,Bengaluru,ENT,Pediatrics,1,5,118,HDFC Ergo,93,55782,119680,Yes,1,3,11,873,6,3,5,3,65,No,1
+AP0079,21,F,Hyderabad,General Medicine,Orthopedics,3,1,59,HDFC Ergo,42,24570,80203,No,1,5,15,14699,9,0,1,0,3,No,0
+AP0080,85,F,Hyderabad,ENT,Neurology,9,1,116,Niva Bupa,47,35966,17517,Yes,3,5,19,14978,1,7,2,3,77,Yes,1
+AP0081,55,F,Hyderabad,General Medicine,Neurology,2,5,75,ICICI Lombard,51,15855,179160,Yes,4,2,2,17237,8,32,5,4,71,Yes,0
+AP0082,65,F,Hyderabad,General Medicine,Oncology,6,3,70,Niva Bupa,55,41659,197136,Yes,4,5,10,4371,0,22,1,4,44,Yes,1
+AP0083,35,M,Vijayawada,Cardiology,ENT,2,5,69,HDFC Ergo,42,41401,212384,Yes,0,2,9,16888,6,52,4,4,61,No,1
+AP0084,24,F,Chennai,Oncology,General Medicine,5,0,106,ICICI Lombard,96,18750,109863,No,3,2,5,16259,11,31,2,2,67,No,0
+AP0085,41,F,Chennai,Oncology,Oncology,6,0,103,Niva Bupa,82,5172,82500,No,3,4,13,5460,11,28,4,2,58,Yes,0
+AP0086,25,M,Vijayawada,General Medicine,Orthopedics,4,5,55,Star,49,28504,227473,No,0,1,2,7733,12,41,5,2,47,No,0
+AP0087,75,F,Chennai,Pediatrics,Oncology,10,4,14,HDFC Ergo,73,10055,101193,No,2,5,8,8179,1,1,5,5,24,No,0
+AP0088,51,F,Bengaluru,ENT,Pediatrics,4,4,59,HDFC Ergo,47,7717,40580,Yes,3,1,14,2876,12,43,5,2,45,Yes,0
+AP0089,38,M,Chennai,Neurology,Oncology,4,4,79,HDFC Ergo,90,58414,41405,Yes,3,0,11,18154,9,23,3,3,71,Yes,1
+AP0090,79,F,Vijayawada,Oncology,Orthopedics,6,4,21,Niva Bupa,81,20269,24441,No,3,5,16,11289,2,56,1,4,76,Yes,0
+AP0091,33,M,Chennai,Orthopedics,Orthopedics,0,1,65,Niva Bupa,99,59684,190947,Yes,2,4,9,27719,1,16,5,1,71,No,1
+AP0092,29,M,Bengaluru,Orthopedics,General Medicine,8,1,90,Star,92,40267,231435,Yes,0,0,20,25264,9,16,3,5,27,No,0
+AP0093,55,F,Vijayawada,Neurology,Dermatology,10,4,91,Niva Bupa,69,32639,24129,Yes,1,3,13,15867,7,13,1,2,78,Yes,1
+AP0094,69,M,Chennai,Oncology,General Medicine,5,2,120,HDFC Ergo,69,48116,37118,No,3,1,4,3172,0,18,3,3,79,No,0
+AP0095,58,M,Bengaluru,Pediatrics,Pediatrics,5,1,120,ICICI Lombard,96,53312,85882,No,0,0,12,16562,7,15,2,1,75,No,1
+AP0096,78,F,Hyderabad,Oncology,Dermatology,9,0,16,HDFC Ergo,96,32433,74329,No,3,2,1,13126,0,36,3,4,25,No,0
+AP0097,75,F,Hyderabad,Orthopedics,Oncology,8,4,46,ICICI Lombard,63,25319,213377,No,4,2,4,6522,9,32,1,3,65,Yes,1
+AP0098,78,F,Bengaluru,Orthopedics,General Medicine,5,0,14,Niva Bupa,50,46765,108010,No,4,2,16,27141,8,34,2,3,73,No,0
+AP0099,32,F,Chennai,Cardiology,Pediatrics,5,3,114,Niva Bupa,81,24140,210233,Yes,0,4,15,5587,8,40,1,5,80,No,1
+AP0100,32,M,Hyderabad,Pediatrics,General Medicine,9,1,115,ICICI Lombard,49,2069,113255,Yes,3,4,19,15453,11,46,2,0,18,Yes,0
+AP0101,58,M,Vijayawada,General Medicine,General Medicine,6,4,51,Niva Bupa,79,34437,131924,Yes,1,2,17,9781,3,60,4,2,37,Yes,0
+AP0102,62,F,Chennai,Oncology,Dermatology,7,5,100,ICICI Lombard,92,20777,95474,Yes,2,0,9,23400,1,22,4,3,33,No,0
+AP0103,52,M,Hyderabad,Neurology,Neurology,8,1,35,Star,82,17768,242288,Yes,1,0,3,13543,5,45,5,3,13,Yes,0
+AP0104,78,F,Bengaluru,ENT,General Medicine,10,0,80,Niva Bupa,81,26667,20509,Yes,4,1,17,24205,11,54,2,0,23,No,1
+AP0105,41,F,Hyderabad,Cardiology,ENT,7,1,14,Star,99,51639,92829,No,3,5,17,17180,7,56,4,1,65,No,0
+AP0106,76,F,Bengaluru,Cardiology,General Medicine,2,2,34,Niva Bupa,76,21671,181790,Yes,1,4,20,29394,6,52,1,3,66,No,0
+AP0107,79,F,Bengaluru,Cardiology,ENT,2,0,61,ICICI Lombard,55,12109,122109,No,2,2,18,23687,9,0,1,2,47,Yes,0
+AP0108,38,F,Chennai,Oncology,ENT,4,0,95,Niva Bupa,79,30500,62894,Yes,1,3,4,14908,11,38,1,2,54,No,1
+AP0109,28,F,Chennai,Oncology,Oncology,3,4,112,Star,93,49929,148562,Yes,4,4,4,5391,5,54,2,4,57,Yes,1
+AP0110,83,F,Hyderabad,Pediatrics,Orthopedics,1,5,36,ICICI Lombard,69,32035,152825,Yes,4,3,9,23700,0,25,5,2,1,Yes,1
+AP0111,26,M,Hyderabad,Pediatrics,Cardiology,5,4,19,Niva Bupa,66,27767,52181,Yes,3,2,12,14697,6,24,1,0,70,Yes,1
+AP0112,68,M,Bengaluru,Cardiology,Cardiology,2,5,120,Niva Bupa,69,7774,181553,No,4,3,7,8110,7,22,3,1,36,Yes,0
+AP0113,71,M,Bengaluru,Neurology,Oncology,10,5,107,Star,78,2111,13801,No,4,5,1,8019,11,2,1,3,57,Yes,1
+AP0114,55,M,Chennai,General Medicine,Neurology,8,4,37,Niva Bupa,96,9183,42554,Yes,3,2,8,1997,8,60,1,4,23,No,0
+AP0115,66,F,Vijayawada,Dermatology,Orthopedics,10,4,73,Niva Bupa,64,22571,53202,No,1,1,9,28099,11,9,1,3,8,No,1
+AP0116,49,F,Bengaluru,General Medicine,Oncology,6,3,81,ICICI Lombard,94,8787,102275,Yes,4,5,6,1688,4,24,5,5,78,Yes,0
+AP0117,45,F,Bengaluru,General Medicine,ENT,10,0,34,Star,53,47468,54813,Yes,3,1,19,23061,3,25,5,1,71,No,0
+AP0118,63,F,Chennai,General Medicine,Pediatrics,10,2,58,ICICI Lombard,46,34973,215453,No,2,1,11,10253,6,2,4,4,29,Yes,0
+AP0119,71,F,Bengaluru,Neurology,General Medicine,9,0,43,HDFC Ergo,64,38275,154366,Yes,3,4,20,22441,5,16,5,3,63,No,0
+AP0120,80,M,Hyderabad,Cardiology,Oncology,2,1,103,Star,88,11092,6673,No,1,5,7,2227,11,9,3,0,28,No,0
+AP0121,79,F,Hyderabad,Cardiology,Dermatology,10,2,17,Star,41,41794,143783,No,4,2,0,16456,11,43,5,3,23,Yes,0
+AP0122,85,F,Chennai,ENT,Dermatology,3,0,77,Star,63,15792,111437,No,4,1,7,9829,10,52,2,0,5,Yes,0
+AP0123,25,M,Bengaluru,Oncology,Pediatrics,7,3,58,ICICI Lombard,81,36221,210619,No,4,0,16,1394,3,13,4,5,73,No,0
+AP0124,22,M,Chennai,Cardiology,Neurology,4,2,15,HDFC Ergo,88,44854,220139,No,0,2,5,18479,3,36,1,3,70,No,0
+AP0125,82,F,Hyderabad,Oncology,Dermatology,1,3,106,HDFC Ergo,93,51806,24927,No,4,4,19,12999,12,20,2,0,35,No,1
+AP0126,73,M,Vijayawada,Oncology,ENT,6,3,39,HDFC Ergo,85,36243,24269,Yes,2,1,12,23320,12,40,3,1,50,No,0
+AP0127,74,F,Chennai,Oncology,Orthopedics,4,2,23,Star,51,340,117978,No,4,4,16,13370,1,1,1,0,46,Yes,0
+AP0128,19,F,Vijayawada,Dermatology,Oncology,6,4,86,HDFC Ergo,76,56604,141604,Yes,3,1,4,8811,4,17,3,3,19,Yes,1
+AP0129,79,M,Chennai,ENT,Neurology,4,1,65,ICICI Lombard,78,27597,166656,Yes,3,0,4,9983,0,60,3,3,43,No,0
+AP0130,35,F,Chennai,Neurology,Pediatrics,10,2,66,Niva Bupa,51,28220,109396,No,2,5,20,16089,9,50,3,1,42,No,0
+AP0131,43,M,Hyderabad,Pediatrics,Neurology,1,2,114,ICICI Lombard,91,23921,81370,Yes,3,5,15,4560,10,19,4,1,33,Yes,0
+AP0132,79,F,Vijayawada,Cardiology,General Medicine,7,5,64,Star,46,4847,206576,Yes,2,1,20,20076,0,36,4,5,52,No,0
+AP0133,46,M,Vijayawada,General Medicine,Dermatology,4,3,23,ICICI Lombard,89,6462,183141,Yes,2,0,15,3425,4,26,1,0,15,Yes,0
+AP0134,84,F,Chennai,Pediatrics,Oncology,3,2,49,ICICI Lombard,86,29840,187652,No,2,0,9,1464,12,45,3,0,3,No,0
+AP0135,84,M,Bengaluru,General Medicine,Dermatology,3,5,23,ICICI Lombard,54,48528,214126,No,1,1,20,21538,6,25,2,0,79,Yes,1
+AP0136,45,M,Chennai,Oncology,Oncology,0,3,85,HDFC Ergo,63,25482,90454,Yes,3,0,8,21977,7,33,4,5,41,No,1
+AP0137,63,F,Bengaluru,ENT,Oncology,5,4,60,HDFC Ergo,60,7486,35896,Yes,2,0,5,12232,11,9,5,4,50,No,0
+AP0138,41,F,Bengaluru,Orthopedics,Pediatrics,6,4,27,Niva Bupa,48,25146,54046,No,3,4,1,28361,5,60,5,0,63,Yes,0
+AP0139,81,F,Vijayawada,Dermatology,Pediatrics,8,1,114,ICICI Lombard,50,36803,26671,Yes,1,2,1,9006,3,34,4,2,22,No,0
+AP0140,32,M,Chennai,General Medicine,Cardiology,8,4,105,ICICI Lombard,74,36026,62289,No,0,5,20,24620,3,19,4,0,58,No,1
+AP0141,48,M,Chennai,Dermatology,Orthopedics,1,2,120,HDFC Ergo,90,28774,59164,Yes,0,4,11,17441,4,38,1,4,22,No,1
+AP0142,83,M,Bengaluru,Dermatology,Cardiology,4,5,47,Niva Bupa,95,37534,176939,Yes,1,1,4,23310,5,53,3,1,51,No,0
+AP0143,66,F,Hyderabad,Oncology,Dermatology,6,1,83,Niva Bupa,84,41144,234983,No,3,3,10,19069,0,55,3,5,12,No,0
+AP0144,68,M,Vijayawada,Neurology,Pediatrics,1,5,95,Niva Bupa,60,55712,222145,No,2,4,18,4279,9,54,3,3,44,Yes,1
+AP0145,38,F,Vijayawada,Cardiology,Dermatology,1,0,22,HDFC Ergo,84,1067,243395,Yes,2,1,8,3058,10,23,4,2,11,No,0
+AP0146,57,M,Vijayawada,Oncology,Oncology,6,5,93,Star,53,3393,129992,Yes,1,4,7,17021,10,28,2,0,2,No,1
+AP0147,79,M,Bengaluru,Dermatology,Oncology,2,0,120,Star,46,45484,87143,No,2,1,12,25344,12,55,4,1,19,Yes,0
+AP0148,39,F,Chennai,Neurology,Orthopedics,10,4,82,ICICI Lombard,79,39997,184979,No,1,0,3,4587,12,7,1,4,50,No,1
+AP0149,28,M,Chennai,Cardiology,ENT,4,3,50,HDFC Ergo,73,16238,164102,Yes,3,2,20,1788,12,57,2,1,64,No,0
+AP0150,27,M,Chennai,General Medicine,Orthopedics,9,0,40,ICICI Lombard,95,41817,224931,No,2,4,5,24993,7,49,4,0,3,Yes,0
+AP0151,68,F,Vijayawada,Dermatology,Dermatology,0,0,43,Star,80,2610,145657,Yes,2,0,9,2589,8,58,2,1,20,No,0
+AP0152,48,M,Bengaluru,Oncology,Dermatology,6,3,85,Star,69,20327,165509,Yes,2,5,5,3913,0,45,1,1,2,Yes,1
+AP0153,39,F,Bengaluru,ENT,Oncology,4,3,54,Star,61,33896,216578,No,2,4,2,8616,11,36,5,5,10,No,0
+AP0154,39,F,Bengaluru,ENT,Oncology,7,3,75,Star,54,3633,199191,Yes,0,0,7,1506,7,23,3,3,20,Yes,0
+AP0155,49,F,Chennai,ENT,Oncology,5,0,80,Niva Bupa,47,14713,136607,Yes,1,1,16,1504,6,4,4,3,37,No,0
+AP0156,65,M,Chennai,ENT,Neurology,0,2,21,ICICI Lombard,63,29933,160108,No,1,5,17,24919,12,15,5,1,1,No,0
+AP0157,19,F,Hyderabad,Dermatology,ENT,10,0,39,Star,53,22703,143887,Yes,3,3,1,4665,11,17,5,0,6,Yes,0
+AP0158,30,M,Vijayawada,Oncology,Cardiology,1,4,62,ICICI Lombard,82,30045,39264,Yes,2,2,10,26241,6,44,3,5,42,No,1
+AP0159,35,M,Bengaluru,Oncology,Orthopedics,3,3,44,ICICI Lombard,69,4894,87321,No,0,4,11,25242,3,28,2,2,60,No,0
+AP0160,56,M,Bengaluru,General Medicine,Orthopedics,10,0,21,Star,85,52926,70069,No,3,4,1,22189,4,16,2,1,4,No,0
+AP0161,77,M,Bengaluru,Oncology,Cardiology,1,3,81,Star,93,16374,209723,Yes,1,1,12,12197,10,40,5,5,11,No,1
+AP0162,74,M,Hyderabad,General Medicine,Oncology,10,0,12,Star,100,12959,125847,Yes,1,4,13,26924,11,25,1,3,4,No,0
+AP0163,41,F,Chennai,Pediatrics,Orthopedics,3,5,64,Star,79,23196,167313,Yes,2,3,13,28926,8,30,2,0,12,No,1
+AP0164,85,M,Hyderabad,Dermatology,General Medicine,10,3,27,ICICI Lombard,74,13071,209848,No,2,4,16,10538,6,17,4,1,4,No,0
+AP0165,25,F,Chennai,Neurology,Orthopedics,4,4,38,Star,55,58704,177193,Yes,2,4,1,25036,3,36,1,3,46,Yes,1
+AP0166,21,F,Bengaluru,Neurology,Pediatrics,5,1,40,Niva Bupa,51,20840,133564,Yes,0,0,7,19715,3,1,5,4,62,Yes,0
+AP0167,61,M,Chennai,Cardiology,Cardiology,2,2,88,HDFC Ergo,77,52851,189731,Yes,0,4,11,2376,5,45,2,5,51,Yes,1
+AP0168,73,F,Chennai,Orthopedics,General Medicine,2,2,48,HDFC Ergo,82,8942,159389,Yes,3,2,9,4172,2,46,3,0,74,No,0
+AP0169,46,M,Vijayawada,Orthopedics,General Medicine,5,4,14,Star,55,39478,95914,No,1,5,2,26924,11,42,2,5,43,No,1
+AP0170,62,F,Hyderabad,Cardiology,Cardiology,1,0,43,ICICI Lombard,68,16353,197042,No,1,3,15,28893,6,22,2,4,49,Yes,0
+AP0171,46,M,Vijayawada,Oncology,Cardiology,10,3,110,Niva Bupa,41,42661,88549,No,0,0,10,5574,6,10,5,5,10,Yes,1
+AP0172,21,F,Bengaluru,Dermatology,Orthopedics,7,2,86,Star,46,58538,91794,Yes,1,3,17,23659,11,34,5,2,37,No,0
+AP0173,80,M,Hyderabad,General Medicine,Cardiology,9,1,22,ICICI Lombard,45,25749,82214,No,1,0,0,6781,2,40,1,2,11,No,0
+AP0174,51,M,Vijayawada,Orthopedics,General Medicine,7,0,49,ICICI Lombard,63,30863,53911,No,0,2,14,15239,4,14,4,2,73,Yes,0
+AP0175,62,F,Bengaluru,Cardiology,Dermatology,10,1,106,ICICI Lombard,74,5616,185110,No,4,1,15,9792,1,25,1,5,5,Yes,0
+AP0176,45,M,Bengaluru,Cardiology,Dermatology,2,0,106,Star,83,11329,119135,Yes,1,4,8,10477,11,58,4,0,12,No,0
+AP0177,84,F,Hyderabad,Dermatology,Oncology,4,4,60,ICICI Lombard,49,21373,43849,Yes,0,4,3,25747,4,55,5,4,45,No,0
+AP0178,78,M,Bengaluru,ENT,Dermatology,9,2,59,HDFC Ergo,79,37488,164555,No,0,3,10,22626,3,3,4,5,61,No,0
+AP0179,57,F,Vijayawada,Oncology,Neurology,4,2,12,HDFC Ergo,59,53568,199962,No,2,2,13,19823,10,5,3,1,57,Yes,0
+AP0180,65,M,Bengaluru,Oncology,ENT,8,3,104,ICICI Lombard,48,49774,209607,Yes,1,1,6,27426,0,15,4,0,59,Yes,1
+AP0181,77,F,Hyderabad,Cardiology,Neurology,5,2,100,Niva Bupa,71,17955,160724,No,1,3,18,18066,5,22,2,1,34,Yes,0
+AP0182,45,M,Bengaluru,Neurology,ENT,2,2,13,ICICI Lombard,72,3253,10256,Yes,3,1,20,5675,9,51,4,0,29,No,0
+AP0183,53,F,Vijayawada,General Medicine,Pediatrics,10,4,113,Niva Bupa,53,46710,127342,No,4,4,12,19152,1,0,3,4,48,No,1
+AP0184,61,F,Chennai,ENT,ENT,1,2,97,Niva Bupa,52,31571,44303,Yes,0,4,12,21644,5,43,1,1,4,No,1
+AP0185,22,M,Chennai,Neurology,Pediatrics,6,2,43,Niva Bupa,72,26515,83694,Yes,4,1,9,3198,7,8,4,5,34,Yes,0
+AP0186,46,F,Vijayawada,General Medicine,General Medicine,5,5,52,Niva Bupa,77,14565,82083,No,0,3,1,28389,10,37,1,4,80,Yes,0
+AP0187,66,F,Vijayawada,Cardiology,Orthopedics,10,3,34,HDFC Ergo,52,7852,94828,No,4,3,4,10367,11,11,5,0,63,No,0
+AP0188,18,F,Chennai,Neurology,Orthopedics,0,5,32,HDFC Ergo,71,41582,210838,Yes,1,4,13,20758,6,25,3,3,62,No,1
+AP0189,19,F,Bengaluru,Cardiology,Cardiology,5,0,14,HDFC Ergo,54,13068,186803,No,2,1,3,12568,8,37,5,2,22,Yes,0
+AP0190,85,F,Vijayawada,Orthopedics,General Medicine,8,0,48,ICICI Lombard,62,29879,201638,Yes,1,3,0,7484,3,46,3,1,28,Yes,0
+AP0191,22,F,Chennai,Cardiology,Cardiology,5,4,74,Star,81,8071,224183,Yes,0,5,3,13656,7,24,2,0,71,No,1
+AP0192,19,F,Vijayawada,Oncology,ENT,10,3,99,HDFC Ergo,66,13467,222750,Yes,4,5,19,3857,4,7,2,0,64,Yes,1
+AP0193,43,F,Vijayawada,ENT,Orthopedics,8,4,35,Star,75,54493,135116,Yes,3,2,7,89,0,42,3,0,15,No,0
+AP0194,50,M,Vijayawada,ENT,ENT,1,1,21,ICICI Lombard,43,4918,31164,Yes,0,2,11,26266,10,20,5,3,15,Yes,0
+AP0195,39,F,Chennai,Pediatrics,ENT,10,0,11,Star,63,43473,218637,No,1,0,12,13115,7,17,2,3,62,No,0
+AP0196,25,M,Hyderabad,Dermatology,Pediatrics,2,5,112,ICICI Lombard,51,7409,165254,No,2,4,0,28264,10,56,2,5,17,No,1
+AP0197,26,F,Chennai,Cardiology,Neurology,0,3,24,Niva Bupa,73,28880,142128,Yes,3,5,7,15791,5,42,4,5,50,Yes,1
+AP0198,38,F,Vijayawada,Orthopedics,Oncology,10,4,88,ICICI Lombard,60,763,68148,No,2,0,16,7297,8,41,1,3,52,Yes,1
+AP0199,75,M,Vijayawada,Pediatrics,General Medicine,9,0,68,Star,71,52511,200359,Yes,0,3,13,1174,8,35,4,0,12,No,0
+AP0200,76,F,Chennai,Cardiology,Neurology,10,4,81,ICICI Lombard,61,42899,151840,No,2,5,14,3736,1,48,2,5,29,Yes,1
+AP0201,65,M,Hyderabad,Orthopedics,Pediatrics,8,2,55,HDFC Ergo,92,35893,192919,No,0,2,19,6419,3,7,3,3,28,No,0
+AP0202,23,M,Vijayawada,Pediatrics,Orthopedics,6,1,101,ICICI Lombard,40,7062,144031,Yes,4,3,18,15824,8,49,3,1,75,Yes,0
+AP0203,59,F,Vijayawada,Neurology,ENT,6,5,114,ICICI Lombard,61,6786,82115,No,1,1,13,19743,11,56,2,5,66,No,1
+AP0204,45,M,Bengaluru,ENT,General Medicine,8,5,80,HDFC Ergo,85,46653,175416,Yes,4,4,20,10563,11,7,3,2,72,No,1
+AP0205,54,F,Hyderabad,Oncology,Cardiology,8,4,83,ICICI Lombard,49,44187,18910,Yes,1,2,5,9391,10,16,4,1,8,No,1
+AP0206,75,M,Bengaluru,Dermatology,Neurology,5,1,106,Niva Bupa,84,2117,179193,Yes,3,3,13,25824,10,20,5,4,7,Yes,0
+AP0207,46,F,Bengaluru,Neurology,ENT,7,5,42,ICICI Lombard,51,40669,183954,Yes,1,1,16,3910,6,2,2,3,36,No,1
+AP0208,18,F,Vijayawada,Orthopedics,Cardiology,4,1,30,HDFC Ergo,99,55444,89575,Yes,4,5,9,16074,12,36,5,4,46,Yes,0
+AP0209,84,M,Bengaluru,Dermatology,Dermatology,2,5,50,Star,62,14415,62985,Yes,2,2,11,9619,3,60,5,4,68,No,0
+AP0210,62,F,Bengaluru,Neurology,Cardiology,10,4,115,Niva Bupa,64,7518,245106,Yes,3,2,17,23723,4,1,1,4,48,No,1
+AP0211,42,F,Hyderabad,Oncology,Orthopedics,10,3,15,Star,80,58869,22163,Yes,1,5,13,27383,1,13,3,4,56,Yes,0
+AP0212,60,M,Hyderabad,Oncology,Cardiology,7,5,97,HDFC Ergo,90,1556,71036,Yes,4,1,8,13357,6,28,2,5,52,No,1
+AP0213,18,M,Hyderabad,Oncology,General Medicine,1,2,12,Star,58,44125,211278,No,4,0,9,25076,7,24,4,3,4,No,0
+AP0214,55,M,Chennai,General Medicine,Cardiology,6,1,78,HDFC Ergo,47,8937,15950,Yes,4,4,12,17601,8,60,2,0,40,Yes,0
+AP0215,83,M,Bengaluru,Orthopedics,Neurology,6,5,104,Niva Bupa,52,13876,35047,Yes,4,0,17,15114,10,35,3,0,38,Yes,0
+AP0216,80,F,Chennai,Orthopedics,Neurology,9,2,22,Star,58,47552,167402,Yes,1,2,15,14766,5,39,2,5,40,Yes,0
+AP0217,72,M,Hyderabad,General Medicine,Neurology,5,4,82,HDFC Ergo,85,52933,198938,No,2,2,4,22268,11,21,3,3,60,No,1
+AP0218,31,M,Hyderabad,ENT,Orthopedics,8,2,109,HDFC Ergo,56,31914,197294,Yes,0,0,16,20697,0,52,3,4,75,No,0
+AP0219,78,M,Chennai,Dermatology,Neurology,4,4,37,Niva Bupa,48,36149,126818,Yes,3,2,16,347,10,15,1,4,22,Yes,1
+AP0220,36,F,Chennai,Cardiology,Neurology,9,3,30,ICICI Lombard,54,37116,21478,No,2,1,1,21908,3,33,2,2,50,No,1
+AP0221,31,F,Chennai,Orthopedics,Dermatology,5,3,15,ICICI Lombard,63,42501,159056,Yes,4,2,12,29728,3,33,1,3,46,No,1
+AP0222,18,M,Vijayawada,Orthopedics,Neurology,9,3,111,Star,72,58141,173683,No,1,1,5,5156,5,38,4,5,16,Yes,1
+AP0223,79,F,Vijayawada,Neurology,Orthopedics,1,3,113,ICICI Lombard,41,47202,68876,Yes,1,4,18,5279,2,40,3,4,6,Yes,1
+AP0224,69,M,Chennai,Oncology,Neurology,8,0,31,ICICI Lombard,78,11798,128578,No,1,1,13,19688,2,50,3,4,24,No,0
+AP0225,26,M,Vijayawada,Dermatology,Orthopedics,9,1,102,Star,41,29718,58044,No,1,4,3,5813,7,57,3,4,77,Yes,0
+AP0226,34,M,Vijayawada,Dermatology,General Medicine,7,4,74,Star,84,6107,143888,No,1,3,12,11485,9,51,1,5,74,Yes,1
+AP0227,28,F,Vijayawada,ENT,Neurology,3,3,27,Star,85,31269,199942,Yes,4,4,3,17031,0,24,3,5,27,No,0
+AP0228,50,F,Vijayawada,General Medicine,ENT,6,3,56,ICICI Lombard,88,10143,58397,No,4,4,15,5856,5,35,1,4,62,No,0
+AP0229,35,M,Bengaluru,Pediatrics,Orthopedics,6,2,83,Star,53,50737,138259,No,2,4,19,22841,10,45,3,0,21,No,0
+AP0230,78,F,Hyderabad,Oncology,ENT,2,5,10,HDFC Ergo,63,53952,25981,Yes,3,3,19,21501,8,18,1,5,77,Yes,1
+AP0231,43,F,Bengaluru,Cardiology,Neurology,0,1,91,HDFC Ergo,83,28768,14453,No,1,5,0,5159,1,17,4,3,46,No,1
+AP0232,26,M,Chennai,General Medicine,General Medicine,0,3,85,Niva Bupa,54,33930,163954,Yes,3,3,18,152,4,11,2,3,65,Yes,1
+AP0233,32,F,Chennai,Pediatrics,Dermatology,5,4,19,ICICI Lombard,89,19284,68772,No,3,5,14,29377,9,55,5,0,62,Yes,0
+AP0234,47,F,Vijayawada,General Medicine,Cardiology,3,2,18,Niva Bupa,55,41527,80311,Yes,3,5,10,2491,8,59,4,1,61,No,0
+AP0235,42,F,Bengaluru,Neurology,Neurology,2,2,37,Niva Bupa,53,17634,65085,Yes,1,4,11,5111,12,6,5,0,11,No,0
+AP0236,65,F,Vijayawada,ENT,Pediatrics,7,4,10,HDFC Ergo,88,2769,245125,No,3,1,18,4202,0,33,5,3,62,Yes,0
+AP0237,40,F,Hyderabad,Pediatrics,General Medicine,10,4,54,Star,40,56387,181712,Yes,3,4,3,10663,5,39,4,2,24,No,0
+AP0238,64,M,Vijayawada,Dermatology,Neurology,5,1,44,ICICI Lombard,84,40179,202183,No,2,3,8,14769,2,36,4,1,74,Yes,0
+AP0239,73,F,Bengaluru,Orthopedics,Orthopedics,3,0,102,ICICI Lombard,91,52696,7553,Yes,3,3,4,29270,10,33,3,4,41,No,0
+AP0240,24,F,Hyderabad,Orthopedics,Cardiology,9,2,42,HDFC Ergo,92,56262,71660,No,0,3,10,8512,5,23,5,4,72,No,0
+AP0241,43,M,Chennai,General Medicine,General Medicine,5,2,12,ICICI Lombard,89,7945,198075,No,0,3,19,9388,7,40,4,1,22,No,0
+AP0242,27,M,Bengaluru,General Medicine,Neurology,6,3,90,Niva Bupa,60,37462,176183,No,2,4,20,12958,4,56,5,3,47,No,1
+AP0243,34,M,Chennai,Oncology,Neurology,0,3,31,HDFC Ergo,65,55981,32003,Yes,0,3,17,1763,0,49,2,3,68,Yes,1
+AP0244,67,F,Bengaluru,Neurology,ENT,1,0,43,ICICI Lombard,80,10176,38138,Yes,4,1,0,1151,10,22,5,2,61,No,0
+AP0245,40,F,Vijayawada,ENT,General Medicine,2,4,44,ICICI Lombard,74,29153,64540,Yes,3,2,11,13507,4,9,5,2,2,Yes,0
+AP0246,78,M,Vijayawada,Pediatrics,ENT,4,4,114,Star,89,22536,117836,No,4,1,0,17963,5,12,2,3,72,No,1
+AP0247,67,F,Bengaluru,ENT,Oncology,10,3,41,ICICI Lombard,80,46854,67799,No,2,5,17,26503,4,26,2,1,9,Yes,1
+AP0248,75,F,Vijayawada,Neurology,General Medicine,7,1,47,Star,49,41739,18010,Yes,1,0,9,8820,2,45,1,3,2,Yes,0
+AP0249,61,F,Chennai,Pediatrics,General Medicine,3,0,29,ICICI Lombard,84,32347,212467,Yes,2,0,4,1836,4,49,1,3,10,No,0
+AP0250,19,M,Bengaluru,Dermatology,Pediatrics,6,1,34,HDFC Ergo,87,53559,13784,Yes,3,5,3,17076,10,13,3,3,50,No,0
+AP0251,84,M,Chennai,Pediatrics,ENT,8,2,30,HDFC Ergo,63,48806,237657,Yes,1,0,7,20739,6,20,1,0,22,No,0
+AP0252,19,M,Vijayawada,Orthopedics,General Medicine,3,4,25,Star,55,51717,46339,No,0,5,19,11089,12,40,4,0,8,No,0
+AP0253,34,F,Bengaluru,General Medicine,General Medicine,1,5,29,ICICI Lombard,86,51869,55584,Yes,3,2,4,8214,0,31,5,5,57,No,1
+AP0254,41,F,Chennai,Pediatrics,ENT,9,4,99,HDFC Ergo,44,12437,144234,Yes,3,2,8,17747,5,29,4,0,65,No,0
+AP0255,48,F,Hyderabad,Dermatology,Neurology,5,5,33,ICICI Lombard,89,40614,149563,Yes,4,2,10,13428,10,20,1,0,13,Yes,1
+AP0256,43,M,Vijayawada,Neurology,Oncology,0,0,116,Star,76,11707,173231,No,3,4,19,22980,9,16,2,0,47,Yes,1
+AP0257,80,M,Vijayawada,Cardiology,General Medicine,3,4,101,ICICI Lombard,92,857,101749,Yes,4,2,16,1332,11,4,1,2,10,Yes,1
+AP0258,67,M,Bengaluru,Neurology,Orthopedics,3,4,22,ICICI Lombard,87,47524,32659,No,3,5,13,28928,1,10,1,1,71,No,1
+AP0259,74,F,Chennai,General Medicine,General Medicine,9,4,53,ICICI Lombard,88,34989,171000,No,2,4,7,18453,8,13,2,3,71,No,1
+AP0260,22,F,Hyderabad,Orthopedics,ENT,0,2,67,Star,59,26023,63166,Yes,2,0,8,18142,8,35,4,4,74,Yes,1
+AP0261,35,F,Chennai,Neurology,Neurology,2,0,14,Niva Bupa,91,23308,83722,Yes,4,3,18,7124,11,4,4,5,42,No,0
+AP0262,56,M,Vijayawada,Oncology,Cardiology,1,1,72,Niva Bupa,62,53707,235632,No,3,0,7,24499,10,54,5,4,2,No,1
+AP0263,37,F,Bengaluru,Orthopedics,Cardiology,5,0,49,ICICI Lombard,68,2698,202352,Yes,1,3,9,25767,6,9,5,1,44,Yes,0
+AP0264,51,M,Vijayawada,Dermatology,Orthopedics,6,3,83,HDFC Ergo,70,35923,151616,Yes,3,3,20,18721,3,35,1,4,68,Yes,1
+AP0265,59,M,Hyderabad,Dermatology,Dermatology,6,1,19,Niva Bupa,62,50906,54935,No,2,4,20,793,12,19,3,1,45,No,0
+AP0266,43,F,Bengaluru,Oncology,Oncology,3,4,28,Star,55,2941,167792,Yes,2,0,10,22734,12,7,4,2,58,No,0
+AP0267,45,M,Chennai,Pediatrics,Orthopedics,8,0,52,Star,64,48497,157831,Yes,2,1,1,9306,3,50,2,5,80,No,0
+AP0268,52,F,Hyderabad,Cardiology,ENT,6,0,69,ICICI Lombard,54,4364,104798,Yes,2,3,19,17418,1,11,1,1,65,No,0
+AP0269,85,F,Chennai,Pediatrics,Dermatology,3,4,101,HDFC Ergo,41,2605,95906,No,2,5,9,7739,8,17,1,0,33,No,1
+AP0270,61,F,Bengaluru,Oncology,Dermatology,2,0,81,HDFC Ergo,66,14783,68009,Yes,3,2,19,10790,7,34,3,1,27,Yes,0
+AP0271,57,M,Vijayawada,Orthopedics,Orthopedics,2,4,79,Niva Bupa,44,56530,151103,Yes,1,2,4,23824,0,48,2,2,53,No,1
+AP0272,31,M,Bengaluru,Cardiology,ENT,3,2,66,HDFC Ergo,78,9958,65865,Yes,0,2,2,22549,12,30,3,1,65,No,0
+AP0273,80,F,Bengaluru,Orthopedics,Neurology,6,5,93,HDFC Ergo,42,12057,112109,Yes,2,3,7,24325,10,12,3,1,9,Yes,0
+AP0274,76,M,Vijayawada,Dermatology,Cardiology,5,3,120,ICICI Lombard,86,32108,87024,No,4,5,18,19457,8,33,5,5,5,Yes,1
+AP0275,84,F,Hyderabad,Dermatology,Cardiology,3,3,68,HDFC Ergo,58,57526,120226,No,2,2,14,5455,6,18,1,4,7,Yes,1
+AP0276,32,M,Bengaluru,Dermatology,Dermatology,8,3,116,Niva Bupa,68,5927,11530,Yes,3,4,6,28919,7,5,4,2,42,Yes,0
+AP0277,75,F,Hyderabad,Dermatology,Orthopedics,1,5,103,ICICI Lombard,75,5976,104773,Yes,1,2,18,28550,10,55,1,1,21,Yes,1
+AP0278,57,F,Chennai,Orthopedics,Oncology,4,1,108,HDFC Ergo,52,27497,5926,No,0,3,15,28030,7,34,1,0,78,No,1
+AP0279,76,F,Vijayawada,Oncology,Cardiology,7,1,37,HDFC Ergo,96,43219,148482,No,4,5,17,26873,3,3,5,1,19,Yes,0
+AP0280,56,F,Hyderabad,Cardiology,Oncology,0,5,54,ICICI Lombard,51,9527,47293,No,4,5,19,18752,12,35,1,1,59,No,1
+AP0281,66,M,Vijayawada,Oncology,ENT,5,0,21,ICICI Lombard,48,21156,36987,No,2,4,13,17191,3,44,3,1,79,Yes,0
+AP0282,54,F,Chennai,ENT,General Medicine,7,0,83,HDFC Ergo,79,5745,152491,No,4,5,20,16309,7,51,5,1,79,Yes,0
+AP0283,21,F,Hyderabad,Neurology,Dermatology,1,5,47,ICICI Lombard,42,103,92501,No,4,5,6,370,10,12,2,5,37,No,1
+AP0284,59,M,Hyderabad,General Medicine,General Medicine,8,0,49,ICICI Lombard,86,33206,154139,Yes,1,1,10,27322,5,59,3,5,62,No,0
+AP0285,76,F,Vijayawada,Dermatology,Cardiology,2,0,92,Niva Bupa,76,31555,195045,No,4,4,0,6824,9,43,2,2,46,Yes,1
+AP0286,39,F,Bengaluru,Oncology,ENT,6,1,45,Niva Bupa,85,22226,13291,No,3,0,15,28739,3,23,1,3,39,Yes,0
+AP0287,22,M,Hyderabad,Pediatrics,Cardiology,5,4,48,ICICI Lombard,97,7355,136086,Yes,1,2,15,24000,8,19,2,2,19,Yes,0
+AP0288,76,F,Hyderabad,Cardiology,ENT,0,4,96,Star,83,13447,227330,Yes,2,3,1,3378,8,49,2,5,40,Yes,1
+AP0289,59,M,Bengaluru,ENT,ENT,3,4,107,Niva Bupa,89,41867,120635,Yes,2,1,5,8966,1,0,3,4,72,Yes,1
+AP0290,52,M,Chennai,Neurology,Orthopedics,5,1,79,Star,59,36003,165763,No,4,3,1,4262,0,30,3,5,7,Yes,0
+AP0291,40,F,Chennai,ENT,General Medicine,6,3,16,HDFC Ergo,85,27948,203810,Yes,3,4,4,3044,12,58,1,5,60,Yes,1
+AP0292,46,M,Chennai,General Medicine,Dermatology,3,3,49,HDFC Ergo,84,30837,245455,No,2,3,15,991,1,30,4,0,45,No,0
+AP0293,34,M,Vijayawada,Oncology,General Medicine,5,3,118,Star,90,18498,84198,No,3,4,13,7817,9,15,2,4,21,No,1
+AP0294,73,F,Chennai,Neurology,Orthopedics,9,3,18,Star,87,13647,249020,No,0,4,19,15168,5,35,3,0,57,Yes,0
+AP0295,66,F,Vijayawada,Cardiology,Oncology,1,2,61,HDFC Ergo,92,39207,41416,Yes,1,5,4,14843,8,18,1,3,79,No,1
+AP0296,56,F,Chennai,Oncology,Cardiology,9,1,36,ICICI Lombard,94,19643,38437,No,0,2,17,1740,0,45,3,4,46,Yes,0
+AP0297,68,F,Vijayawada,Dermatology,Dermatology,6,2,120,ICICI Lombard,74,15416,60369,Yes,3,1,6,18200,6,53,1,2,54,Yes,0
+AP0298,27,M,Bengaluru,Pediatrics,Dermatology,0,2,95,HDFC Ergo,45,8800,40971,No,3,5,19,13949,9,11,2,3,66,No,1
+AP0299,46,M,Vijayawada,Cardiology,Pediatrics,5,4,114,HDFC Ergo,85,25212,136525,No,3,4,18,12024,0,2,4,4,62,No,1
+AP0300,36,F,Vijayawada,Oncology,Oncology,1,0,84,HDFC Ergo,70,45252,170324,Yes,4,4,9,20088,0,57,4,2,69,Yes,1
+AP0301,60,F,Chennai,ENT,ENT,7,3,68,HDFC Ergo,42,59379,187203,No,4,2,1,20620,7,37,5,1,74,Yes,1
+AP0302,80,M,Bengaluru,Oncology,ENT,4,5,47,Niva Bupa,48,1789,166427,No,2,2,0,24295,1,38,5,1,76,Yes,0
+AP0303,51,M,Vijayawada,Orthopedics,Cardiology,2,5,67,Niva Bupa,45,52942,43029,Yes,3,3,12,7797,10,28,3,5,22,Yes,1
+AP0304,51,M,Hyderabad,Orthopedics,Pediatrics,10,4,103,ICICI Lombard,70,3560,84001,No,4,1,12,22397,11,24,3,3,34,Yes,0
+AP0305,66,F,Hyderabad,Oncology,General Medicine,7,4,65,ICICI Lombard,79,18926,245659,No,2,2,8,26290,1,16,1,5,75,No,1
+AP0306,42,F,Bengaluru,General Medicine,Cardiology,10,3,108,Star,93,48123,22813,Yes,3,0,16,3404,10,28,2,2,29,No,1
+AP0307,29,M,Bengaluru,Oncology,Oncology,9,2,34,Star,94,1553,163514,Yes,3,5,20,18548,12,11,1,0,24,No,0
+AP0308,53,F,Chennai,ENT,Orthopedics,7,2,69,Star,57,41863,208713,Yes,3,3,10,1968,4,52,1,2,23,No,1
+AP0309,40,F,Hyderabad,Orthopedics,Dermatology,6,0,72,HDFC Ergo,79,39996,173647,Yes,3,5,8,3384,0,4,2,0,74,No,1
+AP0310,18,M,Vijayawada,ENT,Orthopedics,10,3,12,Niva Bupa,97,9755,107584,Yes,4,5,15,15667,6,25,4,5,9,Yes,0
+AP0311,63,F,Chennai,Dermatology,Cardiology,9,0,59,Star,63,7943,145149,No,0,3,9,21226,3,11,4,4,6,No,0
+AP0312,31,F,Vijayawada,Oncology,Pediatrics,6,5,34,HDFC Ergo,48,45605,14358,Yes,0,5,18,7814,7,24,3,0,70,No,0
+AP0313,61,M,Chennai,Cardiology,Dermatology,0,3,78,Star,53,1075,216577,No,4,1,18,7634,1,2,4,5,19,No,1
+AP0314,23,M,Bengaluru,Cardiology,Orthopedics,9,5,12,Star,97,59452,85566,Yes,3,4,5,27372,9,4,4,0,15,No,0
+AP0315,43,F,Chennai,Dermatology,General Medicine,1,4,112,Star,83,14455,155986,Yes,2,1,1,19434,2,21,5,0,16,No,1
+AP0316,39,F,Bengaluru,Cardiology,Orthopedics,5,1,106,Star,90,11013,227132,No,1,0,15,2645,0,0,4,1,12,No,0
+AP0317,44,M,Chennai,Pediatrics,Dermatology,2,3,98,HDFC Ergo,100,45374,50756,Yes,4,1,15,20055,1,40,4,2,45,No,1
+AP0318,85,M,Chennai,Neurology,Pediatrics,1,0,81,HDFC Ergo,57,12576,18911,Yes,0,1,15,16302,2,10,2,5,6,Yes,1
+AP0319,50,F,Vijayawada,Cardiology,Oncology,6,5,56,Star,99,13735,145865,Yes,1,0,15,16872,1,4,3,1,57,No,0
+AP0320,59,M,Hyderabad,Neurology,Dermatology,1,3,35,HDFC Ergo,64,15077,238666,Yes,0,3,18,15873,0,56,3,3,19,Yes,0
+AP0321,35,F,Bengaluru,General Medicine,ENT,5,4,68,HDFC Ergo,61,25384,38347,Yes,4,0,8,4472,1,54,2,3,59,No,1
+AP0322,38,M,Bengaluru,Oncology,Dermatology,4,1,107,ICICI Lombard,95,14408,61739,No,3,2,0,23921,6,47,3,1,32,No,0
+AP0323,37,M,Vijayawada,Cardiology,Cardiology,9,3,84,ICICI Lombard,86,58446,206485,Yes,3,4,12,15704,12,51,2,5,13,No,1
+AP0324,70,M,Bengaluru,General Medicine,ENT,0,3,40,HDFC Ergo,81,36601,28784,Yes,3,5,9,5301,11,29,1,4,75,Yes,1
+AP0325,41,F,Vijayawada,Cardiology,Oncology,6,3,69,ICICI Lombard,97,57291,186076,No,4,0,9,13955,12,17,2,5,79,Yes,1
+AP0326,25,F,Hyderabad,Oncology,Dermatology,5,5,20,Niva Bupa,69,57727,167302,Yes,2,2,5,21239,8,45,5,0,72,Yes,0
+AP0327,79,M,Bengaluru,General Medicine,General Medicine,1,1,52,Niva Bupa,72,35365,183317,No,2,0,2,12216,5,28,2,3,65,Yes,1
+AP0328,55,F,Chennai,Oncology,Neurology,8,3,100,ICICI Lombard,45,44453,26016,No,1,2,2,3583,2,17,5,0,19,No,1
+AP0329,55,F,Bengaluru,Pediatrics,General Medicine,0,1,36,ICICI Lombard,68,41109,198386,Yes,2,1,2,722,12,14,5,4,43,No,0
+AP0330,85,F,Vijayawada,ENT,Orthopedics,9,4,53,Niva Bupa,50,31860,211901,No,1,3,11,9441,12,54,3,0,19,No,0
+AP0331,54,M,Bengaluru,Orthopedics,Orthopedics,2,2,68,HDFC Ergo,47,40542,15787,No,4,1,14,8533,5,11,2,1,72,Yes,1
+AP0332,75,M,Chennai,Oncology,Cardiology,5,5,50,ICICI Lombard,99,9695,135919,Yes,3,2,4,140,11,34,3,4,43,No,0
+AP0333,74,F,Hyderabad,Pediatrics,Cardiology,2,3,47,HDFC Ergo,83,43705,149430,Yes,2,0,12,20234,3,28,5,2,12,No,0
+AP0334,46,F,Bengaluru,Cardiology,Oncology,8,0,87,ICICI Lombard,83,38235,181044,Yes,4,3,6,16071,5,38,2,4,66,Yes,1
+AP0335,65,F,Chennai,Cardiology,ENT,6,5,56,Niva Bupa,62,9695,85762,No,4,0,6,23850,7,47,4,3,57,No,0
+AP0336,35,M,Bengaluru,Neurology,ENT,6,1,113,ICICI Lombard,95,47749,142704,No,0,4,12,2898,0,26,4,5,35,No,0
+AP0337,35,M,Bengaluru,Dermatology,ENT,9,1,81,ICICI Lombard,42,46546,220691,No,4,2,15,18326,11,29,4,1,4,Yes,0
+AP0338,78,M,Chennai,Dermatology,Orthopedics,10,1,43,ICICI Lombard,98,41979,185313,Yes,0,0,8,16156,1,38,3,5,47,No,0
+AP0339,78,M,Chennai,Cardiology,ENT,10,4,65,HDFC Ergo,77,41156,20338,Yes,2,3,4,11710,2,3,3,2,47,No,1
+AP0340,85,M,Bengaluru,Orthopedics,Oncology,4,5,55,HDFC Ergo,74,18996,89569,No,2,2,11,3140,8,37,1,2,19,Yes,0
+AP0341,70,F,Bengaluru,Oncology,Neurology,7,1,76,HDFC Ergo,72,24445,62963,Yes,4,4,16,27724,8,45,3,4,15,No,0
+AP0342,20,F,Chennai,ENT,General Medicine,2,3,19,HDFC Ergo,92,53663,120851,No,1,5,9,942,11,52,1,0,29,Yes,1
+AP0343,44,M,Hyderabad,Dermatology,Oncology,2,5,28,Star,41,20147,208080,No,3,0,6,3532,0,50,2,5,66,Yes,0
+AP0344,56,M,Hyderabad,Oncology,Neurology,1,3,25,HDFC Ergo,51,2836,180793,No,0,0,4,27717,11,60,3,2,75,No,0
+AP0345,48,M,Hyderabad,Cardiology,Neurology,9,2,30,HDFC Ergo,58,51170,50029,Yes,0,1,16,27895,11,30,5,2,76,Yes,0
+AP0346,66,F,Bengaluru,Neurology,Dermatology,5,3,96,Star,88,11852,87386,Yes,3,0,16,4453,7,48,1,2,37,Yes,1
+AP0347,54,F,Chennai,Pediatrics,Neurology,6,0,51,ICICI Lombard,58,7583,229228,No,1,0,15,22253,5,11,4,0,63,Yes,0
+AP0348,28,M,Bengaluru,Dermatology,Dermatology,10,3,66,Star,87,43158,247559,Yes,0,2,6,11096,3,38,5,3,16,Yes,1
+AP0349,52,F,Chennai,Pediatrics,Dermatology,9,3,102,ICICI Lombard,72,18252,78109,Yes,3,0,3,8214,7,31,4,1,18,Yes,0
+AP0350,81,M,Bengaluru,Dermatology,General Medicine,1,0,104,HDFC Ergo,59,54415,168044,Yes,0,5,16,25151,7,50,1,3,26,No,1
+AP0351,61,M,Hyderabad,Dermatology,Oncology,4,5,73,ICICI Lombard,68,33082,87459,No,3,3,1,1076,2,35,4,5,39,Yes,1
+AP0352,80,M,Vijayawada,Pediatrics,Pediatrics,6,3,65,HDFC Ergo,72,20477,19611,No,2,3,18,12379,9,43,2,2,37,No,1
+AP0353,64,F,Hyderabad,General Medicine,Dermatology,2,0,13,Star,67,2956,95477,No,3,2,1,21667,3,15,5,1,40,Yes,0
+AP0354,39,M,Chennai,Cardiology,Pediatrics,5,5,18,ICICI Lombard,76,7501,139941,No,2,0,15,19267,0,20,3,3,74,No,0
+AP0355,30,M,Chennai,Pediatrics,General Medicine,7,2,83,HDFC Ergo,79,52974,83517,No,3,1,15,20822,12,4,1,4,28,No,1
+AP0356,46,M,Hyderabad,General Medicine,ENT,6,2,16,Star,76,37586,215026,No,3,1,11,26071,1,41,3,2,65,No,0
+AP0357,71,F,Chennai,Pediatrics,Orthopedics,3,3,94,Star,80,20535,189374,Yes,4,3,6,21653,11,60,5,3,35,No,0
+AP0358,64,F,Bengaluru,Neurology,Orthopedics,3,4,103,Niva Bupa,94,34227,119134,No,2,0,20,6670,6,17,1,2,21,No,1
+AP0359,32,M,Bengaluru,Cardiology,Neurology,3,5,86,Niva Bupa,69,26598,132240,No,3,5,1,6618,2,17,2,1,4,No,1
+AP0360,23,F,Hyderabad,Cardiology,Oncology,10,2,94,Niva Bupa,78,11533,83113,Yes,3,2,2,13005,11,53,5,1,31,Yes,0
+AP0361,85,F,Vijayawada,Oncology,Neurology,8,4,104,Star,89,7906,216468,No,2,4,12,26405,11,47,5,1,55,Yes,0
+AP0362,74,F,Chennai,Cardiology,Pediatrics,4,1,23,Niva Bupa,84,14031,34612,No,4,3,15,22371,3,17,2,1,47,No,0
+AP0363,22,M,Bengaluru,ENT,Dermatology,10,5,57,Niva Bupa,80,1381,188662,No,0,4,7,28103,7,24,3,0,51,No,0
+AP0364,38,F,Chennai,Dermatology,Cardiology,3,2,21,Niva Bupa,95,19491,25996,No,3,5,13,27563,5,45,2,3,13,Yes,0
+AP0365,71,F,Vijayawada,Cardiology,Cardiology,5,5,43,HDFC Ergo,80,4349,121235,Yes,0,3,6,20588,4,20,5,4,11,Yes,0
+AP0366,34,F,Chennai,Pediatrics,Pediatrics,10,1,41,HDFC Ergo,56,46764,50476,No,2,1,2,13582,5,11,5,3,49,Yes,0
+AP0367,47,M,Vijayawada,Neurology,ENT,9,0,12,HDFC Ergo,43,42408,110128,No,4,2,4,2918,5,10,5,4,16,Yes,0
+AP0368,81,M,Bengaluru,Neurology,Neurology,7,5,77,Niva Bupa,58,50682,200675,No,3,1,13,28060,3,38,4,1,37,Yes,1
+AP0369,21,F,Chennai,Neurology,Pediatrics,2,3,33,HDFC Ergo,63,51934,157804,No,0,0,15,4364,5,44,4,3,28,No,0
+AP0370,30,M,Hyderabad,General Medicine,Neurology,1,5,64,ICICI Lombard,98,16792,97878,Yes,0,2,16,20304,6,19,5,3,48,Yes,1
+AP0371,39,F,Chennai,Pediatrics,Orthopedics,4,4,15,Star,60,11755,191189,No,1,2,3,10265,0,8,5,3,36,No,0
+AP0372,84,F,Vijayawada,Orthopedics,General Medicine,4,3,46,ICICI Lombard,88,40169,44653,No,0,1,4,1788,3,11,3,0,61,No,0
+AP0373,81,M,Vijayawada,General Medicine,Pediatrics,1,1,100,ICICI Lombard,71,28601,34488,Yes,0,2,2,6675,4,11,4,1,66,No,1
+AP0374,18,M,Vijayawada,Oncology,Neurology,9,4,94,ICICI Lombard,83,13919,29721,No,0,2,3,12916,5,37,5,0,42,Yes,0
+AP0375,79,F,Chennai,Cardiology,General Medicine,10,0,20,Star,81,54440,168149,No,2,5,18,4237,3,55,4,0,37,No,0
+AP0376,66,M,Vijayawada,ENT,Orthopedics,9,0,105,HDFC Ergo,89,35858,231889,No,0,0,6,5339,6,49,1,3,37,Yes,1
+AP0377,57,M,Chennai,Oncology,General Medicine,6,0,48,HDFC Ergo,71,52500,121770,No,3,2,18,19671,6,5,4,3,48,Yes,0
+AP0378,83,F,Vijayawada,Neurology,Orthopedics,0,3,90,ICICI Lombard,73,6091,170035,Yes,2,3,13,2594,12,30,4,2,20,Yes,1
+AP0379,55,M,Hyderabad,Cardiology,Oncology,6,5,48,ICICI Lombard,66,34281,29768,No,4,2,11,8351,9,5,2,4,3,Yes,1
+AP0380,68,M,Hyderabad,Dermatology,ENT,2,5,94,Niva Bupa,77,11767,194817,No,3,4,8,11184,12,11,4,1,24,Yes,0
+AP0381,31,F,Hyderabad,Cardiology,Dermatology,10,5,87,Star,40,57122,50019,No,3,5,12,28468,10,47,3,4,63,No,1
+AP0382,68,F,Hyderabad,Orthopedics,Orthopedics,10,4,114,Star,52,23640,34337,Yes,1,0,6,15765,10,9,5,5,31,No,0
+AP0383,56,F,Bengaluru,Pediatrics,Dermatology,1,5,119,Star,47,12511,48543,Yes,3,3,15,643,7,37,5,1,26,No,1
+AP0384,19,M,Vijayawada,Dermatology,Pediatrics,5,4,116,Niva Bupa,42,3337,132794,No,3,4,18,23744,9,59,4,5,63,Yes,0
+AP0385,58,M,Chennai,Dermatology,Pediatrics,6,5,17,Star,71,1246,168236,No,3,5,13,681,2,18,5,5,25,No,0
+AP0386,61,F,Bengaluru,ENT,Dermatology,3,2,66,ICICI Lombard,93,33268,181451,No,3,1,19,6789,4,44,2,5,12,No,1
+AP0387,80,M,Vijayawada,Pediatrics,ENT,9,1,32,HDFC Ergo,53,10244,150969,Yes,0,2,8,11699,10,10,2,1,65,Yes,0
+AP0388,47,M,Bengaluru,Pediatrics,ENT,9,0,53,Niva Bupa,90,7469,98124,Yes,4,2,4,27964,11,55,4,4,78,Yes,0
+AP0389,32,M,Hyderabad,Cardiology,Oncology,7,5,16,HDFC Ergo,80,52362,35948,Yes,2,1,9,23205,7,48,4,4,64,Yes,0
+AP0390,33,M,Vijayawada,Dermatology,Cardiology,2,1,92,HDFC Ergo,93,21928,217112,No,2,2,16,5611,1,17,3,2,54,No,0
+AP0391,71,M,Bengaluru,Dermatology,Dermatology,8,5,95,ICICI Lombard,97,9935,125259,No,0,3,4,25236,0,45,2,4,9,Yes,1
+AP0392,73,M,Vijayawada,Cardiology,Orthopedics,2,2,50,Star,80,50618,192005,No,3,3,17,28624,4,46,4,5,41,No,0
+AP0393,36,F,Vijayawada,Neurology,Pediatrics,8,0,115,Niva Bupa,96,58996,217816,No,1,2,2,1211,8,21,3,3,17,No,0
+AP0394,84,F,Bengaluru,Cardiology,Cardiology,4,1,21,Niva Bupa,55,36161,223163,No,3,4,3,23985,0,53,5,2,34,No,0
+AP0395,18,F,Chennai,Neurology,Neurology,4,0,16,Niva Bupa,59,29408,79589,Yes,3,4,7,3448,5,33,1,4,25,No,0
+AP0396,70,M,Hyderabad,Cardiology,Dermatology,6,3,22,HDFC Ergo,70,46638,61304,No,0,2,16,13197,9,35,2,4,51,No,1
+AP0397,71,M,Bengaluru,Orthopedics,Pediatrics,7,4,73,ICICI Lombard,48,28841,189686,Yes,1,3,15,1068,11,10,4,4,48,Yes,1
+AP0398,65,F,Hyderabad,Orthopedics,Oncology,1,4,119,Niva Bupa,59,7230,103162,No,2,3,0,25926,2,9,4,4,54,Yes,1
+AP0399,18,M,Chennai,Oncology,Cardiology,7,2,46,ICICI Lombard,70,11998,155224,No,4,3,10,25603,6,30,2,5,78,Yes,0
+AP0400,75,M,Chennai,Oncology,Dermatology,7,1,74,ICICI Lombard,54,49917,240993,No,2,4,1,21969,7,47,4,2,12,Yes,0
+AP0401,33,M,Bengaluru,Cardiology,Neurology,4,5,13,ICICI Lombard,72,41294,240107,Yes,0,5,17,5889,0,17,5,1,32,No,0
+AP0402,69,M,Vijayawada,Cardiology,General Medicine,5,0,113,ICICI Lombard,51,39770,113773,Yes,4,2,12,8427,1,7,5,0,70,Yes,0
+AP0403,37,F,Vijayawada,Orthopedics,Cardiology,1,2,28,Niva Bupa,51,16748,12122,Yes,2,3,3,10487,2,26,2,2,34,No,0
+AP0404,48,F,Vijayawada,Oncology,ENT,9,0,16,Star,60,15703,126850,No,0,3,0,13352,10,14,2,0,35,Yes,0
+AP0405,56,F,Vijayawada,Oncology,Neurology,2,1,107,HDFC Ergo,63,42700,146673,Yes,1,4,13,29867,8,28,5,0,1,No,0
+AP0406,79,F,Chennai,Dermatology,General Medicine,0,4,47,HDFC Ergo,77,35,225380,No,0,1,17,18451,1,19,2,0,51,Yes,1
+AP0407,44,F,Chennai,ENT,Pediatrics,6,1,102,Niva Bupa,55,18314,178611,No,2,1,14,19644,5,1,5,5,18,Yes,0
+AP0408,40,F,Vijayawada,Dermatology,Oncology,0,4,70,Star,74,59077,13112,No,0,2,12,27114,9,22,1,3,23,Yes,1
+AP0409,19,M,Hyderabad,ENT,General Medicine,7,0,69,HDFC Ergo,45,12647,218983,No,1,1,15,11894,0,17,3,3,78,Yes,0
+AP0410,82,F,Bengaluru,Neurology,Orthopedics,4,0,35,Star,77,7270,38619,Yes,1,2,18,28032,3,56,4,4,36,Yes,0
+AP0411,76,M,Vijayawada,Cardiology,General Medicine,4,5,12,ICICI Lombard,94,40269,111660,No,0,5,16,15289,7,23,5,4,6,Yes,0
+AP0412,58,M,Vijayawada,Neurology,General Medicine,7,0,45,Star,96,34892,154899,Yes,1,5,13,2439,3,12,4,1,43,No,0
+AP0413,73,M,Chennai,ENT,Neurology,7,0,90,Star,70,1826,67484,No,0,2,16,26021,3,60,1,0,77,No,0
+AP0414,28,M,Hyderabad,Dermatology,General Medicine,1,0,90,Star,90,37941,38432,Yes,3,0,9,20012,10,27,4,0,14,Yes,1
+AP0415,69,M,Vijayawada,Neurology,Cardiology,6,4,16,ICICI Lombard,64,55700,126689,No,4,4,3,11128,10,60,3,5,4,No,0
+AP0416,31,M,Hyderabad,Neurology,Orthopedics,1,4,52,Niva Bupa,62,12614,115364,No,4,3,5,7967,2,51,5,0,8,Yes,0
+AP0417,63,F,Bengaluru,Orthopedics,Pediatrics,10,2,84,Niva Bupa,78,33628,94889,No,2,0,16,19216,10,43,4,1,8,Yes,0
+AP0418,72,F,Bengaluru,Neurology,Neurology,0,4,114,Star,61,56275,54638,No,3,4,10,27918,9,36,5,2,79,No,1
+AP0419,23,F,Bengaluru,Cardiology,Neurology,7,3,52,HDFC Ergo,69,6871,168556,Yes,1,3,10,26452,11,24,2,1,52,Yes,0
+AP0420,21,M,Bengaluru,ENT,Pediatrics,5,0,56,HDFC Ergo,80,4832,158534,No,0,0,6,6482,4,11,1,1,34,Yes,0
+AP0421,43,M,Bengaluru,ENT,Oncology,2,2,118,Star,93,16119,182590,Yes,3,5,3,11088,3,19,5,3,31,No,0
+AP0422,73,M,Hyderabad,Orthopedics,Orthopedics,9,2,94,HDFC Ergo,52,34532,144606,No,2,2,19,14075,10,15,2,0,79,Yes,1
+AP0423,24,F,Bengaluru,Pediatrics,Neurology,3,4,47,Star,90,21474,128382,Yes,1,4,12,24618,10,48,2,4,48,No,0
+AP0424,85,F,Vijayawada,Pediatrics,ENT,5,4,69,ICICI Lombard,80,21091,246483,Yes,1,1,6,14813,3,25,2,1,40,No,1
+AP0425,50,M,Bengaluru,Oncology,ENT,5,3,83,ICICI Lombard,73,55209,97163,Yes,4,0,14,16785,9,21,2,3,58,No,1
+AP0426,58,F,Vijayawada,Cardiology,Orthopedics,7,3,62,ICICI Lombard,54,52724,74631,Yes,2,0,9,27610,8,32,3,4,11,No,1
+AP0427,22,M,Chennai,Neurology,General Medicine,5,1,22,Niva Bupa,59,4675,200352,No,1,5,19,4517,12,45,1,5,70,No,0
+AP0428,69,F,Hyderabad,Pediatrics,Orthopedics,5,0,108,ICICI Lombard,54,18471,64487,Yes,3,1,16,19234,12,35,3,3,60,No,0
+AP0429,44,F,Vijayawada,Cardiology,General Medicine,6,0,50,HDFC Ergo,76,28101,234048,Yes,2,5,0,16377,12,42,2,2,44,Yes,0
+AP0430,56,F,Hyderabad,Cardiology,Orthopedics,8,3,64,HDFC Ergo,100,49993,91573,No,3,1,12,2087,8,24,4,1,61,Yes,1
+AP0431,29,M,Hyderabad,Orthopedics,Cardiology,4,2,82,ICICI Lombard,41,41877,53940,Yes,0,3,9,6746,3,18,4,5,68,Yes,0
+AP0432,39,F,Vijayawada,Dermatology,Orthopedics,0,3,17,Star,48,33982,145627,No,3,5,2,12746,3,8,3,1,40,No,1
+AP0433,57,M,Vijayawada,ENT,Neurology,9,5,95,Star,49,10405,121845,Yes,3,4,7,17231,5,58,4,4,63,No,0
+AP0434,54,F,Chennai,ENT,Dermatology,1,3,83,HDFC Ergo,66,48319,70309,Yes,4,5,13,15002,6,58,1,5,24,Yes,1
+AP0435,53,F,Hyderabad,Neurology,Pediatrics,2,3,99,ICICI Lombard,88,15708,149919,Yes,2,0,3,16528,12,49,1,2,53,No,1
+AP0436,77,M,Hyderabad,Pediatrics,Dermatology,0,1,42,Niva Bupa,87,33165,109685,Yes,3,0,0,8211,1,45,2,1,42,No,1
+AP0437,49,F,Bengaluru,Pediatrics,ENT,8,3,69,HDFC Ergo,50,5409,224806,Yes,4,0,5,9638,1,34,1,5,51,Yes,1
+AP0438,37,F,Chennai,Orthopedics,Neurology,4,0,95,Star,97,44392,181958,Yes,3,5,1,27410,10,51,1,4,14,No,1
+AP0439,18,M,Vijayawada,Neurology,Neurology,9,5,49,Niva Bupa,98,3435,67531,Yes,0,0,13,915,0,21,4,1,9,Yes,0
+AP0440,23,F,Hyderabad,General Medicine,General Medicine,2,0,112,HDFC Ergo,79,47448,59295,No,3,0,7,7005,1,22,2,2,23,Yes,1
+AP0441,45,F,Bengaluru,Oncology,ENT,6,3,93,Niva Bupa,42,785,22650,Yes,3,2,19,16370,1,45,3,4,73,Yes,0
+AP0442,67,M,Chennai,Orthopedics,General Medicine,10,2,22,ICICI Lombard,44,21256,92845,Yes,4,4,14,12529,8,40,5,5,30,Yes,0
+AP0443,57,M,Vijayawada,Neurology,Oncology,1,1,12,Star,48,49737,103179,No,2,1,4,12312,3,41,5,0,31,No,0
+AP0444,23,F,Chennai,Cardiology,Neurology,5,5,52,Niva Bupa,61,18227,68504,Yes,4,0,7,26261,10,44,2,5,29,No,0
+AP0445,18,M,Vijayawada,Oncology,Neurology,10,4,51,Star,80,28990,42101,Yes,1,0,5,19419,8,53,2,1,31,Yes,1
+AP0446,43,M,Vijayawada,Orthopedics,Neurology,2,3,102,Niva Bupa,58,20412,156105,No,1,2,15,2621,5,25,4,3,22,No,0
+AP0447,37,F,Hyderabad,Dermatology,Dermatology,6,3,64,Star,88,39937,242622,No,4,4,4,18115,11,11,5,2,49,No,1
+AP0448,79,M,Chennai,Orthopedics,Pediatrics,8,2,68,HDFC Ergo,49,24585,245158,Yes,0,0,16,23932,11,23,3,3,52,No,0
+AP0449,57,M,Vijayawada,Cardiology,Oncology,7,3,105,ICICI Lombard,99,25168,153270,Yes,1,3,8,25272,12,46,3,2,66,No,1
+AP0450,67,F,Bengaluru,Neurology,Pediatrics,0,5,98,Star,98,45642,218156,No,0,5,20,4845,4,38,3,3,19,No,1
+AP0451,19,M,Hyderabad,Dermatology,Dermatology,2,1,87,Star,73,43424,243537,Yes,3,1,13,8286,11,19,5,4,69,No,0
+AP0452,31,F,Bengaluru,ENT,Neurology,1,4,49,ICICI Lombard,84,49313,85766,Yes,1,3,0,3174,1,49,4,5,54,No,1
+AP0453,65,M,Bengaluru,Neurology,Pediatrics,2,5,46,HDFC Ergo,72,11182,33898,No,4,1,5,6584,0,47,4,1,25,No,0
+AP0454,39,M,Chennai,Oncology,Dermatology,10,3,66,Star,57,7156,21846,No,0,4,7,15659,7,43,5,0,2,Yes,0
+AP0455,23,M,Bengaluru,Cardiology,Dermatology,9,2,106,Niva Bupa,99,43602,132382,No,2,4,13,11028,5,43,1,2,41,Yes,1
+AP0456,25,F,Chennai,Oncology,Cardiology,9,2,95,ICICI Lombard,95,24801,188057,No,1,0,19,4027,8,17,4,5,32,No,0
+AP0457,42,M,Chennai,Cardiology,General Medicine,6,3,89,Star,91,33745,197888,No,3,1,19,15877,6,47,4,4,11,No,1
+AP0458,55,M,Bengaluru,Cardiology,Orthopedics,6,3,70,ICICI Lombard,90,48121,27830,No,4,3,5,29373,7,7,1,3,70,Yes,1
+AP0459,29,M,Vijayawada,Cardiology,Orthopedics,10,1,37,Niva Bupa,97,49365,105529,No,1,5,8,21821,7,60,2,5,16,Yes,0
+AP0460,46,M,Chennai,Dermatology,Dermatology,5,4,91,ICICI Lombard,91,5927,66175,Yes,2,0,9,2873,1,5,4,2,76,Yes,0
+AP0461,58,F,Hyderabad,ENT,Cardiology,2,5,24,HDFC Ergo,94,24100,106750,No,2,2,4,17031,10,38,5,4,29,Yes,0
+AP0462,58,M,Chennai,Neurology,Pediatrics,7,3,11,ICICI Lombard,49,55860,162670,No,1,5,1,19624,5,19,5,4,16,No,0
+AP0463,81,F,Vijayawada,Cardiology,General Medicine,3,5,83,HDFC Ergo,92,41358,192895,Yes,1,5,1,28358,12,11,4,3,51,No,1
+AP0464,68,F,Vijayawada,Pediatrics,General Medicine,8,5,118,ICICI Lombard,65,1413,23828,No,2,5,6,22973,8,25,2,0,17,No,1
+AP0465,76,M,Bengaluru,Pediatrics,Pediatrics,4,4,120,Niva Bupa,97,55693,42964,Yes,1,5,6,24094,10,0,1,2,74,Yes,1
+AP0466,39,M,Hyderabad,General Medicine,Pediatrics,6,5,110,HDFC Ergo,100,24677,18755,Yes,4,5,10,19444,6,9,2,5,52,Yes,1
+AP0467,56,M,Vijayawada,Oncology,Pediatrics,7,0,25,ICICI Lombard,57,25994,170762,No,2,0,3,3821,1,7,2,3,66,Yes,0
+AP0468,53,M,Bengaluru,Dermatology,Pediatrics,7,0,85,ICICI Lombard,59,37527,154795,Yes,0,2,2,23388,12,34,5,1,52,Yes,0
+AP0469,80,M,Hyderabad,Neurology,Oncology,8,3,81,HDFC Ergo,95,51345,162051,Yes,0,4,14,26231,5,7,5,0,17,Yes,1
+AP0470,22,M,Hyderabad,ENT,General Medicine,4,5,30,HDFC Ergo,67,36863,177532,Yes,1,2,1,17021,12,18,1,5,69,No,1
+AP0471,84,F,Bengaluru,Oncology,Cardiology,5,1,83,HDFC Ergo,42,45554,54302,Yes,2,1,4,19731,8,13,4,4,46,No,0
+AP0472,50,F,Vijayawada,Orthopedics,Dermatology,1,1,103,ICICI Lombard,45,27657,71631,No,1,4,6,2312,10,46,5,2,25,No,1
+AP0473,71,M,Chennai,Dermatology,Dermatology,2,4,94,Star,78,39645,69880,Yes,2,0,17,3604,10,35,5,3,9,No,1
+AP0474,52,M,Bengaluru,ENT,Cardiology,5,5,21,Star,64,59588,63255,No,0,0,5,17251,11,56,3,2,76,No,0
+AP0475,54,F,Hyderabad,Cardiology,Orthopedics,9,0,77,Niva Bupa,100,45905,202098,No,1,2,17,18077,9,56,3,3,62,Yes,0
+AP0476,34,M,Vijayawada,ENT,Cardiology,2,2,11,Niva Bupa,85,46741,208824,Yes,4,3,14,5999,7,22,5,3,65,No,0
+AP0477,57,M,Chennai,Dermatology,General Medicine,3,2,64,Star,80,47085,25833,Yes,1,0,5,18851,0,5,5,5,37,No,0
+AP0478,79,F,Hyderabad,Dermatology,Cardiology,2,0,64,HDFC Ergo,98,47893,222945,Yes,3,5,17,24565,5,15,5,5,68,Yes,0
+AP0479,46,M,Hyderabad,General Medicine,Orthopedics,8,4,67,Niva Bupa,100,44205,18344,No,3,3,5,12231,1,21,2,5,32,Yes,1
+AP0480,45,M,Vijayawada,Neurology,ENT,4,2,48,Star,99,19237,126387,No,0,2,0,20169,7,21,4,2,46,Yes,0
+AP0481,19,M,Vijayawada,Pediatrics,Neurology,5,0,54,Star,73,26349,139825,Yes,3,0,15,226,2,49,2,5,33,Yes,0
+AP0482,72,M,Chennai,Oncology,Pediatrics,5,3,60,ICICI Lombard,50,19613,41667,No,3,0,11,28953,11,12,3,0,25,No,0
+AP0483,22,M,Bengaluru,Pediatrics,ENT,5,0,27,Star,66,27594,133206,No,1,2,12,16444,11,59,4,5,50,Yes,0
+AP0484,62,M,Bengaluru,Cardiology,General Medicine,2,0,23,ICICI Lombard,78,8265,198313,Yes,3,3,9,9247,7,5,1,3,32,Yes,0
+AP0485,32,F,Bengaluru,Dermatology,Neurology,4,5,75,ICICI Lombard,85,16349,210184,Yes,4,4,5,6182,9,40,2,5,20,Yes,1
+AP0486,42,M,Vijayawada,Cardiology,Neurology,4,0,26,Star,95,2514,18357,No,3,4,9,22942,10,14,4,1,44,No,0
+AP0487,24,F,Hyderabad,ENT,General Medicine,10,3,17,Niva Bupa,100,27988,97018,No,1,2,1,5955,0,0,5,0,42,Yes,0
+AP0488,30,F,Bengaluru,ENT,Pediatrics,9,2,70,Niva Bupa,61,59538,84785,Yes,0,5,0,22379,8,49,3,1,43,No,0
+AP0489,85,F,Bengaluru,ENT,Neurology,9,5,113,ICICI Lombard,45,48688,237572,Yes,1,5,19,3943,0,37,3,5,25,Yes,1
+AP0490,61,F,Vijayawada,Neurology,Orthopedics,8,5,67,Star,48,4907,55254,No,4,5,8,29215,12,54,1,4,45,No,1
+AP0491,26,F,Vijayawada,Cardiology,Orthopedics,6,3,90,Niva Bupa,84,59693,38799,No,0,4,1,26030,11,12,1,5,51,No,1
+AP0492,74,F,Vijayawada,Dermatology,ENT,2,5,78,HDFC Ergo,51,4914,5943,Yes,4,1,18,22830,0,56,5,4,59,No,0
+AP0493,33,M,Bengaluru,Cardiology,Neurology,4,2,119,Niva Bupa,42,19422,172671,Yes,2,1,8,28619,12,3,2,5,32,Yes,0
+AP0494,65,F,Hyderabad,ENT,Orthopedics,5,4,24,ICICI Lombard,97,42509,165296,No,2,0,20,26736,0,52,1,2,29,No,1
+AP0495,31,F,Chennai,Neurology,Pediatrics,10,1,42,HDFC Ergo,60,35218,75462,Yes,4,5,12,5100,7,14,1,5,56,No,0
+AP0496,76,M,Bengaluru,Neurology,Pediatrics,2,1,71,HDFC Ergo,81,32503,78936,Yes,2,1,5,26787,6,43,1,4,25,Yes,1
+AP0497,69,M,Bengaluru,Cardiology,Oncology,7,1,19,ICICI Lombard,64,16072,10430,Yes,0,5,1,4331,3,49,4,0,35,Yes,0
+AP0498,31,F,Hyderabad,Neurology,Orthopedics,0,5,86,ICICI Lombard,88,51930,152548,No,1,2,10,15692,2,15,1,0,70,No,1
+AP0499,31,F,Hyderabad,Dermatology,Orthopedics,0,5,79,Star,98,1389,63802,Yes,1,3,12,4829,5,41,1,2,29,No,1
+AP0500,32,M,Hyderabad,ENT,General Medicine,2,5,101,Star,79,32231,92483,Yes,2,0,1,19808,2,11,1,3,68,No,1

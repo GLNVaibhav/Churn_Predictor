@@ -54,3 +54,15 @@ class DiagnosticsResponse(BaseModel):
 
 class FeatureEngineeringResponse(BaseModel):
     feature_engineering: dict[str, Any]
+
+
+class SemanticIntelligenceResponse(BaseModel):
+    semantic_intelligence: dict[str, Any]
+
+
+class FrameworkMapperResponse(BaseModel):
+    framework_mapper: dict[str, Any]
+
+
+class CliOutputResponse(BaseModel):
+    cli_output: dict[str, Any]

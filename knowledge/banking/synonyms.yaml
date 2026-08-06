@@ -1,0 +1,2 @@
+AccountBalance: {aliases: [balance, account_balance]}
+CustomerIncome: {aliases: [income, salary, estimated_salary]}

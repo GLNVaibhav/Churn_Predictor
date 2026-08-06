@@ -10,9 +10,6 @@ import {
 import { StageStatusBadge } from "@/components/shared/status-badge";
 import type { PipelineStage } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { useDevMode } from "@/lib/context/dev-mode-context";
-import { Code2 } from "lucide-react";
 
 interface StageDetailPanelProps {
   stage: PipelineStage | null;
@@ -21,8 +18,6 @@ interface StageDetailPanelProps {
 }
 
 export function StageDetailPanel({ stage, open, onOpenChange }: StageDetailPanelProps) {
-  const { developerMode } = useDevMode();
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-md overflow-y-auto">
@@ -70,50 +65,6 @@ export function StageDetailPanel({ stage, open, onOpenChange }: StageDetailPanel
                 </p>
                 <p className="text-sm leading-relaxed text-muted-foreground">{stage.detail}</p>
               </div>
-
-              {developerMode ? (
-                <>
-                  <Separator />
-                  <div>
-                    <div className="mb-2 flex items-center gap-1.5">
-                      <Code2 className="h-3.5 w-3.5 text-muted-foreground" />
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        Developer detail
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
-                        <span className="text-sm text-muted-foreground">Backend module</span>
-                        <Badge variant="outline" className="font-mono text-[11px]">
-                          {stage.backendModule}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
-                        <span className="text-sm text-muted-foreground">Future endpoint</span>
-                        <Badge variant="outline" className="font-mono text-[11px]">
-                          {stage.futureEndpoint}
-                        </Badge>
-                      </div>
-                      <div>
-                        <p className="mb-1.5 text-xs font-medium text-muted-foreground">Input sample</p>
-                        <pre className="overflow-x-auto rounded-lg border border-border/60 bg-muted/40 p-3 text-[11px] leading-relaxed">
-                          {stage.inputSample}
-                        </pre>
-                      </div>
-                      <div>
-                        <p className="mb-1.5 text-xs font-medium text-muted-foreground">Output sample</p>
-                        <pre className="overflow-x-auto rounded-lg border border-border/60 bg-muted/40 p-3 text-[11px] leading-relaxed">
-                          {stage.outputSample}
-                        </pre>
-                      </div>
-                      <div>
-                        <p className="mb-1.5 text-xs font-medium text-muted-foreground">Notes</p>
-                        <p className="text-sm leading-relaxed text-muted-foreground">{stage.notes}</p>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : null}
             </div>
           </>
         ) : null}

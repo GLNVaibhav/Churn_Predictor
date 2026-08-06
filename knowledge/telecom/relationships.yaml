@@ -1,0 +1,7 @@
+relationships:
+  - {from: Customer, related_to: Billing}
+  - {from: Customer, related_to: Usage}
+  - {from: Customer, related_to: Product}
+  - {from: Customer, related_to: Support}
+  - {from: Network, related_to: Usage}
+  - {from: Complaint, related_to: Support}

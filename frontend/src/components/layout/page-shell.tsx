@@ -8,7 +8,7 @@ export function PageShell({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-1 flex-col gap-6 overflow-y-auto p-6", className)}>
+    <div className={cn("flex flex-1 flex-col gap-5 overflow-y-auto bg-background p-4 sm:p-5 lg:p-6", className)}>
       {children}
     </div>
   );

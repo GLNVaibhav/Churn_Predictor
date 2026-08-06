@@ -13,6 +13,9 @@ from backend.api.schemas.execution import (
     EventsResponse,
     DiagnosticsResponse,
     FeatureEngineeringResponse,
+    SemanticIntelligenceResponse,
+    FrameworkMapperResponse,
+    CliOutputResponse,
     ReportTextsResponse,
 )
 
@@ -101,3 +104,37 @@ def get_feature_engineering(execution_id: str, repo=Depends(get_execution_reposi
     return FeatureEngineeringResponse(
         feature_engineering=data.get("feature_engineering") or {},
     )
+
+
+@router.get(
+    "/analysis/{execution_id}/semantic-intelligence",
+    response_model=SemanticIntelligenceResponse,
+)
+def get_semantic_intelligence(execution_id: str, repo=Depends(get_execution_repository)):
+    data = _load_execution(execution_id, repo)
+    diagnostics = data.get("diagnostics") or {}
+    return SemanticIntelligenceResponse(
+        semantic_intelligence=(
+            data.get("semantic_intelligence")
+            or diagnostics.get("intelligence")
+            or {}
+        ),
+    )
+
+
+@router.get(
+    "/analysis/{execution_id}/framework-mapper",
+    response_model=FrameworkMapperResponse,
+)
+def get_framework_mapper(execution_id: str, repo=Depends(get_execution_repository)):
+    data = _load_execution(execution_id, repo)
+    return FrameworkMapperResponse(framework_mapper=data.get("framework_mapper") or {})
+
+
+@router.get(
+    "/analysis/{execution_id}/cli-output",
+    response_model=CliOutputResponse,
+)
+def get_cli_output(execution_id: str, repo=Depends(get_execution_repository)):
+    data = _load_execution(execution_id, repo)
+    return CliOutputResponse(cli_output=data.get("cli_output") or {})

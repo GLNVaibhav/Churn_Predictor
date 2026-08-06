@@ -91,7 +91,13 @@ def generate_decision_report(assessment: DecisionAssessment) -> str:
 
 
 def print_decision_report(assessment: DecisionAssessment) -> None:
-    print("\n" + generate_decision_report(assessment))
+    report = "\n" + generate_decision_report(assessment)
+    # The report content is ASCII-safe after replacement on Windows consoles
+    # configured with CP1252; assessment data itself remains unchanged.
+    try:
+        print(report)
+    except UnicodeEncodeError:
+        print(report.encode("ascii", "replace").decode("ascii"))
 
 
 # ══════════════════════════════════════════════════════════════════

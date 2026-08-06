@@ -1,386 +1,398 @@
+# coverage.py
+"""Coverage Intelligence
+
+Evaluates dataset coverage based on previous UCIF layers.
+Implements deterministic scoring without external dependencies.
 """
-universal_churn/coverage.py
-────────────────────────────
-Weighted feature coverage scoring and feature recovery.
 
-Phase 5 note — coverage.py is a pure MEASUREMENT engine
---------------------------------------------------------
-This module answers exactly one question: "how much of the expected
-feature schema is actually present, populated, and usable in this
-input?" It never decides whether a prediction is accepted, refused,
-or which model runs — that is routing.py's job, and routing.py's
-alone (see routing.route()). coverage.py does not import routing.py
-and has no notion of ModelType/RoutingDecision.
-
-Coverage bands (measurement only — NOT a routing decision)
-────────────────────────────────────────────────────────────
-Green  ≥ 85%  →  feature schema is well-populated
-Yellow 60–85% →  feature schema is partially populated
-Red    < 60%  →  feature schema is sparse
-
-What a band like 'Red' MEANS for prediction (full sector model vs.
-universal fallback vs. refusal) is entirely determined downstream by
-routing.route(), which also weighs Concept Confidence and the Quality
-Gate before deciding. A 'Red' coverage score on its own no longer
-implies refusal — see routing.py's _red_coverage_decision().
-"""
 from __future__ import annotations
 
-import pandas as pd
+from dataclasses import dataclass
+from typing import List, Tuple, Dict, Set, Any
 
-from .config import SECTOR_FEATURE_WEIGHTS
-from .concept_confidence import compute_concept_confidence, print_concept_confidence_report
-from .canonical_fields import CANONICAL_REGISTRY
-from .schema_resolution import resolve_schema
+from .business_meaning import BusinessMeaning
+from .context_validation import ContextValidation
+from .semantic_graph import (
+    SemanticKnowledgeGraph,
+    GraphNode,
+    BusinessEntity,
+)
+from .canonical_mapping import CanonicalMappingResult, CanonicalMapping
 
+# ---------------------------------------------------------------------------
+# Immutable dataclasses – public contract
+# ---------------------------------------------------------------------------
 
-# ── Feature recovery rules ────────────────────────────────────────
-# (target_feature, [source_columns_needed], derivation_fn)
-_DERIVATION_RULES: list[tuple[str, list[str], object]] = [
-    (
-        'Tenure_Months', ['Policy_Start_Date'],
-        lambda df: (
-            (pd.Timestamp.now() - pd.to_datetime(df['Policy_Start_Date'], errors='coerce'))
-            .dt.days / 30.44
-        ).round(1),
-    ),
-    (
-        'Age', ['Date_of_Birth'],
-        lambda df: (
-            (pd.Timestamp.now() - pd.to_datetime(df['Date_of_Birth'], errors='coerce'))
-            .dt.days / 365.25
-        ).round(0),
-    ),
-    (
-        'Days_Since_Last_Visit', ['Last_Visit_Date'],
-        lambda df: (
-            (pd.Timestamp.now() - pd.to_datetime(df['Last_Visit_Date'], errors='coerce'))
-            .dt.days
-        ).round(0),
-    ),
-    (
-        'DaySinceLastOrder', ['Last_Order_Date'],
-        lambda df: (
-            (pd.Timestamp.now() - pd.to_datetime(df['Last_Order_Date'], errors='coerce'))
-            .dt.days
-        ).round(0),
-    ),
-    (
-        'MonthlyCharges', ['AnnualPremium'],
-        lambda df: (df['AnnualPremium'] / 12).round(2),
-    ),
-    (
-        'Avg_Out_Of_Pocket_Cost', ['AnnualPremium'],
-        lambda df: (df['AnnualPremium'] / 12).round(2),
-    ),
-    (
-        'Visits_Last_Year', ['Visit_History'],
-        lambda df: pd.to_numeric(df['Visit_History'], errors='coerce').fillna(0),
-    ),
-]
+@dataclass(frozen=True)
+class CoverageMetric:
+    """A single coverage metric.
 
-
-def _attempt_feature_recovery(df: pd.DataFrame, sector: str) -> pd.DataFrame | None:
-    """
-    Try to derive missing features from known proxy columns before
-    routing to the universal model fallback.
-    Returns an enriched copy of df if at least one feature was recovered,
-    or None if nothing could be derived.
-    """
-    df_cols_lower = {c.lower().replace('_', ''): c for c in df.columns}
-    recovered     = df.copy()
-    any_recovered = False
-
-    for target_feat, sources, derive_fn in _DERIVATION_RULES:
-        target_lower = target_feat.lower().replace('_', '')
-        if target_lower in df_cols_lower:
-            continue
-
-        src_map = {}
-        for src in sources:
-            src_lower = src.lower().replace('_', '')
-            if src_lower in df_cols_lower:
-                src_map[src] = df_cols_lower[src_lower]
-            else:
-                src_map = {}
-                break
-        if not src_map:
-            continue
-
-        tmp = recovered.rename(columns={v: k for k, v in src_map.items()})
-        try:
-            recovered[target_feat] = derive_fn(tmp).values
-            print(f"  Recovered '{target_feat}' from {sources}")
-            any_recovered = True
-        except Exception as exc:
-            print(f"  Recovery of '{target_feat}' failed: {exc}")
-
-    return recovered if any_recovered else None
-
-
-# Public alias — sector_pipeline.py and other callers outside this module
-# import the public name; the leading-underscore name remains for any
-# internal call sites already using it.
-attempt_feature_recovery = _attempt_feature_recovery
-
-
-def compute_coverage_score(
-    df_input: pd.DataFrame,
-    sector: str,
-    mode: str = 'sector',
-    green_threshold: float = 0.85,
-    yellow_threshold: float = 0.60,
-    _suppress_print: bool = False,
-    recovered_features: list[str] | None = None,
-    raw_df: pd.DataFrame | None = None,
-) -> dict:
-    """
-    Compute weighted feature coverage score for the input CSV.
-
-    Coverage Score = Σ(weight_i × quality_i) / Σ(weight_i)
-
-    quality_i = 1  if column is present, <95% null, and non-constant
-    quality_i = 0  otherwise
-
-    Parameters
+    Attributes
     ----------
-    recovered_features : list[str], optional
-        Names of features that an upstream caller (e.g. sector_pipeline.py,
-        via attempt_feature_recovery()) derived from proxy columns BEFORE
-        this coverage score was computed. Purely informational — passing
-        this does not change the score, it is only echoed back in the
-        return dict so callers/reports can show which features were
-        reconstructed rather than natively present. Defaults to an empty
-        list when not supplied (fully backward compatible — omitting this
-        argument changes nothing about existing behaviour).
-    raw_df : pd.DataFrame, optional
-        The genuinely raw dataframe, used only for concept confidence.
-        When omitted, df_input is used for both coverage and concept
-        confidence so existing callers remain backward compatible.
-
-    Returns a dict with keys:
-        coverage_score      float   — the measurement itself
-        status               'Green' | 'Yellow' | 'Red'   — coverage BAND
-                              (a measurement label, not a routing decision)
-        coverage_band        same value as `status`, exposed under the
-                              forward-looking name used by routing.py /
-                              reporting.py's diagnostics (item 5 of the
-                              Phase 5 spec). Prefer this key in new code.
-        prediction_mode      DEPRECATED — 'Full' | 'Fallback' | 'Refused'.
-                              This is a decision-shaped label left over
-                              from before Phase 5 and is retained ONLY so
-                              older callers reading this exact key don't
-                              break. coverage.py does not act on it and
-                              routing.py does not read it — routing.route()
-                              derives its own decision from `status`,
-                              Concept Confidence, and the Quality Gate.
-                              Do not add new reads of this key; use
-                              `coverage_band` and let routing.py decide.
-        missing_critical     list  (weight ≥ 4 features that failed)
-        missing_high_impact  list  (weight = 3 features that failed)
-        missing_all          list  (all features that failed)
-        recovered_features   list  (echoed back from the `recovered_features`
-                              argument — measurement context only)
-        detail               list[dict]  per-feature breakdown
+    name: str – metric identifier (e.g., "concept_coverage").
+    score: float – normalized score in [0, 1].
+    reasoning: str – deterministic explanation of the score.
     """
-    weights      = SECTOR_FEATURE_WEIGHTS.get(sector, {c: 1 for c in df_input.columns})
-    total_weight = sum(weights.values())
 
-    def _strip(s: str) -> str:
-        return s.lower().replace('_', '').replace(' ', '')
+    name: str
+    score: float
+    reasoning: str
 
-    known_canonical_names = set(CANONICAL_REGISTRY.names())
 
-    def _resolved_canonical_map(df: pd.DataFrame) -> dict[str, list[str]]:
-        canonical_to_cols: dict[str, list[str]] = {}
-        for col in df.columns:
-            if col in known_canonical_names:
-                canonical_to_cols.setdefault(col, []).append(col)
-        _, resolutions = resolve_schema(df)
-        for resolution in resolutions:
-            if resolution.canonical_field:
-                canonical_to_cols.setdefault(resolution.canonical_field, []).append(
-                    resolution.raw_column
-                )
-        return canonical_to_cols
+@dataclass(frozen=True)
+class CoverageIssue:
+    """A detected quality issue.
 
-    def _weight_key_canonical_field(feat: str) -> str | None:
-        name, _method, _confidence = CANONICAL_REGISTRY.match_column(feat)
-        return name
+    Attributes
+    ----------
+    issue_type: str – e.g., "duplicate_mapping".
+    severity: str – one of "LOW", "MEDIUM", "HIGH", "INFO".
+    affected_items: Tuple[str, ...] – identifiers of items concerned.
+    reason: str – deterministic description of why it is an issue.
+    recommendation: str – suggested remediation.
+    """
 
-    stripped_to_original = {_strip(c): c for c in df_input.columns}
-    canonical_map = _resolved_canonical_map(df_input)
+    issue_type: str
+    severity: str
+    affected_items: Tuple[str, ...]
+    reason: str
+    recommendation: str
 
-    detail           = []
-    earned_weight    = 0.0
-    missing_all      = []
-    missing_critical = []
-    semantic_matches  = []
 
-    for feat, weight in weights.items():
-        orig_col = stripped_to_original.get(_strip(feat))
-        semantically_recovered = False
+@dataclass(frozen=True)
+class CoverageSummary:
+    """Aggregated coverage scores and readiness level."""
 
-        if orig_col is None:
-            target_canonical = _weight_key_canonical_field(feat)
-            candidates = canonical_map.get(target_canonical) if target_canonical else None
-            if candidates:
-                orig_col = candidates[0]
-                semantically_recovered = True
+    concept_coverage: float
+    entity_coverage: float
+    semantic_coverage: float
+    confidence_coverage: float
+    stability_coverage: float
+    overall_coverage: float
+    readiness: str
 
-        if orig_col is None:
-            quality, reason = 0, 'absent'
-        else:
-            col      = df_input[orig_col]
-            pct_null = col.isna().mean()
-            numeric  = pd.to_numeric(col, errors='coerce')
-            n_unique = numeric.dropna().nunique()
 
-            if pct_null >= 0.95:
-                quality, reason = 0, f'mostly null ({pct_null*100:.0f}%)'
-            elif n_unique <= 1:
-                quality, reason = 0, 'constant (no variance)'
-            else:
-                quality, reason = 1, 'OK'
-                if semantically_recovered:
-                    reason = f"OK — semantic match ('{feat}' <- '{orig_col}')"
-                    semantic_matches.append(feat)
+@dataclass(frozen=True)
+class CoverageAssessment:
+    """Detailed assessment – metrics and issues."""
 
-        earned_weight += weight * quality
-        detail.append({'feature': feat, 'weight': weight,
-                       'quality': quality, 'reason': reason,
-                       'semantically_recovered': semantically_recovered})
-        if quality == 0:
-            missing_all.append(feat)
-            if weight >= 4:
-                missing_critical.append(feat)
+    metrics: Tuple[CoverageMetric, ...]
+    issues: Tuple[CoverageIssue, ...]
 
-    coverage_score = earned_weight / total_weight if total_weight > 0 else 0.0
 
-    if coverage_score >= green_threshold:
-        status, prediction_mode = 'Green', 'Full'
-    elif coverage_score >= yellow_threshold:
-        status, prediction_mode = 'Yellow', 'Fallback'
+@dataclass(frozen=True)
+class CoverageResult:
+    """Full result returned by ``infer_coverage``."""
+
+    summary: CoverageSummary
+    assessment: CoverageAssessment
+
+# ---------------------------------------------------------------------------
+# Helper utilities – deterministic only
+# ---------------------------------------------------------------------------
+
+# Component weights (sum = 0.90). Penalty weight = 0.10.
+_WEIGHT_CONCEPT = 0.25
+_WEIGHT_ENTITY = 0.20
+_WEIGHT_SEMANTIC = 0.25
+_WEIGHT_CONFIDENCE = 0.20
+_WEIGHT_PENALTY = 0.10
+_TOTAL_WEIGHT = (
+    _WEIGHT_CONCEPT + _WEIGHT_ENTITY + _WEIGHT_SEMANTIC + _WEIGHT_CONFIDENCE + _WEIGHT_PENALTY
+)
+
+# Severity weight mapping – used for penalty calculation.
+_SEVERITY_WEIGHTS: Dict[str, float] = {
+    "INFO": 0.0,
+    "LOW": 0.1,
+    "MEDIUM": 0.3,
+    "HIGH": 0.6,
+}
+
+# ---------------------------------------------------------------------------
+# Concept coverage
+# ---------------------------------------------------------------------------
+
+def _concept_coverage(
+    bms: List[BusinessMeaning], cm: CanonicalMappingResult
+) -> Tuple[float, List[CoverageIssue], CoverageMetric]:
+    total = len(bms)
+    mapped = sum(1 for m in cm.mappings if m.confidence > 0.0)
+    unmapped = total - mapped
+    dup_counts: Dict[str, int] = {}
+    for m in cm.mappings:
+        dup_counts[m.chosen_concept.name] = dup_counts.get(m.chosen_concept.name, 0) + 1
+    duplicate = sum(1 for c, cnt in dup_counts.items() if cnt > 1)
+    conflict = 0
+    conflict_items: List[str] = []
+    if duplicate:
+        def infer_entity(bm: BusinessMeaning) -> str:
+            lowered = bm.primary_business_concept.lower()
+            for kw, ent in [
+                ("customer", "Customer"),
+                ("policy", "Policy"),
+                ("claim", "Claim"),
+                ("subscription", "Subscription"),
+                ("account", "Account"),
+                ("invoice", "Invoice"),
+                ("contract", "Contract"),
+            ]:
+                if kw in lowered:
+                    return ent
+            return "Other"
+        entity_map: Dict[str, Set[str]] = {}
+        for bm, mapping in zip(bms, cm.mappings):
+            ent = infer_entity(bm)
+            entity_map.setdefault(mapping.chosen_concept.name, set()).add(ent)
+        for canon, ents in entity_map.items():
+            if len(ents) > 1:
+                conflict += 1
+                conflict_items.append(canon)
+    concept_score = mapped / total if total else 0.0
+    reasoning = (
+        f"{mapped}/{total} concepts mapped ({concept_score:.2f}); "
+        f"{duplicate} duplicate, {conflict} conflicting."
+    )
+    metric = CoverageMetric(name="concept_coverage", score=concept_score, reasoning=reasoning)
+    issues: List[CoverageIssue] = []
+    if unmapped:
+        issues.append(
+            CoverageIssue(
+                issue_type="unmapped_concepts",
+                severity="MEDIUM",
+                affected_items=tuple(bm.primary_business_concept for bm, m in zip(bms, cm.mappings) if m.confidence == 0.0),
+                reason="Concepts without a confident canonical mapping.",
+                recommendation="Review ambiguous columns or enrich vocabulary.",
+            )
+        )
+    if duplicate:
+        issues.append(
+            CoverageIssue(
+                issue_type="duplicate_mappings",
+                severity="LOW",
+                affected_items=tuple(c for c, cnt in dup_counts.items() if cnt > 1),
+                reason="Same canonical concept used for multiple columns.",
+                recommendation="Ensure distinct concepts where appropriate.",
+            )
+        )
+    if conflict:
+        issues.append(
+            CoverageIssue(
+                issue_type="conflicting_mappings",
+                severity="HIGH",
+                affected_items=tuple(conflict_items),
+                reason="Duplicate canonical concept maps to different inferred entities.",
+                recommendation="Disambiguate by refining BusinessMeaning definitions.",
+            )
+        )
+    return concept_score, issues, metric
+
+# ---------------------------------------------------------------------------
+# Entity coverage
+# ---------------------------------------------------------------------------
+
+def _entity_coverage(graph: SemanticKnowledgeGraph) -> Tuple[float, List[CoverageIssue], CoverageMetric]:
+    total_entities = len(graph.entities)
+    if total_entities == 0:
+        return 0.0, [], CoverageMetric(name="entity_coverage", score=0.0, reasoning="No entities present.")
+    node_to_entity: Dict[int, BusinessEntity] = {}
+    for ent in graph.entities:
+        for nid in ent.node_ids:
+            node_to_entity[nid] = ent
+    participating_entities: Set[BusinessEntity] = set()
+    for e in graph.edges:
+        src_ent = node_to_entity.get(e.source_id)
+        tgt_ent = node_to_entity.get(e.target_id)
+        if src_ent:
+            participating_entities.add(src_ent)
+        if tgt_ent:
+            participating_entities.add(tgt_ent)
+    participating = len(participating_entities)
+    isolated = total_entities - participating
+    entity_score = participating / total_entities
+    reasoning = (
+        f"{participating}/{total_entities} entities have relationships ({entity_score:.2f}); "
+        f"{isolated} isolated."
+    )
+    metric = CoverageMetric(name="entity_coverage", score=entity_score, reasoning=reasoning)
+    issues: List[CoverageIssue] = []
+    if isolated:
+        issues.append(
+            CoverageIssue(
+                issue_type="isolated_entities",
+                severity="MEDIUM",
+                affected_items=tuple(ent.entity_type for ent in graph.entities if ent not in participating_entities),
+                reason="Entities without any graph edges.",
+                recommendation="Inspect entity definitions or add missing relationships.",
+            )
+        )
+    return entity_score, issues, metric
+
+# ---------------------------------------------------------------------------
+# Semantic coverage
+# ---------------------------------------------------------------------------
+
+def _dependency_coverage(graph: SemanticKnowledgeGraph) -> float:
+    """Structural dependency coverage.
+
+    Ratio of actual edges to the maximum possible undirected edges between nodes.
+    """
+    n = graph.node_count
+    if n <= 1:
+        return 1.0
+    max_possible = n * (n - 1) / 2
+    return graph.edge_count / max_possible
+
+
+def _semantic_coverage(graph: SemanticKnowledgeGraph) -> Tuple[float, List[CoverageIssue], CoverageMetric]:
+    max_components = max(1, graph.connected_components)
+    connectivity_score = 1.0 - (graph.connected_components - 1) / max_components
+    nodes_in_clusters = set()
+    for cl in graph.clusters:
+        nodes_in_clusters.update(cl.node_ids)
+    cluster_participation = len(nodes_in_clusters) / graph.node_count if graph.node_count else 0.0
+    dependency_score = _dependency_coverage(graph)
+    consistency_score = graph.consistency_score
+    semantic_score = (connectivity_score + cluster_participation + dependency_score + consistency_score) / 4.0
+    reasoning = (
+        f"Conn={connectivity_score:.2f}, ClustPart={cluster_participation:.2f}, Dep={dependency_score:.2f}, Cons={consistency_score:.2f} => {semantic_score:.2f}"
+    )
+    metric = CoverageMetric(name="semantic_coverage", score=semantic_score, reasoning=reasoning)
+    issues: List[CoverageIssue] = []
+    if graph.connected_components > 1:
+        issues.append(
+            CoverageIssue(
+                issue_type="disconnected_graph",
+                severity="LOW",
+                affected_items=tuple(),
+                reason="Graph has multiple connected components.",
+                recommendation="Consider adding missing semantic edges.",
+            )
+        )
+    if graph.consistency_score < 0.9:
+        issues.append(
+            CoverageIssue(
+                issue_type="graph_inconsistency",
+                severity="MEDIUM",
+                affected_items=tuple(),
+                reason="Low consistency score detected.",
+                recommendation="Review contradictory semantics.",
+            )
+        )
+    return semantic_score, issues, metric
+
+# ---------------------------------------------------------------------------
+# Confidence coverage
+# ---------------------------------------------------------------------------
+
+def _confidence_coverage(
+    bms: List[BusinessMeaning],
+    ctx: ContextValidation,
+    cm: CanonicalMappingResult,
+) -> Tuple[float, List[CoverageIssue], CoverageMetric]:
+    bm_conf = sum(bm.confidence for bm in bms) / len(bms) if bms else 0.0
+    cm_conf = cm.overall_confidence
+    ctx_conf = (ctx.domain_confidence + ctx.confidence_adjustments) / 2.0 if hasattr(ctx, "domain_confidence") else 0.0
+    confidence_score = (0.5 * bm_conf) + (0.25 * cm_conf) + (0.25 * ctx_conf)
+    reasoning = f"BM={bm_conf:.2f}, CM={cm_conf:.2f}, CTX={ctx_conf:.2f} => {confidence_score:.2f}"
+    metric = CoverageMetric(name="confidence_coverage", score=confidence_score, reasoning=reasoning)
+    issues: List[CoverageIssue] = []
+    if confidence_score < 0.6:
+        issues.append(
+            CoverageIssue(
+                issue_type="low_confidence",
+                severity="MEDIUM",
+                affected_items=tuple(),
+                reason="Overall confidence below acceptable threshold.",
+                recommendation="Investigate ambiguous BusinessMeanings or insufficient validation.",
+            )
+        )
+    return confidence_score, issues, metric
+
+# ---------------------------------------------------------------------------
+# Stability metric (balance across components)
+# ---------------------------------------------------------------------------
+
+def _stability_metric(scores: List[float]) -> Tuple[float, CoverageMetric]:
+    if not scores:
+        return 1.0, CoverageMetric(name="coverage_stability", score=1.0, reasoning="No components to evaluate.")
+    range_score = max(scores) - min(scores)
+    stability = 1.0 - range_score  # 1 = perfectly balanced, 0 = max imbalance
+    reasoning = f"Component score range={range_score:.2f}; stability={stability:.2f}"
+    metric = CoverageMetric(name="coverage_stability", score=stability, reasoning=reasoning)
+    return stability, metric
+
+# ---------------------------------------------------------------------------
+# Penalty calculation – based on detected issues
+# ---------------------------------------------------------------------------
+
+def _quality_penalty(issues: List[CoverageIssue]) -> float:
+    total_weight = sum(_SEVERITY_WEIGHTS.get(issue.severity, 0.0) for issue in issues)
+    max_possible = len(issues) * _SEVERITY_WEIGHTS["HIGH"] if issues else 1.0
+    normalized = total_weight / max_possible if max_possible else 0.0
+    return _WEIGHT_PENALTY * normalized
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+def infer_coverage(
+    business_meanings: List[BusinessMeaning],
+    context: ContextValidation,
+    semantic_graph: SemanticKnowledgeGraph,
+    canonical_mapping: CanonicalMappingResult,
+) -> CoverageResult:
+    """Compute deterministic coverage assessment.
+
+    Returns
+    -------
+    CoverageResult
+        Includes per‑component scores, detected issues, overall coverage, and readiness.
+    """
+    concept_score, concept_issues, concept_metric = _concept_coverage(business_meanings, canonical_mapping)
+    entity_score, entity_issues, entity_metric = _entity_coverage(semantic_graph)
+    semantic_score, semantic_issues, semantic_metric = _semantic_coverage(semantic_graph)
+    confidence_score, confidence_issues, confidence_metric = _confidence_coverage(
+        business_meanings, context, canonical_mapping
+    )
+    all_issues = concept_issues + entity_issues + semantic_issues + confidence_issues
+    weighted_sum = (
+        _WEIGHT_CONCEPT * concept_score
+        + _WEIGHT_ENTITY * entity_score
+        + _WEIGHT_SEMANTIC * semantic_score
+        + _WEIGHT_CONFIDENCE * confidence_score
+    )
+    penalty = _quality_penalty(all_issues)
+    # Normalize to allow a perfect dataset to reach 1.0
+    raw_overall = max(0.0, weighted_sum - penalty)
+    overall = min(1.0, raw_overall / (1.0 - _WEIGHT_PENALTY))
+    # Stability metric across the four primary scores
+    stability_score, stability_metric = _stability_metric([
+        concept_score,
+        entity_score,
+        semantic_score,
+        confidence_score,
+    ])
+    # Readiness thresholds (user‑specified)
+    if overall >= 0.92:
+        readiness = "READY"
+    elif overall >= 0.80:
+        readiness = "MOSTLY_READY"
+    elif overall >= 0.60:
+        readiness = "PARTIALLY_READY"
     else:
-        status, prediction_mode = 'Red', 'Refused'
-
-    missing_high_impact = [
-        f for f in missing_all
-        if f not in missing_critical and weights.get(f, 0) >= 3
-    ]
-
-    # ── Concept Confidence (Phase 4, additive) ──────────────────────
-    # Runs independently of the feature-weight scoring above and does
-    # NOT change coverage_score/status/prediction_mode in any way — it
-    # is attached to the return dict alongside them, per the Schema
-    # Intelligence Layer spec ("Add concept confidence alongside it.
-    # Do not replace existing coverage logic."). routing.py's
-    # CoverageResult.from_coverage_dict() reads this key when present
-    # and falls back to None if it's ever missing (e.g. older cached
-    # coverage dicts), so this is fully backward compatible.
-    try:
-        concept_source_df = raw_df if raw_df is not None else df_input
-        concept_confidence_report = compute_concept_confidence(concept_source_df, sector)
-        concept_confidence = concept_confidence_report.to_dict()
-    except Exception as exc:
-        # Never let a concept-confidence failure block coverage scoring
-        # or prediction — degrade to "unknown" instead.
-        concept_confidence = {
-            'sector': sector, 'per_concept': {}, 'overall_confidence': 0.0,
-            'reconstructable_concepts': 0, 'total_concepts': 0,
-            'concepts_reconstructable': False,
-            'error': f"concept confidence computation failed: {exc}",
-        }
-
-    if not _suppress_print:
-        _print_coverage_report(
-            coverage_score, status, prediction_mode, sector, mode,
-            weights, detail, missing_critical, missing_high_impact, missing_all,
-            concept_confidence, recovered_features, semantic_matches,
-        )
-        print_concept_confidence_report(concept_confidence)
-
-    return {
-        'coverage_score'      : round(coverage_score, 4),
-        'status'              : status,
-        'coverage_band'       : status,                 # forward-looking alias — see docstring
-        'prediction_mode'     : prediction_mode,         # DEPRECATED — measurement only, not a decision
-        'missing_critical'    : missing_critical,
-        'missing_high_impact' : missing_high_impact,
-        'missing_all'         : missing_all,
-        'recovered_features'  : list(recovered_features) if recovered_features else [],
-        'semantic_matches'    : semantic_matches,
-        'detail'              : detail,
-        'concept_confidence'  : concept_confidence,
-    }
-
-
-def _print_coverage_report(
-    coverage_score, status, prediction_mode, sector, mode,
-    weights, detail, missing_critical, missing_high_impact, missing_all,
-    concept_confidence=None, recovered_features=None, semantic_matches=None,
-) -> None:
-    sep   = '─' * 60
-    icons = {'Green': '✔', 'Yellow': '△', 'Red': '✖'}
-    print(f"\n{sep}")
-    print(f"  COVERAGE SCORE REPORT  [{mode.upper()} / {sector.upper()}]")
-    print(sep)
-    print(f"  Weighted coverage score : {coverage_score*100:.1f}%")
-    print(f"  Coverage band           : {icons[status]} {status}  (measurement only — "
-          f"no routing decision is made here)")
-    print(f"  Legacy band label       : {prediction_mode}  (deprecated, decision-shaped "
-          f"field kept only for backward compatibility — ignored by routing.py)")
-
-    if missing_critical:
-        print(f"\n  Missing critical features (weight ≥ 4):")
-        for f in missing_critical:
-            r = next(d['reason'] for d in detail if d['feature'] == f)
-            print(f"    [{weights[f]}]  {f}  ({r})")
-
-    if missing_high_impact:
-        print(f"\n  Missing high-impact features (weight = 3):")
-        for f in missing_high_impact:
-            r = next(d['reason'] for d in detail if d['feature'] == f)
-            print(f"    [{weights[f]}]  {f}  ({r})")
-
-    low_missing = [f for f in missing_all
-                   if f not in missing_critical and f not in missing_high_impact]
-    if low_missing:
-        print(f"\n  Lower-weight features missing or unusable:")
-        for f in low_missing:
-            r = next(d['reason'] for d in detail if d['feature'] == f)
-            print(f"    [{weights[f]}]  {f}  ({r})")
-
-    if recovered_features:
-        print(f"\n  Recovered features (derived from proxy columns upstream):")
-        for f in recovered_features:
-            print(f"    ~ {f}")
-
-    if semantic_matches:
-        print(f"\n  Semantically recovered features (matched via canonical field, not literal column name):")
-        for f in semantic_matches:
-            print(f"    ≈ {f}")
-
-    # ── Phase 4/5 (v5.2): informational only, no decisions here ────
-    # coverage.py measures FEATURE availability and stops there. It
-    # does not decide which model runs or whether a prediction is
-    # refused — that is routing.py's job (routing.py combines this
-    # coverage_score with Concept Confidence and the Quality Gate).
-    # This module cross-references reconstructed concepts for context
-    # only; it does not merge the two metrics into one number.
-    print(f"\n  This score measures FEATURE availability only. It does not, by "
-          f"itself, determine which model runs or whether a prediction is "
-          f"made — see the Concept Confidence report below and the "
-          f"Routing Decision for that.")
-    if concept_confidence and concept_confidence.get('per_concept'):
-        reconstructed = [
-            name for name, e in concept_confidence['per_concept'].items()
-            if e.get('reconstructable')
-        ]
-        print(
-            f"  Cross-reference — business concepts reconstructed for this "
-            f"input regardless of feature coverage: "
-            f"{reconstructed if reconstructed else 'None'}"
-        )
-
-    print(sep)
+        readiness = "NOT_READY"
+    summary = CoverageSummary(
+        concept_coverage=concept_score,
+        entity_coverage=entity_score,
+        semantic_coverage=semantic_score,
+        confidence_coverage=confidence_score,
+        stability_coverage=stability_score,
+        overall_coverage=overall,
+        readiness=readiness,
+    )
+    assessment = CoverageAssessment(
+        metrics=(concept_metric, entity_metric, semantic_metric, confidence_metric, stability_metric),
+        issues=tuple(all_issues),
+    )
+    return CoverageResult(summary=summary, assessment=assessment)

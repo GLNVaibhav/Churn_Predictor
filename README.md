@@ -1,6 +1,6 @@
 # 🚀 Universal Churn Intelligence Framework (UCIF)
 
-> **An Explainable Churn Intelligence Framework for Universal Customer Churn Analysis**
+> An Explainable Churn Intelligence Framework for Universal Customer Churn Analysis
 
 UCIF is a modular and explainable software framework that transforms raw customer datasets into transparent business diagnostic insights through intelligent schema understanding, adaptive model routing, explainable predictions, business reasoning, and decision support.
 
@@ -26,36 +26,34 @@ UCIF can be explored through three complementary interfaces, each serving a diff
 
 | Experience | Purpose | Recommended For |
 |------------|---------|-----------------|
-| 🖥️ **CLI (Reference Implementation)** | Complete Universal Churn Intelligence pipeline with every intelligence layer, report, and business diagnostic output | ⭐ **Recommended Experience** |
-| 💻 **Enterprise Platform** | Interactive Explainable Churn Intelligence Platform powered by FastAPI & Next.js | Enterprise UI, APIs, and workflow demonstration |
-| 🌟 **Official Landing Page** | Product overview, architecture, vision, and feature showcase | First-time visitors and project overview |
+| 🖥️ CLI (Reference Implementation) | Complete Universal Churn Intelligence pipeline with every intelligence layer, report, and business diagnostic output | ⭐ Recommended Experience |
+| 💻 Enterprise Platform | Interactive Explainable Churn Intelligence Platform powered by FastAPI and Next.js | Enterprise UI, APIs, and workflow demonstration |
+| 🌟 Official Landing Page | Product overview, architecture, vision, and feature showcase | First-time visitors and project overview |
 
 ---
 
-> ## ⭐ Recommended Experience
->
-> The **Command Line Interface (CLI)** is the **reference implementation** of the Universal Churn Intelligence Framework.
->
-> It demonstrates the complete intelligence pipeline exactly as designed, without the constraints of cloud deployment.
->
-> Through the CLI, you can experience:
->
-> - ✅ Automatic Industry Detection
-> - ✅ Universal Dataset Intelligence
-> - ✅ Coverage Intelligence
-> - ✅ Concept Confidence Analysis
-> - ✅ Data Quality Validation
-> - ✅ Adaptive Routing Engine
-> - ✅ Universal & Sector Prediction
-> - ✅ Prediction Quality Report
-> - ✅ Explainable AI
-> - ✅ Business Reasoning
-> - ✅ Business Diagnostic Insights
-> - ✅ Comprehensive Report Generation
->
-> **For the most complete UCIF experience, we recommend running the framework locally using the CLI.**
->
-> The Enterprise Web Platform showcases these capabilities through an interactive interface and REST APIs, while the Official Landing Page provides an overview of the platform, architecture, and vision.
+## ⭐ Recommended Experience
+
+The CLI is the reference implementation of UCIF.
+
+It demonstrates the complete intelligence pipeline exactly as designed, without the constraints of cloud deployment.
+
+Through the CLI, you can experience:
+
+- ✅ Automatic Industry Detection
+- ✅ Universal Dataset Intelligence
+- ✅ Coverage Intelligence
+- ✅ Concept Confidence Analysis
+- ✅ Data Quality Validation
+- ✅ Adaptive Routing Engine
+- ✅ Universal and Sector Prediction
+- ✅ Prediction Quality Reporting
+- ✅ Explainable AI
+- ✅ Business Reasoning
+- ✅ Business Diagnostic Insights
+- ✅ Comprehensive Report Generation
+
+For the most complete UCIF experience, run the framework locally using the CLI.
 
 ---
 
@@ -66,45 +64,43 @@ UCIF can be explored through three complementary interfaces, each serving a diff
 | 🌟 Official Landing Page | https://churn-prediction-gray-delta.vercel.app/ |
 | 💻 Enterprise Platform | https://churnframework.vercel.app/ |
 
-> **Note:** The Enterprise Platform demonstrates the frontend experience with FastAPI integration. Some advanced framework capabilities—such as local artifact generation, full execution persistence, and complete CLI reporting—are available only when running UCIF locally.
+> The Enterprise Platform demonstrates the frontend experience with FastAPI integration. Some advanced framework capabilities, such as local artifact generation and full CLI-style reporting, are available when running UCIF locally.
 
 ---
 
 ## 🎯 Vision
 
-The Universal Churn Intelligence Framework (UCIF) is designed to go beyond traditional churn prediction by combining **semantic intelligence, business reasoning, explainability, and decision support** within a unified software architecture.
+The Universal Churn Intelligence Framework (UCIF) is designed to go beyond traditional churn prediction by combining semantic intelligence, business reasoning, explainability, and decision support within a unified architecture.
 
 Instead of only predicting whether a customer will churn, UCIF answers:
 
-- **Can this dataset be trusted?**
-- **Is prediction technically reliable?**
-- **Which prediction strategy should be used?**
-- **Why is the customer likely to churn?**
-- **What analytical evidence supports this prediction?**
+- Can this dataset be trusted?
+- Is prediction technically reliable?
+- Which prediction strategy should be used?
+- Why is the customer likely to churn?
+- What analytical evidence supports this prediction?
 
-This transforms traditional predictive analytics into an **Explainable Churn Intelligence Framework** that supports evidence-based business analysis.
+This transforms traditional predictive analytics into an Explainable Churn Intelligence Framework.
 
 ---
 
 # 🧭 Diagnostics Before Decisions
 
-A fundamental design principle of UCIF is **Diagnostics Before Decisions**.
+A fundamental design principle of UCIF is Diagnostics Before Decisions.
 
-The framework is intentionally designed as an **Explainable Decision Support Framework**, not an autonomous decision-making platform.
+The framework is intentionally designed as an Explainable Decision Support Framework, not an autonomous decision-making platform.
 
-Rather than prescribing business decisions, UCIF produces semantic interpretations, coverage assessments, data quality evaluations, business reasoning, prediction explanations, and business diagnostic insights that enable analysts and decision-makers to understand customer churn behavior with greater transparency.
-
-Organizational decisions remain under human control while being supported by explainable analytical evidence.
+Rather than prescribing business decisions, UCIF produces semantic interpretations, coverage assessments, data quality evaluations, business reasoning, prediction explanations, and business diagnostic insights that help analysts and decision-makers understand churn behavior with greater transparency.
 
 ---
 
 # 📖 What is UCIF?
 
-The **Universal Churn Intelligence Framework (UCIF)** is a modular and explainable software framework that enables organizations to analyze customer churn across multiple industries using a unified analytical architecture.
+The Universal Churn Intelligence Framework (UCIF) is a modular and explainable software framework that enables organizations to analyze customer churn across multiple industries using a unified analytical architecture.
 
 Unlike conventional churn prediction systems that only generate a binary prediction, UCIF performs a complete end-to-end intelligence pipeline—from understanding heterogeneous customer datasets to producing transparent business diagnostic insights.
 
-UCIF is designed around the philosophy that **prediction alone is not enough**. Every prediction should be measurable, explainable, trustworthy, and supported by analytical evidence.
+UCIF is designed around the philosophy that prediction alone is not enough. Every prediction should be measurable, explainable, trustworthy, and supported by analytical evidence.
 
 The framework combines machine learning, adaptive routing, business reasoning, explainable AI, and business diagnostic insights into a unified platform that can be deployed through a CLI, REST APIs, or an enterprise web application.
 
@@ -114,7 +110,7 @@ The framework combines machine learning, adaptive routing, business reasoning, e
 
 Traditional churn prediction systems generally answer one question:
 
-> **"Will this customer churn?"**
+> Will this customer churn?
 
 UCIF answers several critical business questions before making a prediction:
 
@@ -127,13 +123,30 @@ UCIF answers several critical business questions before making a prediction:
 - ✅ What business evidence supports it?
 - ✅ What diagnostic insights should analysts investigate?
 
-This transforms traditional predictive analytics into an **Explainable Churn Intelligence Framework**.
+---
+
+## 🧠 Adaptive Business Intelligence Layer (ABIL)
+
+The Adaptive Business Intelligence Layer (ABIL) is the decision-support layer that turns prediction outputs into transparent business evidence.
+
+ABIL does not replace the prediction model or alter routing decisions. Instead, it enriches the analysis by:
+
+- generating structured business evidence from detected concepts and dataset interpretation
+- connecting model output to explainable business findings
+- supporting decision-readiness and diagnostic interpretation
+- producing evidence-backed reasoning used in UCIF reports
+
+In short, ABIL helps answer a crucial question:
+
+> What business story supports this prediction?
+
+This layer is part of the framework’s broader philosophy of Diagnostics Before Decisions, ensuring that each prediction is supported by interpretable and actionable evidence.
 
 ---
 
 # 🚀 Key Capabilities
 
-### 🧠 Universal Dataset Intelligence
+## 🧠 Universal Dataset Intelligence
 
 Automatically understands datasets from multiple industries without requiring fixed column names.
 
@@ -147,11 +160,9 @@ Supported capabilities include:
 
 ---
 
-### 📊 Coverage Intelligence
+## 📊 Coverage Intelligence
 
 Measures how much useful business information exists within a dataset.
-
-Instead of simply counting columns, UCIF evaluates whether critical business concepts are sufficiently represented before allowing prediction.
 
 Outputs include:
 
@@ -163,7 +174,7 @@ Outputs include:
 
 ---
 
-### 🎯 Concept Confidence
+## 🎯 Concept Confidence
 
 Determines whether important business concepts can actually be reconstructed from the available data.
 
@@ -175,15 +186,13 @@ Examples include:
 - Support Friction
 - Recurring Commitment
 
-This ensures predictions remain business-aware rather than purely statistical.
-
 ---
 
-### 🛡 Quality Intelligence
+## 🛡 Data Quality Intelligence
 
 Performs automated validation before prediction.
 
-Quality checks include:
+Checks include:
 
 - Target Leakage Detection
 - Duplicate Detection
@@ -191,11 +200,9 @@ Quality checks include:
 - Column Validation
 - Data Consistency Checks
 
-Only high-quality datasets proceed to prediction.
-
 ---
 
-### 🔀 Adaptive Model Routing
+## 🔀 Adaptive Model Routing
 
 UCIF intelligently selects the most appropriate prediction strategy.
 
@@ -203,13 +210,11 @@ Depending on dataset quality and business context, the framework automatically c
 
 - Full Sector Model
 - Universal Model
-- Refusal (when prediction would be unreliable)
-
-This prevents low-quality predictions from reaching business users.
+- Refusal when prediction would be unreliable
 
 ---
 
-### 🤖 Explainable AI
+## 🤖 Explainable AI
 
 Every prediction includes detailed explanations describing:
 
@@ -220,11 +225,9 @@ Every prediction includes detailed explanations describing:
 - Overall customer health
 - Business risk level
 
-Predictions are accompanied by natural-language reasoning instead of opaque model outputs.
-
 ---
 
-### 💼 Business Reasoning
+## 💼 Business Reasoning
 
 Machine learning predictions are translated into business insights.
 
@@ -236,13 +239,11 @@ UCIF identifies:
 - Customer risk indicators
 - Operational recommendations
 
-This bridges the gap between data science and business decision-making.
-
 ---
 
-### 🏢 Business Diagnostic Insights
+## 🏢 Business Diagnostic Insights
 
-The final stage of the framework synthesizes prediction outcomes, business reasoning, coverage assessment, and data quality evaluation into evidence-based business diagnostic insights.
+The final stage synthesizes prediction outcomes, business reasoning, coverage assessment, and data quality evaluation into evidence-based business diagnostics.
 
 Outputs include:
 
@@ -254,8 +255,6 @@ Outputs include:
 - Prediction Explanations
 - Supporting Business Evidence
 - Investigation Priorities
-
-Designed to support business analysts and organizational stakeholders by providing transparent analytical evidence while preserving human decision authority.
 
 ---
 
@@ -274,8 +273,6 @@ UCIF currently supports multiple business domains through industry-specific inte
 | 🏭 Manufacturing | 🚧 Planned |
 | ☁ SaaS | 🚧 In Progress |
 
-The architecture is extensible, allowing additional industries to be integrated without modifying the core framework.
-
 ---
 
 # ✨ Core Highlights
@@ -291,66 +288,48 @@ The architecture is extensible, allowing additional industries to be integrated 
 - CLI support
 - Modular architecture
 - Multi-industry design
-- Production-ready deployment architecture
+- Deployment-ready architecture
 
 ---
 
 # 🏗️ System Architecture
 
-UCIF follows a modular, layered architecture that separates business intelligence, backend orchestration, APIs, and the enterprise user interface.
-
-Each layer has a single responsibility, making the platform scalable, maintainable, and extensible for future AI domains such as Fraud Detection, Customer Lifetime Value (CLV), Risk Assessment, and Recommendation Systems.
-
----
-
-# 🌐 High-Level Platform Architecture
+UCIF follows a modular layered architecture that separates business intelligence, backend orchestration, APIs, and the enterprise user interface.
 
 ```text
-                        ┌────────────────────────────┐
-                        │      Enterprise User       │
-                        │  Dashboard • Workspace     │
-                        │ Reports • Monitoring       │
-                        └──────────────┬─────────────┘
-                                       │
-                                       ▼
-                         Next.js Enterprise Frontend
-                                       │
-                                       ▼
-                            FastAPI REST Backend
-                                       │
-                                       ▼
-                            AnalysisService Layer
-                                       │
-                                       ▼
-                             Execution Manager
-                                       │
-                                       ▼
-                          Framework Adapter (ACL)
-                                       │
-                                       ▼
-                Universal Churn Intelligence Framework
-                                       │
-        ┌──────────────┬──────────────┬──────────────┐
-        ▼              ▼              ▼              ▼
- Coverage       Quality Gate     Routing Engine   Prediction
-        │              │              │              │
-        └──────────────┴──────────────┴──────────────┘
-                                       │
-                                       ▼
-                            Business Reasoning
-                                       │
-                                       ▼
-                         Business Diagnostic Insights
-                                       │
-                                       ▼
-                          Reports & Execution Result
+Enterprise User
+      │
+      ▼
+Next.js Enterprise Frontend
+      │
+      ▼
+FastAPI REST Backend
+      │
+      ▼
+AnalysisService Layer
+      │
+      ▼
+Execution Manager
+      │
+      ▼
+Framework Adapter (ACL)
+      │
+      ▼
+Universal Churn Intelligence Framework
+      │
+      ├── Semantic Intelligence
+      ├── Coverage Intelligence
+      ├── Quality Gate
+      ├── Routing Engine
+      ├── Prediction Engine
+      └── Business Reasoning
 ```
 
 ---
 
 # 🧠 Universal Churn Intelligence Framework
 
-The framework itself is completely independent of the backend.
+The framework itself is independent of the backend and serves as the core intelligence engine of the system.
 
 ```text
 Input Dataset
@@ -359,10 +338,10 @@ Input Dataset
 Dataset Profiling
       │
       ▼
-Schema Resolution
+Semantic Understanding
       │
       ▼
-Feature Engineering
+Canonical Mapping
       │
       ▼
 Coverage Intelligence
@@ -439,8 +418,6 @@ REST API Response
 - Report delivery
 - API contracts
 
-The backend intentionally avoids implementing business intelligence. All prediction logic remains inside the Universal Churn Intelligence Framework.
-
 ---
 
 # 🎨 Frontend Architecture
@@ -465,8 +442,6 @@ Routing Prediction Reports
 Reasoning Diagnostics Monitoring
 ```
 
-The frontend follows a **single execution model**, where one analysis powers the entire workspace.
-
 ---
 
 # 🔄 End-to-End Execution Flow
@@ -481,7 +456,7 @@ Upload Wizard
 Dataset Validation
       │
       ▼
-Industry Detection
+Semantic Intelligence
       │
       ▼
 Coverage Intelligence
@@ -516,16 +491,16 @@ Interactive Workspace
 # 🧩 Project Structure
 
 ```text
-Churn_Predictor/
+Churn_Analysis/
 │
-├── backend/                 # FastAPI backend & orchestration
+├── backend/                 # FastAPI backend and orchestration
 ├── frontend/                # Next.js enterprise application
 ├── universal_churn/         # Universal Churn Intelligence Framework
 ├── knowledge/               # Business knowledge base
 ├── tests/                   # Automated tests
-├── scripts/                 # Utility & deployment scripts
+├── scripts/                 # Utility and deployment scripts
 ├── docs/                    # Documentation
-├── outputs/                 # Generated reports & predictions
+├── outputs/                 # Generated reports and predictions
 ├── data/                    # Sample datasets
 │
 ├── main.py                  # CLI entry point
@@ -540,289 +515,13 @@ Churn_Predictor/
 
 UCIF is built around several core engineering principles:
 
-- **Modular Design** — Independent framework, backend, and frontend layers.
-- **Separation of Concerns** — Business intelligence remains inside the framework; orchestration stays in the backend.
-- **Extensibility** — New industries and AI domains can be added without redesigning the architecture.
-- **Explainability** — Every prediction is accompanied by business reasoning and supporting evidence.
-- **Decision Support** — UCIF provides explainable analytical evidence that supports human decision-making rather than replacing it.
-- **Enterprise Readiness** — REST APIs, modern frontend, deployment support, and scalable architecture.
-- **Framework Independence** — The `universal_churn` engine can be consumed via CLI, FastAPI, or future integrations without modification.
-
----
-
----
-
-# ✨ Platform Features
-
-The Universal Churn Intelligence Framework (UCIF) combines machine learning, business intelligence, explainability, and decision support into a unified analytical framework.
-
-Each module is designed to solve a specific challenge in the customer churn prediction lifecycle while working seamlessly as part of a larger explainable churn intelligence ecosystem.
-
----
-
-# 🧠 Universal Dataset Intelligence
-
-UCIF automatically understands customer datasets originating from different industries without requiring fixed schemas or predefined column names.
-
-### Capabilities
-
-- Intelligent schema profiling
-- Canonical field resolution
-- Semantic column matching
-- Feature normalization
-- Dataset understanding
-- Missing feature detection
-
-**Supported Input**
-
-- CSV
-- Business datasets
-- Cross-industry schemas
-
----
-
-# 📊 Coverage Intelligence
-
-Coverage Intelligence measures how well a dataset represents the business concepts required for reliable churn prediction.
-
-Instead of simply checking whether columns exist, UCIF evaluates the usefulness and completeness of business information.
-
-### Outputs
-
-- Coverage Score
-- Coverage Band
-- Missing Critical Features
-- Semantic Feature Recovery
-- Coverage Explanation
-- Dataset Readiness
-
----
-
-# 🎯 Concept Confidence Engine
-
-Business concepts are reconstructed even when datasets contain different naming conventions.
-
-Examples include:
-
-- Customer Loyalty
-- Engagement Level
-- Satisfaction Signals
-- Support Friction
-- Recurring Commitment
-
-Each concept receives an independent confidence score indicating how reliably it can be reconstructed.
-
----
-
-# 🛡 Data Quality Intelligence
-
-Before any prediction is made, UCIF performs extensive quality validation to ensure trustworthy results.
-
-### Validation Checks
-
-- Target Leakage Detection
-- Duplicate Detection
-- Missing Value Analysis
-- Feature Validation
-- Schema Consistency
-- Prediction Readiness
-
-Only datasets that satisfy quality requirements proceed to prediction.
-
----
-
-# 🔀 Adaptive Routing Engine
-
-UCIF dynamically determines the most appropriate prediction strategy.
-
-Instead of forcing every dataset through a single model, the routing engine intelligently selects the best execution path.
-
-### Routing Strategies
-
-- Full Sector Model
-- Universal Model
-- Prediction Refusal
-
-Routing decisions are based on:
-
-- Coverage Score
-- Concept Confidence
-- Data Quality
-- Prediction Reliability
-
----
-
-# 🤖 Prediction Engine
-
-UCIF supports multiple prediction strategies while maintaining a unified execution pipeline.
-
-### Prediction Modes
-
-| Mode | Description |
-|------|-------------|
-| **Auto** | Automatically selects the optimal prediction strategy |
-| **Sector** | Executes an industry-specific prediction model |
-| **Universal** | Uses the universal fallback prediction model |
-
-Generated outputs include:
-
-- Churn Probability
-- Prediction Labels
-- Risk Categories
-- Prediction Confidence
-- Risk Distribution
-
----
-
-# 💡 Explainable AI
-
-Predictions are accompanied by natural-language explanations that make model outputs understandable for both technical and business users.
-
-Each explanation includes:
-
-- Prediction Summary
-- Supporting Evidence
-- Strongest Business Signals
-- Weakest Business Signals
-- Missing Evidence
-- Overall Confidence
-
----
-
-# 💼 Business Reasoning Engine
-
-Raw predictions are transformed into meaningful business intelligence.
-
-The reasoning engine identifies:
-
-- Business Findings
-- Customer Risk Indicators
-- Business Strengths
-- Business Weaknesses
-- Customer Health
-- Operational Recommendations
-
-This bridges the gap between machine learning and business decision-making.
-
----
-
-# 📊 Business Diagnostic Insights
-
-The final layer synthesizes technical outputs into transparent business diagnostics that support analysts and decision-makers.
-
-Outputs include:
-
-- Business Diagnostic Report
-- Business Confidence Indicators
-- Technical Confidence
-- Overall Analytical Confidence
-- Evidence Strength
-- Supporting Business Evidence
-- Investigation Priorities
-
-Rather than prescribing decisions, UCIF provides explainable analytical evidence that supports informed business decision-making.
-
----
-
-# 📄 Intelligent Reporting
-
-UCIF automatically generates structured reports throughout the prediction pipeline.
-
-Available reports include:
-
-- Coverage Score Report
-- Concept Confidence Report
-- Data Quality Report
-- Routing Decision Report
-- Prediction Quality Report
-- Prediction Explanation Report
-- Business Diagnostic Report
-- Execution Summary
-
-Reports are available through:
-
-- Command Line Interface (CLI)
-- REST APIs
-- Enterprise Web Platform
-
----
-
-# 🌐 Enterprise Web Platform
-
-UCIF includes a modern enterprise dashboard built using **Next.js**, providing an intuitive interface for end-to-end churn analysis.
-
-Key modules include:
-
-- Mission Control Dashboard
-- Upload Wizard
-- Analysis Workspace
-- Pipeline Visualization
-- Coverage Intelligence
-- Prediction Analytics
-- Business Reasoning
-- Business Diagnostic Insights
-- Reports
-- Monitoring
-- Knowledge Base
-- Settings
-
----
-
-# ⚡ FastAPI Backend
-
-The backend exposes UCIF capabilities through REST APIs while maintaining a clean separation between orchestration and business intelligence.
-
-Features include:
-
-- Analysis Management
-- Dataset Upload
-- Execution Tracking
-- Report Retrieval
-- Health Monitoring
-- Framework Metadata
-- Prediction APIs
-
----
-
-# 💻 Command Line Interface (CLI)
-
-UCIF can also be executed entirely from the terminal.
-
-Example:
-
-```bash
-python main.py --mode auto --input customer_dataset.csv --report
-```
-
-The CLI provides detailed execution insights including:
-
-- Industry Detection
-- Coverage Intelligence
-- Concept Confidence
-- Data Quality
-- Adaptive Routing
-- Prediction Results
-- Business Reasoning
-- Business Diagnostic Report
-
----
-
-# 🔬 Extensible Framework
-
-UCIF has been designed as a modular intelligence framework.
-
-New domains can be added without redesigning the architecture.
-
-Future extensions include:
-
-- Fraud Detection
-- Customer Lifetime Value (CLV)
-- Credit Risk Assessment
-- Demand Forecasting
-- Recommendation Systems
-- Customer Segmentation
-
-The framework architecture remains reusable across multiple AI-powered analytical domains.
+- Modular Design — Independent framework, backend, and frontend layers.
+- Separation of Concerns — Business intelligence remains inside the framework; orchestration stays in the backend.
+- Extensibility — New industries and AI domains can be added without redesigning the architecture.
+- Explainability — Every prediction is accompanied by business reasoning and supporting evidence.
+- Decision Support — UCIF provides explainable analytical evidence that supports human decision-making rather than replacing it.
+- Enterprise Readiness — REST APIs, modern frontend, deployment support, and scalable architecture.
+- Framework Independence — The universal_churn engine can be consumed via CLI, FastAPI, or future integrations without modification.
 
 ---
 
@@ -830,9 +529,7 @@ The framework architecture remains reusable across multiple AI-powered analytica
 
 There are two ways to experience UCIF.
 
----
-
-# 🌐 Option 1 — Use UCIF Online (Recommended)
+## 🌐 Option 1 — Use UCIF Online
 
 No installation required.
 
@@ -845,7 +542,7 @@ Simply upload a supported dataset and start exploring the complete Explainable C
 
 ---
 
-# 💻 Option 2 — Run UCIF Locally
+## 💻 Option 2 — Run UCIF Locally
 
 Clone the repository:
 
@@ -880,13 +577,13 @@ The local deployment is intended for contributors, development, debugging, resea
 
 # 📜 License
 
-This project is licensed under the **MIT License**.
+This project is licensed under the MIT License.
 
 ---
 
 # 👨‍💻 Author
 
-**Gollamudi Lakshmi Narasimha Vaibhav**
+Gollamudi Lakshmi Narasimha Vaibhav
 
 Computer Science Engineering Student
 
@@ -909,5 +606,184 @@ Contributions, suggestions, and feedback are always welcome.
 
 ---
 
-> **Universal Churn Intelligence Framework (UCIF)**  
-> *An Explainable Churn Intelligence Framework for Universal Customer Churn Analysis*
+> Universal Churn Intelligence Framework (UCIF)
+> An Explainable Churn Intelligence Framework for Universal Customer Churn Analysis
+
+### Production API
+
+The deployed frontend connects through a same-origin proxy to:
+
+```text
+https://churn-framework-api.vercel.app
+```
+
+Important public endpoints:
+
+- `GET /api/v1/health`
+- `GET /api/v1/framework`
+- `POST /api/v1/upload`
+- `POST /api/v1/analyze`
+- `GET /api/v1/executions`
+- `GET /api/v1/analysis/{execution_id}`
+- `GET /api/v1/analysis/{execution_id}/pipeline`
+- `GET /api/v1/analysis/{execution_id}/predictions`
+- `GET /api/v1/analysis/{execution_id}/reports`
+- `GET /api/v1/analysis/{execution_id}/decision`
+- `GET /api/v1/analysis/{execution_id}/diagnostics`
+- `GET /api/v1/analysis/{execution_id}/semantic-intelligence`
+- `GET /api/v1/analysis/{execution_id}/framework-mapper`
+- `GET /api/v1/analysis/{execution_id}/cli-output`
+
+Note: the production API is contract-compatible and lightweight because Vercel serverless cannot package the full local Python ML runtime. The full `universal_churn` execution remains available locally through the FastAPI backend and CLI.
+
+## End-to-End Flow
+
+```text
+CSV Upload
+   |
+   v
+Frontend Upload Wizard
+   |
+   v
+API Upload Contract
+   |
+   v
+Dataset Profiling + Sector Detection
+   |
+   v
+Analyze Request
+   |
+   v
+Framework Mapper Boundary
+   |
+   v
+Semantic Intelligence
+   |
+   v
+Coverage + Concept Confidence
+   |
+   v
+Quality Validation
+   |
+   v
+Adaptive Routing
+   |
+   v
+Prediction
+   |
+   v
+Explanation + Decision Intelligence
+   |
+   v
+CLI Output + Reports + Workspace Views
+```
+
+## Project Structure
+
+```text
+.
+|-- main.py                         # CLI entry point
+|-- api/                            # Lightweight Vercel API contract service
+|-- backend/                        # Full FastAPI orchestration backend
+|   |-- api/                        # Routers, schemas, app factory
+|   |-- adapters/                   # FrameworkAdapter boundary
+|   |-- contracts/                  # Stable API DTOs
+|   |-- mappers/                    # FrameworkMapper and platform enrichment
+|   |-- runtime/                    # Execution manager and repository
+|   |-- services/                   # Upload, analysis, report services
+|   `-- tests/                      # Backend contract and service tests
+|-- frontend/                       # Next.js SaaS console
+|   |-- src/app/                    # Routes and API proxy
+|   |-- src/components/             # Layout, workspace, charts, reports
+|   `-- src/lib/                    # API clients, hooks, navigation, types
+|-- universal_churn/                # Core UCIF intelligence framework
+|-- knowledge/                      # Sector knowledge packs
+|-- tests/                          # Framework tests and golden datasets
+|-- data/                           # Local uploads and run records
+|-- outputs/                        # Local predictions, reports, model artifacts
+|-- publication/                    # Manuscript and report artifacts
+|-- PROJECT_OUTLINE.md              # Detailed architecture outline
+`-- vercel.backend.json             # Vercel API deployment config
+```
+
+## Quick Start
+
+### Run the full local framework
+
+```powershell
+python main.py --input tests/golden_telecom.csv --mode auto --explain
+```
+
+### Run the full local API
+
+```powershell
+uvicorn backend.api.app:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Run the frontend
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend dev server runs on:
+
+```text
+http://localhost:5000
+```
+
+By default, local frontend requests use `NEXT_PUBLIC_API_URL=http://localhost:8000` or the same-origin proxy. In production, the frontend project uses `BACKEND_URL=https://churn-framework-api.vercel.app`.
+
+## Testing
+
+Backend and contract tests:
+
+```powershell
+pytest backend/tests
+```
+
+Focused validation used during the latest integration pass:
+
+```powershell
+pytest backend/tests/test_services.py backend/tests/test_framework_adapter.py backend/tests/test_contracts.py backend/tests/test_framework_mapper.py -q
+```
+
+Frontend checks:
+
+```powershell
+cd frontend
+npm run lint
+npx tsc --noEmit --incremental false
+npm run build
+```
+
+## Design Principles
+
+- Diagnostics before decisions.
+- Keep framework logic independent from API and UI concerns.
+- Use `FrameworkAdapter` as the only backend boundary into `universal_churn`.
+- Use `FrameworkMapper` to produce stable public API contracts.
+- Keep frontend rendering contract-driven; do not reimplement framework logic in React.
+- Prefer explainable refusal over unreliable prediction.
+- Preserve human decision authority.
+
+## License
+
+This project is licensed under the MIT License. See `LICENSE` for details.
+
+## Author
+
+Gollamudi Lakshmi Narasimha Vaibhav
+
+Computer Science Engineering Student
+
+Focus areas:
+
+- Explainable AI
+- Software architecture
+- Machine learning
+- Business intelligence
+- Customer analytics
+- Enterprise AI systems

@@ -1,0 +1,1 @@
+entities: [Customer, Account, Branch, Loan, Deposit, Product]

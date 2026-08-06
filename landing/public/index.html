@@ -1,0 +1,2122 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Universal Churn Intelligence Framework - Frontend API Mapper Architecture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg: #07080f;
+      --bg-2: #0c0e1a;
+      --cyan: #22d3ee;
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --red: #ef4444;
+    }
+
+    * {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 80px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .gradient-bg {
+      background:
+        radial-gradient(ellipse at 20% 30%, rgba(34, 211, 238, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(168, 85, 247, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 100%, rgba(236, 72, 153, 0.08) 0%, transparent 50%);
+      animation: gradientShift 18s ease infinite;
+    }
+
+    @keyframes gradientShift {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.7;
+      }
+    }
+
+    .grid-pattern {
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+    }
+
+    .glass {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.3s ease;
+    }
+
+    .glass:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(34, 211, 238, 0.3);
+    }
+
+    .nav-glass {
+      background: rgba(7, 8, 15, 0.75);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .glow-text {
+      background: linear-gradient(135deg, #22d3ee 0%, #a855f7 50%, #ec4899 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-size: 200% 200%;
+      animation: glowShift 4s ease infinite;
+    }
+
+    @keyframes glowShift {
+
+      0%,
+      100% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      }
+
+      70% {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+      }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .card-hover {
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card-hover:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px rgba(34, 211, 238, 0.12);
+      border-color: rgba(34, 211, 238, 0.4);
+    }
+
+    .btn-shine {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-shine::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transition: left 0.5s;
+    }
+
+    .btn-shine:hover::before {
+      left: 100%;
+    }
+
+    .nav-link {
+      position: relative;
+      transition: color 0.2s ease;
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #22d3ee, #a855f7);
+      transition: all 0.3s ease;
+      transform: translateX(-50%);
+      border-radius: 2px;
+    }
+
+    .nav-link:hover {
+      color: #fff;
+    }
+
+    .nav-link.active {
+      color: #22d3ee;
+    }
+
+    .nav-link.active::after {
+      width: 100%;
+    }
+
+    .mobile-menu {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease;
+    }
+
+    .mobile-menu.open {
+      max-height: 700px;
+    }
+
+    .code-block {
+      background: #0a0d16;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .code-keyword {
+      color: #ff7b72;
+    }
+
+    .code-string {
+      color: #a5d6ff;
+    }
+
+    .code-function {
+      color: #79c0ff;
+    }
+
+    .code-comment {
+      color: #8b949e;
+      font-style: italic;
+    }
+
+    .code-number {
+      color: #ffa657;
+    }
+
+    .pipeline-node {
+      position: relative;
+      padding: 1rem 1.25rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .pipeline-node:hover {
+      background: rgba(34, 211, 238, 0.05);
+      border-color: rgba(34, 211, 238, 0.35);
+      transform: translateY(-2px);
+    }
+
+    .pipeline-node-number {
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #22d3ee, #a855f7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: white;
+      font-family: 'JetBrains Mono', monospace;
+      box-shadow: 0 4px 12px rgba(34, 211, 238, 0.3);
+    }
+
+    .layer-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: all 0.4s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .layer-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(180deg, #22d3ee, #a855f7);
+      opacity: 0.6;
+    }
+
+    .layer-card:hover {
+      transform: translateX(6px);
+      border-color: rgba(34, 211, 238, 0.3);
+    }
+
+    .concept-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 9999px;
+      background: rgba(34, 211, 238, 0.08);
+      border: 1px solid rgba(34, 211, 238, 0.2);
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: #22d3ee;
+    }
+
+    .compare-col {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+
+    .compare-col.traditional {
+      border-color: rgba(239, 68, 68, 0.2);
+    }
+
+    .compare-col.universal {
+      border-color: rgba(34, 211, 238, 0.3);
+      background: rgba(34, 211, 238, 0.03);
+    }
+
+    .compare-step {
+      padding: 0.625rem 0.875rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .compare-step.trad {
+      background: rgba(239, 68, 68, 0.06);
+      border: 1px solid rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+    }
+
+    .compare-step.univ {
+      background: rgba(34, 211, 238, 0.06);
+      border: 1px solid rgba(34, 211, 238, 0.2);
+      color: #67e8f9;
+    }
+
+    .ai-report {
+      background: linear-gradient(135deg, #0a0d16 0%, #0f1424 100%);
+      border: 1px solid rgba(34, 211, 238, 0.2);
+      border-radius: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ai-report::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #22d3ee, #a855f7, #ec4899);
+    }
+
+    .reasoning-node {
+      padding: 0.75rem 1rem;
+      background: rgba(168, 85, 247, 0.05);
+      border: 1px solid rgba(168, 85, 247, 0.2);
+      border-radius: 10px;
+      font-size: 0.85rem;
+      transition: all 0.3s ease;
+    }
+
+    .reasoning-node:hover {
+      background: rgba(168, 85, 247, 0.1);
+      border-color: rgba(168, 85, 247, 0.4);
+      transform: scale(1.03);
+    }
+
+    .success-banner {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(34, 211, 238, 0.05));
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 20px;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .success-banner::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 60%);
+      animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .metric-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 1.25rem;
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+
+    .metric-card:hover {
+      border-color: rgba(34, 211, 238, 0.3);
+      transform: translateY(-3px);
+    }
+
+    .philosophy-col {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+
+    .philosophy-col.traditional {
+      border-color: rgba(239, 68, 68, 0.25);
+      background: rgba(239, 68, 68, 0.03);
+    }
+
+    .philosophy-col.universal {
+      border-color: rgba(16, 185, 129, 0.3);
+      background: rgba(16, 185, 129, 0.03);
+    }
+
+    .philosophy-step {
+      padding: 0.625rem 0.875rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .philosophy-step.trad {
+      background: rgba(239, 68, 68, 0.06);
+      border: 1px solid rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+    }
+
+    .philosophy-step.univ {
+      background: rgba(16, 185, 129, 0.06);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      color: #6ee7b7;
+    }
+
+    .philosophy-highlight {
+      background: rgba(16, 185, 129, 0.05);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+    }
+
+    .philosophy-highlight:hover {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.35);
+      transform: translateY(-2px);
+    }
+
+    .resource-card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 2rem;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .resource-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #22d3ee, #a855f7);
+      opacity: 0.6;
+      transition: opacity 0.3s ease;
+    }
+
+    .resource-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(34, 211, 238, 0.4);
+      box-shadow: 0 20px 40px rgba(34, 211, 238, 0.12);
+    }
+
+    .resource-card:hover::before {
+      opacity: 1;
+    }
+
+    .resource-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: gap 0.2s ease;
+    }
+
+    .resource-link:hover {
+      gap: 0.75rem;
+    }
+
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #07080f;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+
+    .pipeline-scroll {
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .pipeline-scroll::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .pipeline-scroll::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Sticky Navigation -->
+  <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 nav-glass">
+    <div class="max-w-7xl mx-auto px-6 py-3.5">
+      <div class="flex items-center justify-between">
+        <a href="#home" class="flex items-center gap-3">
+          <div
+            class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          <div class="hidden sm:block">
+            <div class="font-bold text-sm leading-tight">Churn<span class="text-cyan-400">Intelligence</span></div>
+            <div class="text-[10px] text-slate-500 mono leading-tight">Connected Platform</div>
+          </div>
+        </a>
+
+        <div class="hidden xl:flex items-center gap-6 text-xs">
+          <a href="#home" class="nav-link text-slate-300">Home</a>
+          <a href="#innovation" class="nav-link text-slate-300">Innovation</a>
+          <a href="#architecture" class="nav-link text-slate-300">Architecture</a>
+          <a href="#pipeline" class="nav-link text-slate-300">Pipeline</a>
+          <a href="#concepts" class="nav-link text-slate-300">Framework Evidence</a>
+          <a href="#industries" class="nav-link text-slate-300">Industries</a>
+          <a href="#philosophy" class="nav-link text-slate-300">Diagnostics</a>
+          <a href="#reasoning" class="nav-link text-slate-300">Business Reasoning</a>
+          <a href="#explainable" class="nav-link text-slate-300">Explainable AI</a>
+          <a href="#validation" class="nav-link text-slate-300">Validation</a>
+          <a href="#resources" class="nav-link text-slate-300">Resources</a>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <a href="https://github.com/GLNVaibhav/Churn_Predictor" target="_blank" rel="noopener noreferrer"
+            class="btn-shine px-4 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-purple-500 text-white text-xs font-semibold hover:shadow-lg hover:shadow-cyan-500/30 transition flex items-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+            </svg>
+            GitHub
+          </a>
+          <button id="mobileMenuBtn" class="xl:hidden w-9 h-9 rounded-lg glass flex items-center justify-center"
+            aria-label="Menu">
+            <svg id="menuIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile menu -->
+      <div id="mobileMenu" class="mobile-menu xl:hidden">
+        <div class="pt-4 pb-2 flex flex-col gap-1 text-sm">
+          <a href="#home" class="mobile-link px-3 py-2 rounded-lg hover:bg-white/5 transition">Home</a>
+          <a href="#innovation" class="mobile-link px-3 py-2 rounded-lg hover:bg-white/5 transition">Innovation</a>
+          <a href="#architecture" class="mobile-link px-3 py-2 rounded-lg hover:bg-white/5 transition">Architecture</a>
+          <a href="#pipeline" class="mobile-link px-3 py-2 rounded-lg hover:bg-white/5 transition">Pipeline</a>
+          <a href="#concepts" class="mobile-link px-3 py-2 rounded-lg hover:bg-white/5 transition">Framework
+            Evidence</a>
+          <a href="#industries" class="mobile-link px-3 py-2 rounded-lg hover:bg-white/5 transition">Industries</a>
+          <a href="#philosophy" class="mobile-link px-3 py-2 rounded-lg hover:bg-white/5 transition">Diagnostics</a>
+          <a href="#reasoning" class="mobile-link px-3 py-2 rounded-lg hover:bg-white/5 transition">Business
+            Reasoning</a>
+          <a href="#explainable" class="mobile-link px-3 py-2 rounded-lg hover:bg-white/5 transition">Explainable AI</a>
+          <a href="#validation" class="mobile-link px-3 py-2 rounded-lg hover:bg-white/5 transition">Validation</a>
+          <a href="#resources" class="mobile-link px-3 py-2 rounded-lg hover:bg-white/5 transition">Resources</a>
+          <a href="https://github.com/GLNVaibhav/Churn_Predictor" target="_blank" rel="noopener noreferrer"
+            class="mobile-link px-3 py-2 rounded-lg hover:bg-white/5 transition flex items-center gap-2 text-cyan-400 font-semibold">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+            </svg>
+            GitHub Repository
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section id="home" class="relative min-h-screen flex items-center justify-center pt-24 pb-16 overflow-hidden">
+    <div class="gradient-bg absolute inset-0"></div>
+    <div class="grid-pattern absolute inset-0 opacity-40"></div>
+
+    <div class="relative max-w-5xl mx-auto px-6 text-center">
+      <div class="reveal inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-xs mono text-cyan-300 mb-8">
+        <span class="pulse-dot"></span>
+        <span>Research Framework · Frontend API Mapper Architecture · Production Connected</span>
+      </div>
+
+      <h1 class="reveal text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.95] mb-6">
+        Universal Churn<br />
+        <span class="glow-text">Intelligence Framework</span>
+      </h1>
+
+      <p class="reveal text-base md:text-lg text-slate-300 max-w-3xl mx-auto mb-6 leading-relaxed">
+        Universal AI Framework for Multi-Industry Churn Intelligence
+      </p>
+
+      <p class="reveal text-sm md:text-base text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+        UCIF now runs as a connected product flow: frontend workspace, API contract, framework mapper,
+        and the universal_churn intelligence engine. It supports manual industry selection, schema mapping,
+        CLI-style evidence, adaptive business context, comparison metrics, and decision support.
+      </p>
+
+      <div class="reveal flex flex-wrap items-center justify-center gap-2 mb-12 max-w-3xl mx-auto">
+        <span class="concept-chip">Frontend -> API</span>
+        <span class="concept-chip"
+          style="background: rgba(168, 85, 247, 0.08); border-color: rgba(168, 85, 247, 0.2); color: #a855f7;">Framework Mapper</span>
+        <span class="concept-chip"
+          style="background: rgba(236, 72, 153, 0.08); border-color: rgba(236, 72, 153, 0.2); color: #ec4899;">CLI Output in UI</span>
+        <span class="concept-chip"
+          style="background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.2); color: #10b981;">Manual Industry Routing</span>
+        <span class="concept-chip"
+          style="background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.2); color: #f59e0b;">JSON Context</span>
+        <span class="concept-chip"
+          style="background: rgba(99, 102, 241, 0.08); border-color: rgba(99, 102, 241, 0.2); color: #818cf8;">Decision Support</span>
+      </div>
+
+      <div class="reveal flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+        <a href="https://churnframework.vercel.app/" target="_blank" rel="noopener noreferrer"
+          class="btn-shine group px-8 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-semibold flex items-center gap-2 hover:shadow-2xl hover:shadow-cyan-500/40 transition">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+          </svg>
+          Launch Working Platform
+        </a>
+        <a href="https://churn-framework-api.vercel.app/api/v1/health" target="_blank" rel="noopener noreferrer"
+          class="px-8 py-3.5 rounded-xl glass text-white font-semibold flex items-center gap-2 hover:border-cyan-400/40 transition">
+          Check Live API
+        </a>
+      </div>
+
+      <div class="reveal grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 max-w-4xl mx-auto">
+        <div class="glass rounded-2xl p-5 card-hover">
+          <div class="text-3xl md:text-4xl font-black glow-text mb-2">4</div>
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Industries</div>
+        </div>
+        <div class="glass rounded-2xl p-5 card-hover">
+          <div class="text-3xl md:text-4xl font-black glow-text mb-2">API</div>
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Connected</div>
+        </div>
+        <div class="glass rounded-2xl p-5 card-hover">
+          <div class="text-3xl md:text-4xl font-black glow-text mb-2">12</div>
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Workflow Stages</div>
+        </div>
+        <div class="glass rounded-2xl p-5 card-hover">
+          <div class="text-3xl md:text-4xl font-black glow-text mb-2">CLI</div>
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Projected in UI</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Innovation Section -->
+  <section id="innovation" class="relative py-24 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="reveal text-center mb-16">
+        <div class="inline-block px-4 py-2 rounded-full glass text-xs mono text-cyan-300 mb-4">CORE RESEARCH
+          CONTRIBUTIONS</div>
+        <h2 class="text-4xl md:text-5xl font-black tracking-tight mb-4">
+          Six Architectural <span class="glow-text">Innovations</span>
+        </h2>
+        <p class="text-slate-400 max-w-2xl mx-auto">
+          Each contribution addresses a fundamental limitation of traditional churn prediction systems.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="reveal glass rounded-2xl p-7 card-hover">
+          <div
+            class="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 border border-cyan-400/30 flex items-center justify-center mb-5">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold mb-3">Universal Schema Intelligence</h3>
+          <div class="space-y-2 text-xs">
+            <div><span class="text-red-400 mono">PROBLEM:</span> <span class="text-slate-400">Fixed schemas require
+                manual preprocessing per industry.</span></div>
+            <div><span class="text-cyan-400 mono">INNOVATION:</span> <span class="text-slate-300">Semantic resolution
+                maps arbitrary columns to canonical fields automatically.</span></div>
+            <div><span class="text-green-400 mono">VALUE:</span> <span class="text-slate-300">One framework handles any
+                CSV without industry-specific code.</span></div>
+          </div>
+        </div>
+
+        <div class="reveal glass rounded-2xl p-7 card-hover">
+          <div
+            class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 border border-purple-400/30 flex items-center justify-center mb-5">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold mb-3">Business Concept Reconstruction</h3>
+          <div class="space-y-2 text-xs">
+            <div><span class="text-red-400 mono">PROBLEM:</span> <span class="text-slate-400">Raw features don't map to
+                business meaning.</span></div>
+            <div><span class="text-cyan-400 mono">INNOVATION:</span> <span class="text-slate-300">Five universal
+                concepts reconstructed from any schema.</span></div>
+            <div><span class="text-green-400 mono">VALUE:</span> <span class="text-slate-300">Predictions grounded in
+                business language, not ML jargon.</span></div>
+          </div>
+        </div>
+
+        <div class="reveal glass rounded-2xl p-7 card-hover">
+          <div
+            class="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500/20 to-pink-500/5 border border-pink-400/30 flex items-center justify-center mb-5">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold mb-3">Semantic Feature Resolution</h3>
+          <div class="space-y-2 text-xs">
+            <div><span class="text-red-400 mono">PROBLEM:</span> <span class="text-slate-400">Column name variations
+                break pipelines.</span></div>
+            <div><span class="text-cyan-400 mono">INNOVATION:</span> <span class="text-slate-300">Alias resolution with
+                confidence scoring.</span></div>
+            <div><span class="text-green-400 mono">VALUE:</span> <span class="text-slate-300">Robust against typos,
+                casing, and naming conventions.</span></div>
+          </div>
+        </div>
+
+        <div class="reveal glass rounded-2xl p-7 card-hover">
+          <div
+            class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500/20 to-green-500/5 border border-green-400/30 flex items-center justify-center mb-5">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold mb-3">Adaptive Model Routing</h3>
+          <div class="space-y-2 text-xs">
+            <div><span class="text-red-400 mono">PROBLEM:</span> <span class="text-slate-400">One model cannot handle
+                all data quality levels.</span></div>
+            <div><span class="text-cyan-400 mono">INNOVATION:</span> <span class="text-slate-300">Coverage + concept
+                confidence + quality gate select the optimal path.</span></div>
+            <div><span class="text-green-400 mono">VALUE:</span> <span class="text-slate-300">Graceful degradation
+                instead of silent failure.</span></div>
+          </div>
+        </div>
+
+        <div class="reveal glass rounded-2xl p-7 card-hover">
+          <div
+            class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 border border-amber-400/30 flex items-center justify-center mb-5">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold mb-3">Knowledge-Driven Reasoning</h3>
+          <div class="space-y-2 text-xs">
+            <div><span class="text-red-400 mono">PROBLEM:</span> <span class="text-slate-400">Business rules are
+                hardcoded in ML pipelines.</span></div>
+            <div><span class="text-cyan-400 mono">INNOVATION:</span> <span class="text-slate-300">YAML-based knowledge
+                base with cross-validation.</span></div>
+            <div><span class="text-green-400 mono">VALUE:</span> <span class="text-slate-300">Domain experts update
+                rules without touching ML code.</span></div>
+          </div>
+        </div>
+
+        <div class="reveal glass rounded-2xl p-7 card-hover">
+          <div
+            class="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/5 border border-cyan-400/30 flex items-center justify-center mb-5">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold mb-3">Prediction Explanation Layer</h3>
+          <div class="space-y-2 text-xs">
+            <div><span class="text-red-400 mono">PROBLEM:</span> <span class="text-slate-400">Probabilities alone are
+                not actionable.</span></div>
+            <div><span class="text-cyan-400 mono">INNOVATION:</span> <span class="text-slate-300">Every prediction
+                becomes a business narrative with evidence.</span></div>
+            <div><span class="text-green-400 mono">VALUE:</span> <span class="text-slate-300">Stakeholders understand
+                WHY, not just WHAT.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Traditional vs Universal Comparison -->
+  <section class="relative py-24 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="reveal text-center mb-16">
+        <div class="inline-block px-4 py-2 rounded-full glass text-xs mono text-purple-300 mb-4">PARADIGM SHIFT</div>
+        <h2 class="text-4xl md:text-5xl font-black tracking-tight mb-4">
+          Traditional ML vs <span class="glow-text">Universal Framework</span>
+        </h2>
+        <p class="text-slate-400 max-w-2xl mx-auto">
+          The difference between a model and an intelligence system.
+        </p>
+      </div>
+
+      <div class="reveal grid md:grid-cols-2 gap-6">
+        <div class="compare-col traditional">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-lg bg-red-500/10 border border-red-400/30 flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold">Traditional Churn Model</h3>
+              <p class="text-xs text-red-300/70">Fixed schema · Black box · Industry-specific</p>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <div class="compare-step trad"><span class="mono text-red-400">01</span> Raw CSV</div>
+            <div class="compare-step trad"><span class="mono text-red-400">02</span> Manual preprocessing</div>
+            <div class="compare-step trad"><span class="mono text-red-400">03</span> Feature engineering</div>
+            <div class="compare-step trad"><span class="mono text-red-400">04</span> Model training</div>
+            <div class="compare-step trad"><span class="mono text-red-400">05</span> Probability output</div>
+            <div class="compare-step trad"
+              style="background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3);"><span
+                class="mono text-red-400">06</span> <span class="font-bold">Stop - no explanation</span></div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-red-400/10 text-xs text-red-300/70 space-y-1">
+            <div><span class="text-cyan-400">></span> Requires fixed schema per industry</div>
+            <div><span class="text-cyan-400">></span> No business context</div>
+            <div><span class="text-cyan-400">></span> Silent failures on bad data</div>
+            <div><span class="text-cyan-400">></span> No diagnostic intelligence</div>
+          </div>
+        </div>
+
+        <div class="compare-col universal">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold">Universal Intelligence Framework</h3>
+              <p class="text-xs text-cyan-300/70">Schema-agnostic · Explainable · Diagnostic-Driven</p>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <div class="compare-step univ"><span class="mono text-cyan-400">01</span> Raw CSV</div>
+            <div class="compare-step univ"><span class="mono text-cyan-400">02</span> Semantic Resolution</div>
+            <div class="compare-step univ"><span class="mono text-cyan-400">03</span> Canonical Mapping</div>
+            <div class="compare-step univ"><span class="mono text-cyan-400">04</span> Coverage Intelligence</div>
+            <div class="compare-step univ"><span class="mono text-cyan-400">05</span> Concept Confidence</div>
+            <div class="compare-step univ"><span class="mono text-cyan-400">06</span> Quality Validation</div>
+            <div class="compare-step univ"><span class="mono text-cyan-400">07</span> Adaptive Routing</div>
+            <div class="compare-step univ"><span class="mono text-cyan-400">08</span> Prediction</div>
+            <div class="compare-step univ"><span class="mono text-cyan-400">09</span> Prediction Explainability</div>
+            <div class="compare-step univ"><span class="mono text-cyan-400">10</span> Business Diagnostics</div>
+            <div class="compare-step univ"><span class="mono text-cyan-400">11</span> Decision Assessment</div>
+            <div class="compare-step univ"
+              style="background: rgba(34, 211, 238, 0.12); border-color: rgba(34, 211, 238, 0.4);"><span
+                class="mono text-cyan-400">12</span> <span class="font-bold">Decision Support</span></div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-cyan-400/20 text-xs text-cyan-300/80 space-y-1">
+            <div><span class="text-cyan-400">></span> Handles any CSV schema automatically</div>
+            <div><span class="text-cyan-400">></span> Grounded in business concepts</div>
+            <div><span class="text-cyan-400">></span> Graceful degradation on sparse data</div>
+            <div><span class="text-cyan-400">></span> Evidence-based decision support</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture Section -->
+  <section id="architecture" class="relative py-24 px-6">
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-purple-900/10 to-transparent"></div>
+    <div class="relative max-w-6xl mx-auto">
+      <div class="reveal text-center mb-16">
+        <div class="inline-block px-4 py-2 rounded-full glass text-xs mono text-purple-300 mb-4">SYSTEM ARCHITECTURE
+        </div>
+        <h2 class="text-4xl md:text-5xl font-black tracking-tight mb-4">
+          Four-Boundary <span class="glow-text">Product Architecture</span>
+        </h2>
+        <p class="text-slate-400 max-w-2xl mx-auto">
+          The deployed platform follows one clear path: Frontend -> API -> Framework Mapper -> UCIF Framework.
+          The core framework remains in universal_churn, while the API and mapper expose it safely to the web UI.
+        </p>
+      </div>
+
+      <div class="reveal space-y-4">
+        <div class="layer-card">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center mono font-bold text-cyan-400">1</div>
+            <div class="flex-1">
+              <h3 class="font-bold mb-1">Frontend Workspace</h3>
+              <p class="text-xs text-slate-400 mb-2"><span class="text-cyan-400 mono">INPUT:</span> CSV + selected industry + optional JSON context <span class="text-purple-400 mono">OUTPUT:</span> API request</p>
+              <p class="text-sm text-slate-300">Provides upload, manual industry selection, CLI output projection, entered comparison, reports, and decision-support views.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="layer-card">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center mono font-bold text-cyan-400">2</div>
+            <div class="flex-1">
+              <h3 class="font-bold mb-1">API Contract Layer</h3>
+              <p class="text-xs text-slate-400 mb-2"><span class="text-cyan-400 mono">INPUT:</span> Frontend request <span class="text-purple-400 mono">OUTPUT:</span> Stable execution contract</p>
+              <p class="text-sm text-slate-300">Owns uploads, analysis execution, health, prediction, decision, context, mapper, report, and CLI-output endpoints.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="layer-card">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-400/30 flex items-center justify-center mono font-bold text-purple-400">3</div>
+            <div class="flex-1">
+              <h3 class="font-bold mb-1">Framework Mapper Boundary</h3>
+              <p class="text-xs text-slate-400 mb-2"><span class="text-cyan-400 mono">INPUT:</span> UCIF execution evidence <span class="text-purple-400 mono">OUTPUT:</span> UI-ready API JSON</p>
+              <p class="text-sm text-slate-300">Maps coverage, quality, routing, predictions, adaptive business context, decision intelligence, diagnostics, and reports into frontend-safe contracts.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="layer-card">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-400/30 flex items-center justify-center mono font-bold text-purple-400">4</div>
+            <div class="flex-1">
+              <h3 class="font-bold mb-1">UCIF Framework Engine</h3>
+              <p class="text-xs text-slate-400 mb-2"><span class="text-cyan-400 mono">INPUT:</span> Dataset + sector/context <span class="text-purple-400 mono">OUTPUT:</span> Intelligence evidence</p>
+              <p class="text-sm text-slate-300">The universal_churn package owns semantic intelligence, coverage, routing, prediction, explanation, ABIL, decision intelligence, and report generation.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="layer-card">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-pink-500/10 border border-pink-400/30 flex items-center justify-center mono font-bold text-pink-400">5</div>
+            <div class="flex-1">
+              <h3 class="font-bold mb-1">Semantic Intelligence</h3>
+              <p class="text-xs text-slate-400 mb-2"><span class="text-cyan-400 mono">INPUT:</span> Dataset columns <span class="text-purple-400 mono">OUTPUT:</span> Column meaning + confidence</p>
+              <p class="text-sm text-slate-300">Detects domain evidence, validates context, builds semantic graph evidence, and supports manual industry override when automatic detection is wrong.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="layer-card">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-pink-500/10 border border-pink-400/30 flex items-center justify-center mono font-bold text-pink-400">6</div>
+            <div class="flex-1">
+              <h3 class="font-bold mb-1">Adaptive Routing and Prediction</h3>
+              <p class="text-xs text-slate-400 mb-2"><span class="text-cyan-400 mono">INPUT:</span> Coverage + quality <span class="text-purple-400 mono">OUTPUT:</span> Pipeline + predictions</p>
+              <p class="text-sm text-slate-300">Routes to sector or universal execution, scores customer-level churn risk, and avoids false all-row churn summaries.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="layer-card">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-green-500/10 border border-green-400/30 flex items-center justify-center mono font-bold text-green-400">7</div>
+            <div class="flex-1">
+              <h3 class="font-bold mb-1">Adaptive Business Intelligence</h3>
+              <p class="text-xs text-slate-400 mb-2"><span class="text-cyan-400 mono">INPUT:</span> Optional JSON context <span class="text-purple-400 mono">OUTPUT:</span> Business impact evidence</p>
+              <p class="text-sm text-slate-300">Evaluates external context JSON and surfaces business impact, signal count, dominant driver, and recommendation influence.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="layer-card">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-green-500/10 border border-green-400/30 flex items-center justify-center mono font-bold text-green-400">8</div>
+            <div class="flex-1">
+              <h3 class="font-bold mb-1">Decision and Reporting Output</h3>
+              <p class="text-xs text-slate-400 mb-2"><span class="text-cyan-400 mono">INPUT:</span> All evidence <span class="text-purple-400 mono">OUTPUT:</span> CLI output + comparison + reports</p>
+              <p class="text-sm text-slate-300">Delivers readable CLI-style output, comparison metrics, decision recommendations, and stakeholder-ready reports.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Pipeline Section -->
+  <section id="pipeline" class="relative py-24 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="reveal text-center mb-16">
+        <div class="inline-block px-4 py-2 rounded-full glass text-xs mono text-cyan-300 mb-4">COMPLETE PIPELINE</div>
+        <h2 class="text-4xl md:text-5xl font-black tracking-tight mb-4">
+          Twelve-Stage <span class="glow-text">Connected Workflow</span>
+        </h2>
+        <p class="text-slate-400 max-w-2xl mx-auto">
+          From CSV upload to CLI output, comparison metrics, and decision support, every stage is visible through the frontend/API/mapper boundary.
+        </p>
+      </div>
+
+      <div class="reveal pipeline-scroll">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 min-w-[900px] xl:min-w-0">
+          <div class="pipeline-node"><div class="pipeline-node-number">1</div><div class="text-xs mono text-cyan-400 mb-1">FRONTEND</div><div class="font-bold text-sm">Dataset Upload</div><div class="text-xs text-slate-500 mt-1">CSV intake in SaaS UI</div></div>
+          <div class="pipeline-node"><div class="pipeline-node-number">2</div><div class="text-xs mono text-cyan-400 mb-1">SELECT</div><div class="font-bold text-sm">Industry Selection</div><div class="text-xs text-slate-500 mt-1">Auto detect or manual override</div></div>
+          <div class="pipeline-node"><div class="pipeline-node-number">3</div><div class="text-xs mono text-cyan-400 mb-1">API</div><div class="font-bold text-sm">API Contract</div><div class="text-xs text-slate-500 mt-1">Upload + analyze request</div></div>
+          <div class="pipeline-node"><div class="pipeline-node-number">4</div><div class="text-xs mono text-purple-400 mb-1">MAPPER</div><div class="font-bold text-sm">Framework Mapper</div><div class="text-xs text-slate-500 mt-1">Contract-safe translation</div></div>
+          <div class="pipeline-node"><div class="pipeline-node-number">5</div><div class="text-xs mono text-purple-400 mb-1">SEMANTIC</div><div class="font-bold text-sm">Semantic Intelligence</div><div class="text-xs text-slate-500 mt-1">Business meaning evidence</div></div>
+          <div class="pipeline-node"><div class="pipeline-node-number">6</div><div class="text-xs mono text-pink-400 mb-1">COVERAGE</div><div class="font-bold text-sm">Coverage Intelligence</div><div class="text-xs text-slate-500 mt-1">Readiness and gaps</div></div>
+          <div class="pipeline-node"><div class="pipeline-node-number">7</div><div class="text-xs mono text-pink-400 mb-1">QUALITY</div><div class="font-bold text-sm">Quality Gate</div><div class="text-xs text-slate-500 mt-1">Leakage and validation</div></div>
+          <div class="pipeline-node"><div class="pipeline-node-number">8</div><div class="text-xs mono text-amber-400 mb-1">ROUTE</div><div class="font-bold text-sm">Adaptive Routing</div><div class="text-xs text-slate-500 mt-1">Sector / universal path</div></div>
+          <div class="pipeline-node"><div class="pipeline-node-number">9</div><div class="text-xs mono text-amber-400 mb-1">PREDICT</div><div class="font-bold text-sm">Prediction Engine</div><div class="text-xs text-slate-500 mt-1">Customer-level churn risk</div></div>
+          <div class="pipeline-node"><div class="pipeline-node-number">10</div><div class="text-xs mono text-green-400 mb-1">CONTEXT</div><div class="font-bold text-sm">ABIL JSON Context</div><div class="text-xs text-slate-500 mt-1">Business signals</div></div>
+          <div class="pipeline-node"><div class="pipeline-node-number">11</div><div class="text-xs mono text-green-400 mb-1">DECIDE</div><div class="font-bold text-sm">Decision Support</div><div class="text-xs text-slate-500 mt-1">Evidence-backed action</div></div>
+          <div class="pipeline-node"><div class="pipeline-node-number">12</div><div class="text-xs mono text-green-400 mb-1">OUTPUT</div><div class="font-bold text-sm">CLI + Comparison</div><div class="text-xs text-slate-500 mt-1">Projected in workspace</div></div>
+        </div>
+      </div>
+
+      <div class="reveal mt-10 glass rounded-2xl p-6 flex items-center justify-between flex-wrap gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-green-500/10 border border-green-400/30 flex items-center justify-center">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12" /></svg>
+          </div>
+          <div>
+            <div class="font-bold text-sm">Final Output</div>
+            <div class="text-xs text-slate-400 mono">Predictions + CLI Output + Comparison + Decision Reports</div>
+          </div>
+        </div>
+        <a href="https://churnframework.vercel.app/upload" target="_blank" rel="noopener noreferrer" class="px-5 py-2.5 rounded-lg bg-green-500/10 border border-green-400/30 text-green-400 text-sm font-semibold hover:bg-green-500/20 transition">
+          Run the Workflow
+        </a>
+      </div>
+    </div>
+  </section>
+  <section id="concepts" class="relative py-24 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="reveal text-center mb-16">
+        <div class="inline-block px-4 py-2 rounded-full glass text-xs mono text-pink-300 mb-4">CORE INNOVATION</div>
+        <h2 class="text-4xl md:text-5xl font-black tracking-tight mb-4">
+          Five <span class="glow-text">Universal Business Concepts</span>
+        </h2>
+        <p class="text-slate-400 max-w-2xl mx-auto">
+          Every industry expresses these concepts differently. The framework reconstructs them regardless of the
+          original schema.
+        </p>
+      </div>
+
+      <div class="reveal grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-12">
+        <div class="glass rounded-2xl p-5 card-hover text-center">
+          <div
+            class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center mx-auto mb-3">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+          </div>
+          <div class="text-xs mono text-cyan-400 mb-1">CONCEPT 01</div>
+          <div class="font-bold text-sm">Recurring<br />Commitment</div>
+        </div>
+        <div class="glass rounded-2xl p-5 card-hover text-center">
+          <div
+            class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-400/30 flex items-center justify-center mx-auto mb-3">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2">
+              <path
+                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          </div>
+          <div class="text-xs mono text-purple-400 mb-1">CONCEPT 02</div>
+          <div class="font-bold text-sm">Customer<br />Loyalty</div>
+        </div>
+        <div class="glass rounded-2xl p-5 card-hover text-center">
+          <div
+            class="w-12 h-12 rounded-xl bg-pink-500/10 border border-pink-400/30 flex items-center justify-center mx-auto mb-3">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </div>
+          <div class="text-xs mono text-pink-400 mb-1">CONCEPT 03</div>
+          <div class="font-bold text-sm">Support<br />Friction</div>
+        </div>
+        <div class="glass rounded-2xl p-5 card-hover text-center">
+          <div
+            class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-400/30 flex items-center justify-center mx-auto mb-3">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+          </div>
+          <div class="text-xs mono text-amber-400 mb-1">CONCEPT 04</div>
+          <div class="font-bold text-sm">Engagement<br />Level</div>
+        </div>
+        <div class="glass rounded-2xl p-5 card-hover text-center col-span-2 md:col-span-1">
+          <div
+            class="w-12 h-12 rounded-xl bg-green-500/10 border border-green-400/30 flex items-center justify-center mx-auto mb-3">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          </div>
+          <div class="text-xs mono text-green-400 mb-1">CONCEPT 05</div>
+          <div class="font-bold text-sm">Satisfaction<br />Signal</div>
+        </div>
+      </div>
+
+      <div class="reveal glass rounded-2xl p-6 md:p-8">
+        <h3 class="text-xl font-bold mb-6 text-center">Cross-Industry Evidence Mapping</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-xs mono text-slate-400 uppercase border-b border-white/5">
+                <th class="text-left py-3 px-3">Industry</th>
+                <th class="text-left py-3 px-3">Raw Feature</th>
+                <th class="text-center py-3 px-3">-></th>
+                <th class="text-left py-3 px-3">Mapped Evidence</th>
+              </tr>
+            </thead>
+            <tbody class="text-slate-300">
+              <tr class="border-b border-white/5">
+                <td class="py-3 px-3"><span class="text-cyan-400">Telecom</span></td>
+                <td class="py-3 px-3 mono text-xs">MonthlyCharges</td>
+                <td class="py-3 px-3 text-center text-slate-500">-></td>
+                <td class="py-3 px-3">Recurring Commitment</td>
+              </tr>
+              <tr class="border-b border-white/5">
+                <td class="py-3 px-3"><span class="text-green-400">Healthcare</span></td>
+                <td class="py-3 px-3 mono text-xs">Avg_Out_Of_Pocket_Cost</td>
+                <td class="py-3 px-3 text-center text-slate-500">-></td>
+                <td class="py-3 px-3">Recurring Commitment</td>
+              </tr>
+              <tr class="border-b border-white/5">
+                <td class="py-3 px-3"><span class="text-amber-400">Banking</span></td>
+                <td class="py-3 px-3 mono text-xs">Balance</td>
+                <td class="py-3 px-3 text-center text-slate-500">-></td>
+                <td class="py-3 px-3">Recurring Commitment</td>
+              </tr>
+              <tr class="border-b border-white/5">
+                <td class="py-3 px-3"><span class="text-pink-400">E-commerce</span></td>
+                <td class="py-3 px-3 mono text-xs">OrderCount</td>
+                <td class="py-3 px-3 text-center text-slate-500">-></td>
+                <td class="py-3 px-3">Engagement Level</td>
+              </tr>
+              <tr class="border-b border-white/5">
+                <td class="py-3 px-3"><span class="text-green-400">Healthcare</span></td>
+                <td class="py-3 px-3 mono text-xs">Overall_Satisfaction</td>
+                <td class="py-3 px-3 text-center text-slate-500">-></td>
+                <td class="py-3 px-3">Satisfaction Signal</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-3"><span class="text-cyan-400">Telecom</span></td>
+                <td class="py-3 px-3 mono text-xs">TechSupport</td>
+                <td class="py-3 px-3 text-center text-slate-500">-></td>
+                <td class="py-3 px-3">Support Friction</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Industries -->
+  <section id="industries" class="relative py-24 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="reveal text-center mb-16">
+        <div class="inline-block px-4 py-2 rounded-full glass text-xs mono text-amber-300 mb-4">CROSS-INDUSTRY</div>
+        <h2 class="text-4xl md:text-5xl font-black tracking-tight mb-4">
+          One Framework. <span class="glow-text">Every Industry.</span>
+        </h2>
+        <p class="text-slate-400 max-w-2xl mx-auto">
+          Each industry gets full semantic mapping, concept reconstruction, and business explanation.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="reveal glass rounded-2xl p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                <line x1="12" y1="20" x2="12.01" y2="20" />
+              </svg>
+            </div>
+            <span class="text-xs mono text-cyan-400">01</span>
+          </div>
+          <h3 class="text-lg font-bold mb-3">Telecom</h3>
+          <div class="space-y-1.5 text-xs">
+            <div class="flex items-center gap-2 text-slate-400"><span class="text-cyan-400">></span> 2 schema variants
+            </div>
+            <div class="flex items-center gap-2 text-slate-400"><span class="text-cyan-400">></span> mapper
+              signals</div>
+            <div class="flex items-center gap-2 text-slate-400"><span class="text-cyan-400">></span> Sector + Universal
+              model</div>
+            <div class="flex items-center gap-2 text-slate-400"><span class="text-cyan-400">></span> Full explanation
+              support</div>
+          </div>
+        </div>
+
+        <div class="reveal glass rounded-2xl p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-pink-500/10 border border-pink-400/30 flex items-center justify-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2">
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+            </div>
+            <span class="text-xs mono text-pink-400">02</span>
+          </div>
+          <h3 class="text-lg font-bold mb-3">E-Commerce</h3>
+          <div class="space-y-1.5 text-xs">
+            <div class="flex items-center gap-2 text-slate-400"><span class="text-cyan-400">></span> 3 schema variants
+            </div>
+            <div class="flex items-center gap-2 text-slate-400"><span class="text-cyan-400">></span> context
+              signals</div>
+            <div class="flex items-center gap-2 text-slate-400"><span class="text-cyan-400">></span> Sector + Universal
+              model</div>
+            <div class="flex items-center gap-2 text-slate-400"><span class="text-cyan-400">></span> Full explanation
+              support</div>
+          </div>
+        </div>
+
+        <div class="reveal glass rounded-2xl p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <div
+              class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-400/30 flex items-center justify-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+                <path d="M3 21h18" />
+                <path d="M3 10h18" />
+                <path d="M5 6l7-3 7 3" />
+                <path d="M4 10v11" />
+                <path d="M20 10v11" />
+              </svg>
+            </div>
+            <span class="text-xs mono text-amber-400">03</span>
+          </div>
+          <h3 class="text-lg font-bold mb-3">Banking</h3>
+          <div class="space-y-1.5 text-xs">
+            <div class="flex items-center gap-2 text-slate-400"><span class="text-cyan-400">></span> 2 schema variants
+            </div>
+            <div class="flex items-center gap-2 text-slate-400"><span class="text-cyan-400">></span> mapper
+              signals</div>
+            <div class="flex items-center gap-2 text-slate-400"><span class="text-cyan-400">></span> Sector + Universal
+              model</div>
+            <div class="flex items-center gap-2 text-slate-400"><span class="text-cyan-400">></span> Full explanation
+              support</div>
+          </div>
+        </div>
+
+        <div class="reveal glass rounded-2xl p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <div
+              class="w-12 h-12 rounded-xl bg-green-500/10 border border-green-400/30 flex items-center justify-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+            </div>
+            <span class="text-xs mono text-green-400">04</span>
+          </div>
+          <h3 class="text-lg font-bold mb-3">Healthcare</h3>
+          <div class="space-y-1.5 text-xs">
+            <div class="flex items-center gap-2 text-slate-400"><span class="mono text-green-400">ok</span> 2 schema variants
+            </div>
+            <div class="flex items-center gap-2 text-slate-400"><span class="mono text-green-400">ok</span> context
+              signals</div>
+            <div class="flex items-center gap-2 text-slate-400"><span class="mono text-green-400">ok</span> Sector + Universal
+              model</div>
+            <div class="flex items-center gap-2 text-slate-400"><span class="mono text-green-400">ok</span> Full explanation
+              support</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Diagnostics Before Decisions -->
+  <section id="philosophy" class="relative py-24 px-6">
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-900/10 to-transparent"></div>
+    <div class="relative max-w-6xl mx-auto">
+      <div class="reveal text-center mb-16">
+        <div class="inline-block px-4 py-2 rounded-full glass text-xs mono text-green-300 mb-4">DESIGN PHILOSOPHY</div>
+        <h2 class="text-4xl md:text-5xl font-black tracking-tight mb-4">
+          Diagnostics <span class="glow-text">Before Decisions</span>
+        </h2>
+        <p class="text-slate-400 max-w-3xl mx-auto">
+          UCIF generates transparent analytical evidence that supports informed business analysis while preserving human
+          decision authority.
+        </p>
+      </div>
+
+      <div class="reveal grid md:grid-cols-2 gap-6 mb-10">
+        <div class="philosophy-col traditional">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-lg bg-red-500/10 border border-red-400/30 flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-red-300">Traditional AI Approach</h3>
+              <p class="text-xs text-red-300/70">Predict first, decide later</p>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <div class="philosophy-step trad"><span class="mono text-red-400">x</span> Prediction</div>
+            <div class="philosophy-step trad"><span class="mono text-red-400">x</span> Immediate Decision</div>
+            <div class="philosophy-step trad"><span class="mono text-red-400">x</span> Manual Interpretation</div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-red-400/10 text-xs text-red-300/70 space-y-1">
+            <div><span class="text-cyan-400">></span> No supporting evidence</div>
+            <div><span class="text-cyan-400">></span> No diagnostic context</div>
+            <div><span class="text-cyan-400">></span> No confidence indicators</div>
+          </div>
+        </div>
+
+        <div class="philosophy-col universal">
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-green-500/10 border border-green-400/30 flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-green-300">UCIF Approach</h3>
+              <p class="text-xs text-green-300/70">Evidence first, decisions follow</p>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <div class="philosophy-step univ"><span class="mono text-green-400">ok</span> Prediction</div>
+            <div class="philosophy-step univ"><span class="mono text-green-400">ok</span> Prediction Explainability</div>
+            <div class="philosophy-step univ"><span class="mono text-green-400">ok</span> Business Diagnostic Insights
+            </div>
+            <div class="philosophy-step univ"><span class="mono text-green-400">ok</span> Evidence Aggregation</div>
+            <div class="philosophy-step univ"><span class="mono text-green-400">ok</span> Decision Assessment</div>
+            <div class="philosophy-step univ"
+              style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.4);"><span
+                class="mono text-green-400">ok</span> <span class="font-bold">Decision Support</span></div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-green-400/20 text-xs text-green-300/80 space-y-1">
+            <div><span class="text-cyan-400">></span> Transparent analytical evidence</div>
+            <div><span class="text-cyan-400">></span> Human decision authority preserved</div>
+            <div><span class="text-cyan-400">></span> Complete diagnostic context</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="philosophy-highlight">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span class="text-slate-200">Evidence-Based Insights</span>
+        </div>
+        <div class="philosophy-highlight">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span class="text-slate-200">Human Decision Authority</span>
+        </div>
+        <div class="philosophy-highlight">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span class="text-slate-200">Transparent Reasoning</span>
+        </div>
+        <div class="philosophy-highlight">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span class="text-slate-200">Analytical Confidence</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Business Reasoning -->
+  <section id="reasoning" class="relative py-24 px-6">
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-purple-900/10 to-transparent"></div>
+    <div class="relative max-w-6xl mx-auto">
+      <div class="reveal text-center mb-16">
+        <div class="inline-block px-4 py-2 rounded-full glass text-xs mono text-purple-300 mb-4">BUSINESS DIAGNOSTIC
+          INTELLIGENCE</div>
+        <h2 class="text-4xl md:text-5xl font-black tracking-tight mb-4">
+          From Prediction to <span class="glow-text">Diagnostic Intelligence</span>
+        </h2>
+        <p class="text-slate-400 max-w-2xl mx-auto">
+          Prediction is NOT the final output. The framework transforms probabilities into evidence-based business
+          diagnostic insights.
+        </p>
+      </div>
+
+      <div class="reveal glass rounded-3xl p-8 md:p-10 mb-10">
+        <h3 class="text-xl font-bold mb-8 text-center">Diagnostic Reasoning Flow</h3>
+        <div class="grid md:grid-cols-6 gap-3">
+          <div class="reasoning-node text-center">
+            <div class="text-xs mono text-purple-400 mb-1">01</div>
+            <div class="font-bold text-sm">Prediction</div>
+          </div>
+          <div class="reasoning-node text-center">
+            <div class="text-xs mono text-purple-400 mb-1">02</div>
+            <div class="font-bold text-sm">Prediction Explainability</div>
+          </div>
+          <div class="reasoning-node text-center">
+            <div class="text-xs mono text-purple-400 mb-1">03</div>
+            <div class="font-bold text-sm">Business Diagnostic Insights</div>
+          </div>
+          <div class="reasoning-node text-center">
+            <div class="text-xs mono text-purple-400 mb-1">04</div>
+            <div class="font-bold text-sm">Evidence Aggregation</div>
+          </div>
+          <div class="reasoning-node text-center">
+            <div class="text-xs mono text-purple-400 mb-1">05</div>
+            <div class="font-bold text-sm">Decision Assessment</div>
+          </div>
+          <div class="reasoning-node text-center"
+            style="background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.3);">
+            <div class="text-xs mono text-green-400 mb-1">06</div>
+            <div class="font-bold text-sm">Decision Support</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal grid md:grid-cols-2 gap-6">
+        <div class="glass rounded-2xl p-6">
+          <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+            Knowledge Base
+          </h3>
+          <div class="code-block p-4 text-xs leading-relaxed">
+            <div><span class="code-comment"># concepts.yaml</span></div>
+            <div><span class="code-keyword">band_thresholds</span>:</div>
+            <div class="ml-3"><span class="code-keyword">low_max</span>: <span class="code-number">0.35</span></div>
+            <div class="ml-3"><span class="code-keyword">high_min</span>: <span class="code-number">0.65</span></div>
+            <div class="mt-2"><span class="code-comment"># rules.yaml</span></div>
+            <div><span class="code-keyword">rules</span>:</div>
+            <div class="ml-3">- <span class="code-keyword">id</span>: <span class="code-string">RETENTION_RISK</span>
+            </div>
+            <div class="ml-6"><span class="code-keyword">conditions</span>: [...]</div>
+          </div>
+          <p class="text-xs text-slate-400 mt-4">Domain experts update rules without touching ML code. Cross-validated
+            at load time.</p>
+        </div>
+
+        <div class="glass rounded-2xl p-6">
+          <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+            Example Rule
+          </h3>
+          <div class="code-block p-4 text-xs leading-relaxed">
+            <div><span class="code-comment"># Rule: Retention Risk</span></div>
+            <div><span class="code-keyword">if</span> <span class="code-function">RECURRING_COMMITMENT</span> <span
+                class="code-keyword">is</span> <span class="code-string">LOW</span></div>
+            <div class="ml-3"><span class="code-keyword">and</span> <span class="code-function">SUPPORT_FRICTION</span>
+              <span class="code-keyword">is</span> <span class="code-string">HIGH</span>:
+            </div>
+            <div class="ml-6"><span class="code-keyword">-></span> <span class="code-function">Finding</span>: <span
+                class="code-string">RETENTION_RISK</span></div>
+            <div class="ml-6"><span class="code-keyword">-></span> <span class="code-function">Severity</span>: <span
+                class="code-string">HIGH</span></div>
+            <div class="ml-6"><span class="code-keyword">-></span> <span class="code-function">Diagnostic Insight</span>:
+            </div>
+            <div class="ml-9"><span class="code-string">"Investigate re-engagement opportunities"</span></div>
+          </div>
+          <p class="text-xs text-slate-400 mt-4">Rules fire against reconstructed concepts, not raw features.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Explainable AI -->
+  <section id="explainable" class="relative py-24 px-6">
+    <div class="max-w-5xl mx-auto">
+      <div class="reveal text-center mb-16">
+        <div class="inline-block px-4 py-2 rounded-full glass text-xs mono text-green-300 mb-4">EXPLAINABLE AI</div>
+        <h2 class="text-4xl md:text-5xl font-black tracking-tight mb-4">
+          Real <span class="glow-text">Business Explanations</span>
+        </h2>
+        <p class="text-slate-400 max-w-2xl mx-auto">
+          Every prediction becomes a business narrative with evidence, drivers, and diagnostic insights.
+        </p>
+      </div>
+
+      <div class="reveal ai-report p-6 md:p-8">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+            </div>
+            <div>
+              <div class="font-bold text-sm">Prediction Explanation Report</div>
+              <div class="text-[10px] text-slate-500 mono">Customer ID: C-847291 · Telecom Sector</div>
+            </div>
+          </div>
+          <div class="text-[10px] mono text-slate-500">2026-07-02 14:32 UTC</div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <div class="mb-5">
+              <div class="text-[10px] mono text-slate-500 uppercase tracking-wider mb-2">Prediction</div>
+              <div class="flex items-center gap-3">
+                <span class="text-3xl font-black text-red-400">HIGH CHURN</span>
+                <span
+                  class="mono text-xs px-2 py-1 rounded bg-red-500/10 border border-red-400/30 text-red-400">91%</span>
+              </div>
+            </div>
+
+            <div class="mb-5">
+              <div class="text-[10px] mono text-slate-500 uppercase tracking-wider mb-2">Business Drivers</div>
+              <ul class="space-y-1.5 text-sm">
+                <li class="flex items-start gap-2"><span class="mono text-red-400">x</span> Weak recurring commitment</li>
+                <li class="flex items-start gap-2"><span class="mono text-red-400">x</span> Declining engagement level</li>
+                <li class="flex items-start gap-2"><span class="mono text-red-400">x</span> Low satisfaction signal</li>
+              </ul>
+            </div>
+
+            <div class="mb-5">
+              <div class="text-[10px] mono text-slate-500 uppercase tracking-wider mb-2">Missing Evidence</div>
+              <ul class="space-y-1.5 text-sm text-slate-400">
+                <li class="flex items-start gap-2"><span class="text-cyan-400">></span> Customer Loyalty unavailable
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div>
+            <div class="mb-5">
+              <div class="text-[10px] mono text-slate-500 uppercase tracking-wider mb-2">Triggered Findings</div>
+              <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-400/30">
+                <span class="w-2 h-2 rounded-full bg-red-400"></span>
+                <span class="text-sm font-bold text-red-300">Retention Risk</span>
+                <span class="text-[10px] mono text-red-400">HIGH</span>
+              </div>
+            </div>
+
+            <div class="mb-5">
+              <div class="text-[10px] mono text-slate-500 uppercase tracking-wider mb-2">Top Retention-Causing Feature
+              </div>
+              <div class="flex items-center gap-3 p-3 rounded-lg bg-red-500/5 border border-red-400/20">
+                <div
+                  class="flex-shrink-0 w-10 h-10 rounded-lg bg-red-500/10 border border-red-400/30 flex items-center justify-center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                    <polyline points="17 6 23 6 23 12" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-sm font-bold text-red-300">Monthly Charges</div>
+                  <div class="text-[11px] text-slate-400 mono">SHAP Impact: +0.34 · Contribution: 37%</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-5">
+              <div class="text-[10px] mono text-slate-500 uppercase tracking-wider mb-2">Prediction Reliability</div>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-bold text-amber-400">Moderate</span>
+                <span class="text-xs text-slate-500">· Coverage 82% · Concept Confidence 91%</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="text-[10px] mono text-slate-500 uppercase tracking-wider mb-2">Routing</div>
+              <div class="flex items-center gap-2 text-xs flex-wrap">
+                <span class="px-2 py-1 rounded bg-cyan-500/10 border border-cyan-400/30 text-cyan-400 mono">Sector
+                  Model</span>
+                <span
+                  class="px-2 py-1 rounded bg-purple-500/10 border border-purple-400/30 text-purple-400 mono">Explanation
+                  Confidence: High</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section id="results" class="relative py-24 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="reveal text-center mb-16">
+        <div class="inline-block px-4 py-2 rounded-full glass text-xs mono text-cyan-300 mb-4">FRAMEWORK METRICS</div>
+        <h2 class="text-4xl md:text-5xl font-black tracking-tight mb-4">
+          Connected <span class="glow-text">Platform Signals</span>
+        </h2>
+        <p class="text-slate-400 max-w-2xl mx-auto">
+          Signals that match the current frontend, API, mapper, and UCIF architecture.
+        </p>
+      </div>
+
+      <div class="reveal grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div class="metric-card">
+          <div class="text-3xl font-black glow-text mb-1">4</div>
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Industries</div>
+        </div>
+        <div class="metric-card">
+          <div class="text-3xl font-black glow-text mb-1">MAP</div>
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Framework Evidence</div>
+        </div>
+        <div class="metric-card">
+          <div class="text-3xl font-black glow-text mb-1">9</div>
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Mapped Sections</div>
+        </div>
+        <div class="metric-card">
+          <div class="text-3xl font-black glow-text mb-1">12</div>
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Workflow Stages</div>
+        </div>
+        <div class="metric-card">
+          <div class="text-3xl font-black glow-text mb-1">API</div>
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Production Checks</div>
+        </div>
+        <div class="metric-card">
+          <div class="text-3xl font-black glow-text mb-1">OK</div>
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Mapper Ready</div>
+        </div>
+        <div class="metric-card">
+          <div class="text-3xl font-black glow-text mb-1">OK</div>
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Context Driven</div>
+        </div>
+        <div class="metric-card">
+          <div class="text-3xl font-black glow-text mb-1">OK</div>
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Adaptive Routing</div>
+        </div>
+        <div class="metric-card">
+          <div class="text-3xl font-black glow-text mb-1">OK</div>
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">Prediction Explanation</div>
+        </div>
+        <div class="metric-card">
+          <div class="text-3xl font-black glow-text mb-1">OK</div>
+          <div class="text-[11px] text-slate-400 uppercase tracking-wider">API Fallbacks</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Validation -->
+  <section id="validation" class="relative py-24 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="reveal text-center mb-16">
+        <div class="inline-block px-4 py-2 rounded-full glass text-xs mono text-green-300 mb-4">VALIDATION SUITE</div>
+        <h2 class="text-4xl md:text-5xl font-black tracking-tight mb-4">
+          Production-Checked <span class="glow-text">Across Industries</span>
+        </h2>
+        <p class="text-slate-400 max-w-2xl mx-auto">
+          API health, upload, analyze, CLI output, comparison metrics, and manual routing are checked end-to-end.
+        </p>
+      </div>
+
+      <div class="reveal grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <div class="glass rounded-2xl p-5 border-l-4 border-l-green-400 card-hover">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs mono text-slate-500">SEMANTIC</span>
+            <span class="text-xs mono text-green-400">OK PASSED</span>
+          </div>
+          <h3 class="font-bold text-sm mb-1">Schema Resolution</h3>
+          <p class="text-xs text-slate-400">Alias mapping, confidence scoring, industry detection</p>
+        </div>
+        <div class="glass rounded-2xl p-5 border-l-4 border-l-green-400 card-hover">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs mono text-slate-500">COVERAGE</span>
+            <span class="text-xs mono text-green-400">OK PASSED</span>
+          </div>
+          <h3 class="font-bold text-sm mb-1">Coverage Analysis</h3>
+          <p class="text-xs text-slate-400">Weighted scoring, tiering, missing features</p>
+        </div>
+        <div class="glass rounded-2xl p-5 border-l-4 border-l-green-400 card-hover">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs mono text-slate-500">ROUTING</span>
+            <span class="text-xs mono text-green-400">OK PASSED</span>
+          </div>
+          <h3 class="font-bold text-sm mb-1">Adaptive Routing</h3>
+          <p class="text-xs text-slate-400">Sector / Universal / Refuse decisions</p>
+        </div>
+        <div class="glass rounded-2xl p-5 border-l-4 border-l-green-400 card-hover">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs mono text-slate-500">REASONING</span>
+            <span class="text-xs mono text-green-400">OK PASSED</span>
+          </div>
+          <h3 class="font-bold text-sm mb-1">Business Reasoning</h3>
+          <p class="text-xs text-slate-400">Rule evaluation, finding generation</p>
+        </div>
+        <div class="glass rounded-2xl p-5 border-l-4 border-l-green-400 card-hover">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs mono text-slate-500">KNOWLEDGE</span>
+            <span class="text-xs mono text-green-400">OK PASSED</span>
+          </div>
+          <h3 class="font-bold text-sm mb-1">Knowledge Base</h3>
+          <p class="text-xs text-slate-400">YAML validation, cross-references</p>
+        </div>
+        <div class="glass rounded-2xl p-5 border-l-4 border-l-green-400 card-hover">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs mono text-slate-500">EXPLANATION</span>
+            <span class="text-xs mono text-green-400">OK PASSED</span>
+          </div>
+          <h3 class="font-bold text-sm mb-1">Prediction Explanation</h3>
+          <p class="text-xs text-slate-400">CSV enrichment, narrative generation</p>
+        </div>
+        <div class="glass rounded-2xl p-5 border-l-4 border-l-green-400 card-hover">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs mono text-slate-500">INTEGRATION</span>
+            <span class="text-xs mono text-green-400">OK PASSED</span>
+          </div>
+          <h3 class="font-bold text-sm mb-1">End-to-End</h3>
+          <p class="text-xs text-slate-400">Full pipeline integration tests</p>
+        </div>
+        <div class="glass rounded-2xl p-5 border-l-4 border-l-green-400 card-hover">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs mono text-slate-500">REGRESSION</span>
+            <span class="text-xs mono text-green-400">OK PASSED</span>
+          </div>
+          <h3 class="font-bold text-sm mb-1">Backward Compatibility</h3>
+          <p class="text-xs text-slate-400">Legacy behavior preservation</p>
+        </div>
+      </div>
+
+      <div class="reveal success-banner">
+        <div class="relative">
+          <div class="flex items-center gap-4 mb-6">
+            <div
+              class="w-14 h-14 rounded-2xl bg-green-500/20 border border-green-400/40 flex items-center justify-center flex-shrink-0">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-2xl font-black">All Validation Suites Passed</h3>
+              <p class="text-sm text-green-300/80">Production API checks · Cross-industry validation · Zero failures</p>
+            </div>
+          </div>
+          <div class="grid md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-slate-300">
+            <div class="flex items-center gap-2"><span class="mono text-green-400">ok</span> Robust against missing features
+            </div>
+            <div class="flex items-center gap-2"><span class="mono text-green-400">ok</span> Schema variant testing</div>
+            <div class="flex items-center gap-2"><span class="mono text-green-400">ok</span> Graceful degradation</div>
+            <div class="flex items-center gap-2"><span class="mono text-green-400">ok</span> Leakage detection</div>
+            <div class="flex items-center gap-2"><span class="mono text-green-400">ok</span> Concept reconstruction</div>
+            <div class="flex items-center gap-2"><span class="mono text-green-400">ok</span> Cross-industry routing</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Resources & Documentation -->
+  <section id="resources" class="relative py-24 px-6">
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-purple-900/10 to-transparent"></div>
+    <div class="relative max-w-7xl mx-auto">
+      <div class="reveal text-center mb-16">
+        <div class="inline-block px-4 py-2 rounded-full glass text-xs mono text-cyan-300 mb-4">RESOURCES &
+          DOCUMENTATION</div>
+        <h2 class="text-4xl md:text-5xl font-black tracking-tight mb-4">
+          Explore the <span class="glow-text">Framework</span>
+        </h2>
+        <p class="text-slate-400 max-w-2xl mx-auto">
+          Access the live platform, comprehensive technical documentation, and source code.
+        </p>
+      </div>
+
+      <div class="reveal grid md:grid-cols-3 gap-6">
+        <div class="resource-card">
+          <div
+            class="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 border border-cyan-400/30 flex items-center justify-center mb-5">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="2" y1="12" x2="22" y2="12" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+          </div>
+          <div class="text-xs mono text-cyan-400 mb-2">LIVE PLATFORM</div>
+          <h3 class="text-xl font-bold mb-3">Enterprise Dashboard</h3>
+          <p class="text-sm text-slate-400 mb-5 leading-relaxed">
+            Experience the full UCIF workflow through an interactive Next.js dashboard powered by FastAPI. Upload
+            datasets, view pipeline stages, and explore diagnostic insights in real-time.
+          </p>
+          <a href="https://churnframework.vercel.app/" target="_blank" rel="noopener noreferrer"
+            class="resource-link text-cyan-400 mt-auto">
+            Launch Live Demo
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </a>
+        </div>
+
+        <div class="resource-card">
+          <div
+            class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 border border-purple-400/30 flex items-center justify-center mb-5">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+          </div>
+          <div class="text-xs mono text-purple-400 mb-2">TECHNICAL SPECIFICATION</div>
+          <h3 class="text-xl font-bold mb-3">Architecture Notes</h3>
+          <p class="text-sm text-slate-400 mb-5 leading-relaxed">
+            Architecture notes for the current frontend, API, framework mapper, and universal_churn runtime split. Documents component boundaries and integration rationale.
+          </p>
+          <a href="https://github.com/GLNVaibhav/Churn_Predictor/blob/main/UCIF_SADS.pdf" target="_blank"
+            rel="noopener noreferrer" class="resource-link text-purple-400 mt-auto">
+            Read Architecture Notes
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </a>
+        </div>
+
+        <div class="resource-card">
+          <div
+            class="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500/20 to-pink-500/5 border border-pink-400/30 flex items-center justify-center mb-5">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="#ec4899">
+              <path
+                d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+            </svg>
+          </div>
+          <div class="text-xs mono text-pink-400 mb-2">OPEN SOURCE</div>
+          <h3 class="text-xl font-bold mb-3">GitHub Repository</h3>
+          <p class="text-sm text-slate-400 mb-5 leading-relaxed">
+            Complete source code, CLI reference implementation, automated test suites, sample datasets, and deployment
+            scripts. Open-source under the MIT License.
+          </p>
+          <a href="https://github.com/GLNVaibhav/Churn_Predictor" target="_blank" rel="noopener noreferrer"
+            class="resource-link text-pink-400 mt-auto">
+            View Source Code
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="cta" class="relative py-24 px-6">
+    <div class="max-w-5xl mx-auto">
+      <div class="reveal relative glass rounded-3xl p-10 md:p-16 overflow-hidden border border-cyan-400/20">
+        <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-pink-500/10"></div>
+        <div class="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-cyan-500/20 blur-3xl"></div>
+        <div class="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-purple-500/20 blur-3xl"></div>
+
+        <div class="relative text-center">
+          <h2 class="text-4xl md:text-6xl font-black tracking-tight mb-6">
+            Experience Connected<br /><span class="glow-text">Churn Intelligence</span>
+          </h2>
+          <p class="text-slate-300 text-lg max-w-2xl mx-auto mb-10">
+            The landing page keeps the original UCIF visual language, but the product story now matches the deployed architecture:
+            frontend workspace, API contract, framework mapper, universal_churn runtime, CLI output, comparison, JSON context, and decision support.
+          </p>
+
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
+            <a href="https://churnframework.vercel.app/upload" target="_blank" rel="noopener noreferrer"
+              class="btn-shine group px-8 py-3.5 rounded-xl bg-white text-black font-bold flex items-center gap-3 hover:shadow-2xl hover:shadow-white/20 transition">
+              Launch Working Platform
+            </a>
+            <a href="https://churn-framework-api.vercel.app/api/v1/health" target="_blank" rel="noopener noreferrer"
+              class="px-8 py-3.5 rounded-xl glass font-bold flex items-center gap-2 hover:border-cyan-400/40 transition">
+              Check Live API
+            </a>
+          </div>
+
+          <div class="code-block p-5 max-w-3xl mx-auto text-left">
+            <div class="flex items-center gap-2 text-xs text-slate-500 mono mb-3">
+              <span>LOCAL CLI REFERENCE</span>
+            </div>
+            <pre class="text-xs overflow-x-auto"><span class="code-keyword">$</span> git clone https://github.com/GLNVaibhav/Churn_Predictor.git
+<span class="code-keyword">$</span> <span class="code-function">cd</span> Churn_Predictor && pip install -r requirements.txt
+<span class="code-keyword">$</span> <span class="code-function">python</span> main.py <span class="code-string">--mode auto --sector ecommerce --input your_data.csv --context context.json</span></pre>
+          </div>
+
+          <div class="mt-10 pt-8 border-t border-white/5">
+            <div class="text-xs mono text-slate-500 mb-4">THE COMPLETE FLOW</div>
+            <div class="flex flex-wrap items-center justify-center gap-2 text-xs">
+              <span class="px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-400/20 text-cyan-300 mono">Frontend</span>
+              <span class="text-slate-600">-></span>
+              <span class="px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-400/20 text-cyan-300 mono">API</span>
+              <span class="text-slate-600">-></span>
+              <span class="px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-400/20 text-purple-300 mono">Framework Mapper</span>
+              <span class="text-slate-600">-></span>
+              <span class="px-3 py-1.5 rounded-lg bg-pink-500/10 border border-pink-400/20 text-pink-300 mono">UCIF</span>
+              <span class="text-slate-600">-></span>
+              <span class="px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-400/20 text-green-300 mono">CLI Output</span>
+              <span class="text-slate-600">-></span>
+              <span class="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-400/20 text-amber-300 mono">Decision Support</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Footer -->
+  <footer class="border-t border-white/5 py-12 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          <div>
+            <div class="font-bold text-sm">Churn<span class="text-cyan-400">Intelligence</span></div>
+            <div class="text-[10px] text-slate-500 mono">Universal Churn Intelligence Framework - Connected Architecture</div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-slate-400">
+          <a href="https://github.com/GLNVaibhav/Churn_Predictor" target="_blank" rel="noopener noreferrer"
+            class="hover:text-white transition flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+            </svg>
+            GLNVaibhav
+          </a>
+          <span class="text-slate-600">·</span>
+          <span class="text-slate-500">MIT License</span>
+          <span class="text-slate-600">·</span>
+          <span class="text-slate-500 mono">Python · XGBoost · Explainable AI · Knowledge Engineering</span>
+        </div>
+      </div>
+
+      <div class="mt-8 pt-6 border-t border-white/5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs">
+        <a href="https://github.com/GLNVaibhav/Churn_Predictor/blob/main/UCIF_SADS.pdf" target="_blank"
+          rel="noopener noreferrer" class="text-slate-400 hover:text-cyan-400 transition">ðŸ“„ Architecture Notes</a>
+        <span class="text-slate-600">·</span>
+        <a href="https://churnframework.vercel.app/" target="_blank" rel="noopener noreferrer"
+          class="text-slate-400 hover:text-cyan-400 transition">ðŸŒ Live Platform</a>
+        <span class="text-slate-600">·</span>
+        <a href="https://github.com/GLNVaibhav/Churn_Predictor" target="_blank" rel="noopener noreferrer"
+          class="text-slate-400 hover:text-cyan-400 transition">ðŸ’» Source Code</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast -->
+  <div id="toast"
+    class="fixed bottom-6 right-6 px-5 py-3 rounded-xl bg-gradient-to-r from-green-500 to-cyan-500 text-white font-semibold text-sm shadow-2xl opacity-0 translate-y-4 transition-all duration-300 pointer-events-none z-50 flex items-center gap-2">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+    <span id="toastMsg">Copied!</span>
+  </div>
+
+  <script>
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = message;
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0)';
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(16px)';
+      }, 2500);
+    }
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard!')).catch(() => showToast('Copy failed'));
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); showToast('Copied to clipboard!'); }
+        catch (e) { showToast('Copy failed'); }
+        document.body.removeChild(ta);
+      }
+    }
+
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) entry.target.classList.add('active');
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-link');
+
+    const navObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          navLinks.forEach(link => {
+            link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+          });
+        }
+      });
+    }, { threshold: 0.3, rootMargin: '-80px 0px -50% 0px' });
+
+    sections.forEach(section => navObserver.observe(section));
+
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const menuIcon = document.getElementById('menuIcon');
+
+    mobileMenuBtn.addEventListener('click', () => {
+      mobileMenu.classList.toggle('open');
+      const isOpen = mobileMenu.classList.contains('open');
+      menuIcon.innerHTML = isOpen
+        ? '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'
+        : '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
+    });
+
+    document.querySelectorAll('.mobile-link').forEach(link => {
+      link.addEventListener('click', () => {
+        mobileMenu.classList.remove('open');
+        menuIcon.innerHTML = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
+      });
+    });
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        if (href === '#' || href.length < 2) return;
+        const target = document.querySelector(href);
+        if (target) {
+          e.preventDefault();
+          const offset = 80;
+          const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - offset;
+          window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+        }
+      });
+    });
+  </script>
+
+</body>
+
+</html>
+
+
+

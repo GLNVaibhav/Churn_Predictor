@@ -7,7 +7,12 @@ export interface AnalyzeStartResponse {
   status: string;
 }
 
-export function startAnalysis(uploadId: string, sector?: string | null, signal?: AbortSignal) {
+export function startAnalysis(
+  uploadId: string,
+  sector?: string | null,
+  businessContext?: Record<string, unknown> | null,
+  signal?: AbortSignal,
+) {
   return apiRequest<AnalyzeStartResponse>(
     API.analyze,
     {
@@ -18,6 +23,7 @@ export function startAnalysis(uploadId: string, sector?: string | null, signal?:
         mode: "auto",
         explain: true,
         include_reports: true,
+        business_context: businessContext || undefined,
       }),
     },
     signal,

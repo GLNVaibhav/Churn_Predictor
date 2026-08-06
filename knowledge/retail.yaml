@@ -1,0 +1,4 @@
+concepts:
+  order_count: {concept: PurchaseFrequency, domain: Retail, metric: Count, dimension: Loyalty, canonical: Interaction, aliases: [orders]}
+  cashback_amount: {concept: MarketingOffer, domain: Retail, metric: Money, dimension: Marketing, canonical: Offer, aliases: [cashback]}
+  complain: {concept: ComplaintHistory, domain: Retail, metric: Count, dimension: CustomerExperience, canonical: Complaint, aliases: [complaint]}

@@ -1,0 +1,24 @@
+operator: {concept: Operator, entity: Network, canonical: Network, domain: Telecom, metric: Category, dimension: Service}
+customer_id: {concept: CustomerIdentifier, entity: Customer, canonical: Customer, domain: Telecom, metric: Identifier, dimension: Customer}
+plan_type: {concept: SubscriptionPlan, entity: Product, canonical: Subscription, domain: Telecom, metric: Category, dimension: Product}
+tenure_months: {concept: CustomerTenure, entity: Customer, canonical: Lifecycle, domain: Telecom, metric: Duration, dimension: Lifecycle}
+circle: {concept: ServiceRegion, entity: Network, canonical: Network, domain: Telecom, metric: Category, dimension: Service}
+monthly_spend_inr: {concept: Revenue, entity: Billing, canonical: Revenue, domain: Telecom, metric: Money, dimension: Billing}
+data_gb_used: {concept: DataUsage, entity: Usage, canonical: Usage, domain: Telecom, metric: Usage, dimension: Service}
+voice_minutes: {concept: VoiceUsage, entity: Usage, canonical: VoiceUsage, domain: Telecom, metric: Duration, dimension: Service}
+support_tickets_6m: {concept: SupportUsage, entity: Support, canonical: Support, domain: Telecom, metric: Count, dimension: CustomerSupport}
+dropped_calls_6m: {concept: CallQuality, entity: Network, canonical: ServiceQuality, domain: Telecom, metric: Count, dimension: ServiceQuality}
+network_quality_score: {concept: NetworkQuality, entity: Network, canonical: ServiceQuality, domain: Telecom, metric: Score, dimension: ServiceQuality}
+complaints_6m: {concept: ComplaintHistory, entity: Complaint, canonical: Complaint, domain: Telecom, metric: Count, dimension: CustomerSupport}
+port_out_count_6m: {concept: PortOutRisk, entity: Customer, canonical: Retention, domain: Telecom, metric: Count, dimension: Retention}
+payment_delay_6m: {concept: PaymentDelay, entity: Billing, canonical: Payment, domain: Telecom, metric: Count, dimension: Billing}
+high_value_user: {concept: CustomerValue, entity: Customer, canonical: Loyalty, domain: Telecom, metric: Score, dimension: Loyalty}
+churn: {concept: ChurnRisk, entity: Risk, canonical: Risk, domain: Telecom, metric: Score, dimension: Risk}
+# Common telecom measures.  These are intentionally business concepts rather
+# than operator- or vendor-specific field names.
+recharge_value: {concept: RechargeValue, entity: Billing, canonical: RecurringRevenue, domain: Telecom, metric: Money, dimension: Billing}
+arpu: {concept: AverageRevenuePerUser, entity: Billing, canonical: AverageRevenuePerUser, domain: Telecom, metric: Money, dimension: Billing}
+sms_count: {concept: MessagingUsage, entity: Usage, canonical: MessagingUsage, domain: Telecom, metric: Count, dimension: Service}
+complaint_count: {concept: SupportContacts, entity: Support, canonical: SupportContacts, domain: Telecom, metric: Count, dimension: CustomerSupport}
+days_since_last_recharge: {concept: RechargeRecency, entity: Customer, canonical: ActivityRecency, domain: Telecom, metric: Duration, dimension: Lifecycle}
+broadband_user: {concept: BroadbandAdoption, entity: Product, canonical: ProductPortfolio, domain: Telecom, metric: Boolean, dimension: Product}

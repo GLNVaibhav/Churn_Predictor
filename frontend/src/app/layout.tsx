@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AppSidebar } from "@/components/layout/app-sidebar";
-import { AppTopbar } from "@/components/layout/app-topbar";
+import { AppChrome } from "@/components/layout/app-chrome";
+import { CommandMenu } from "@/components/layout/command-menu";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { DevModeProvider } from "@/lib/context/dev-mode-context";
+import { AuthProvider } from "@/lib/context/auth-context";
+import { ThemeProvider } from "@/lib/context/theme-context";
 import { ExecutionProvider } from "@/lib/context/execution-context";
 import { AppQueryProvider } from "@/lib/query-provider";
 
@@ -21,6 +22,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Universal Churn Intelligence Platform",
   description: "Enterprise dashboard for the Universal Churn Prediction Framework",
+  icons: {
+    icon: "/ucif-logo.svg",
+  },
 };
 
 export default function RootLayout({
@@ -29,20 +33,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AppQueryProvider>
           <ExecutionProvider>
             <TooltipProvider delay={150}>
-              <DevModeProvider>
-                <div className="flex h-screen w-full overflow-hidden bg-background">
-                  <AppSidebar />
-                  <div className="flex flex-1 flex-col overflow-hidden">
-                    <AppTopbar />
-                    {children}
-                  </div>
-                </div>
-              </DevModeProvider>
+              <ThemeProvider>
+                <AuthProvider>
+                  <AppChrome>{children}</AppChrome>
+                  <CommandMenu />
+                </AuthProvider>
+              </ThemeProvider>
             </TooltipProvider>
           </ExecutionProvider>
         </AppQueryProvider>

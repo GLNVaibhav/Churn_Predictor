@@ -1,0 +1,1 @@
+relationships: [{from: Warehouse, related_to: Order}, {from: Order, related_to: Payment}]

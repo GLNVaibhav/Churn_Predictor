@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { ApiError } from "@/lib/api/client";
 import {
   getExecution,
   getExecutionContext,
@@ -17,6 +18,11 @@ import { startAnalysis } from "@/lib/api/analysis";
 import { uploadDataset } from "@/lib/api/upload";
 import { useExecutionContext } from "@/lib/context/execution-context";
 
+function isMissingExecution(error: unknown) {
+  if (error instanceof ApiError && error.status === 404) return true;
+  return error instanceof Error && /execution not found/i.test(error.message);
+}
+
 export function useExecution(executionId?: string | null) {
   const ctx = useExecutionContext();
   const id = executionId || ctx.executionId;
@@ -31,6 +37,10 @@ export function useExecution(executionId?: string | null) {
   });
 
   useEffect(() => {
+    if (isMissingExecution(query.error)) {
+      ctx.clearExecutionContext();
+      return;
+    }
     const execution = query.data?.execution;
     if (!execution || !id) return;
     const inner = execution.execution as Record<string, unknown> | undefined;
@@ -41,9 +51,15 @@ export function useExecution(executionId?: string | null) {
       sector: String((execution.dataset as Record<string, unknown> | undefined)?.sector || execution.sector || ctx.sector || ""),
       status: String(inner?.status || execution.status || ctx.status || ""),
     });
-  }, [query.data, id]);
+  }, [query.data, query.error, id, ctx]);
 
-  return query;
+  const missingExecution = isMissingExecution(query.error);
+
+  return {
+    ...query,
+    error: missingExecution ? null : query.error,
+    isError: missingExecution ? false : query.isError,
+  };
 }
 
 export function useExecutionPipeline(executionId?: string | null, status?: string | null) {
@@ -136,7 +152,8 @@ export function useStartExecution() {
   const ctx = useExecutionContext();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => startAnalysis(ctx.uploadId as string, ctx.sector),
+    mutationFn: (options?: { sector?: string | null; businessContext?: Record<string, unknown> | null }) =>
+      startAnalysis(ctx.uploadId as string, options?.sector ?? ctx.sector, options?.businessContext),
     onSuccess: (analysis) => {
       ctx.setExecutionContext({
         uploadId: analysis.upload_id,

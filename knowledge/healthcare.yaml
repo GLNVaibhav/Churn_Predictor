@@ -1,0 +1,4 @@
+concepts:
+  patient_id: {concept: PatientIdentifier, domain: Healthcare, metric: Identifier, dimension: Customer, canonical: Customer, aliases: [patientid]}
+  missed_appointments: {concept: AppointmentRisk, domain: Healthcare, metric: Count, dimension: Interaction, canonical: Interaction, aliases: [missed_appointment]}
+  billing_issues: {concept: BillingExperience, domain: Healthcare, metric: Count, dimension: CustomerExperience, canonical: Billing, aliases: [billing_issue]}

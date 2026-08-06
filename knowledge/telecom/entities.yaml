@@ -1,0 +1,1 @@
+entities: [Customer, Network, Billing, Usage, Complaint, Support, Product, Risk]

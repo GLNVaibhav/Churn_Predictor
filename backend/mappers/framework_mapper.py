@@ -54,8 +54,8 @@ class FrameworkMapper:
             return None
         if not isinstance(coverage, dict):
             raise UnsupportedFrameworkOutputError(
-                "map_coverage() expects the dict returned by "
-                "coverage.compute_coverage_score(); got "
+                "map_coverage() expects the API coverage contract adapted "
+                "from a typed UCIF CoverageResult; got "
                 f"{type(coverage).__name__}."
             )
         return CoverageSummary.from_dict(coverage)

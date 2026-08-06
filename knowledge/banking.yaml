@@ -1,0 +1,4 @@
+concepts:
+  balance: {concept: AccountBalance, domain: Banking, metric: Money, dimension: Financial, canonical: Account, aliases: [account_balance]}
+  credit_score: {concept: CreditRisk, domain: Banking, metric: Score, dimension: Risk, canonical: Risk, aliases: [creditscore]}
+  num_of_products: {concept: ProductHolding, domain: Banking, metric: Count, dimension: Product, canonical: Product, aliases: [numofproducts]}

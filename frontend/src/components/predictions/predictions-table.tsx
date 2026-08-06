@@ -42,7 +42,20 @@ const columns: DataTableColumn<PredictionRecord>[] = [
     key: "churnProbability",
     header: "Churn Probability",
     align: "right",
-    render: (row) => `${(row.churnProbability * 100).toFixed(1)}%`,
+    render: (row) => {
+      const value = row.churnProbability * 100;
+      return (
+        <div className="ml-auto w-32">
+          <div className="mb-1 flex justify-end text-xs font-semibold tabular-nums">{value.toFixed(1)}%</div>
+          <div className="h-2 rounded-full bg-muted">
+            <div
+              className="h-2 rounded-full bg-red-200"
+              style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+            />
+          </div>
+        </div>
+      );
+    },
     sortValue: (row) => row.churnProbability,
   },
   {
@@ -101,6 +114,9 @@ export function PredictionsTable({ data }: { data: PredictionRecord[] }) {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pageData = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const highRiskCount = filtered.filter((row) => row.riskTier === "High" || row.riskTier === "Critical").length;
+  const avgRisk = filtered.length ? filtered.reduce((sum, row) => sum + row.churnProbability, 0) / filtered.length : 0;
+  const escalationCount = filtered.filter((row) => row.decision === "Escalate").length;
 
   function handleRowClick(row: PredictionRecord) {
     setSelected(row);
@@ -114,6 +130,25 @@ export function PredictionsTable({ data }: { data: PredictionRecord[] }) {
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[
+          ["High-risk customers", highRiskCount.toLocaleString(), "Priority cohort"],
+          ["Average risk", `${(avgRisk * 100).toFixed(1)}%`, "Filtered view"],
+          ["Escalations", escalationCount.toLocaleString(), "Need action"],
+        ].map(([label, value, hint]) => (
+          <div key={label} className="rounded-md border border-border/60 bg-background/75 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+          </div>
+        ))}
+      </div>
+      {filtered.length > 0 && highRiskCount === 0 ? (
+        <div className="rounded-lg border border-emerald-500/25 bg-emerald-50 p-4 text-sm text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
+          <p className="font-semibold">Rock-solid retention in this filtered cohort.</p>
+          <p className="mt-1 text-xs leading-5 opacity-80">No high or critical churn risk customers are currently visible in this view.</p>
+        </div>
+      ) : null}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-xs">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -152,7 +187,13 @@ export function PredictionsTable({ data }: { data: PredictionRecord[] }) {
         </div>
       </div>
 
-      <DataTable columns={columns} data={pageData} rowKey={(row) => row.id} onRowClick={handleRowClick} />
+      <DataTable
+        columns={columns}
+        data={pageData}
+        rowKey={(row) => row.id}
+        onRowClick={handleRowClick}
+        emptyLabel="No matching customers. Adjust filters or open a different analysis."
+      />
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">

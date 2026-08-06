@@ -1,0 +1,9 @@
+Revenue: {canonical: Revenue, entity: Billing}
+DataUsage: {canonical: Usage, entity: Usage}
+VoiceUsage: {canonical: VoiceUsage, entity: Usage}
+RechargeValue: {canonical: RecurringRevenue, entity: Billing}
+AverageRevenuePerUser: {canonical: AverageRevenuePerUser, entity: Billing}
+MessagingUsage: {canonical: MessagingUsage, entity: Usage}
+SupportContacts: {canonical: SupportContacts, entity: Support}
+RechargeRecency: {canonical: ActivityRecency, entity: Customer}
+BroadbandAdoption: {canonical: ProductPortfolio, entity: Product}

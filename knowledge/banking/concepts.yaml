@@ -1,0 +1,8 @@
+CustomerId: {concept: CustomerIdentifier, entity: Customer, canonical: Customer, domain: Banking, metric: Identifier, dimension: Customer}
+CreditScore: {concept: CreditRisk, entity: Account, canonical: Risk, domain: Banking, metric: Score, dimension: Risk}
+Geography: {concept: BranchGeography, entity: Branch, canonical: Account, domain: Banking, metric: Category, dimension: Geography}
+Balance: {concept: AccountBalance, entity: Account, canonical: Account, domain: Banking, metric: Money, dimension: Financial}
+HasCrCard: {concept: CreditCardHolding, entity: Account, canonical: Product, domain: Banking, metric: Category, dimension: Product}
+IsActiveMember: {concept: CustomerActivity, entity: Customer, canonical: Interaction, domain: Banking, metric: Score, dimension: Interaction}
+EstimatedSalary: {concept: CustomerIncome, entity: Customer, canonical: Revenue, domain: Banking, metric: Money, dimension: Financial}
+NumOfProducts: {concept: ProductHolding, entity: Account, canonical: Product, domain: Banking, metric: Count, dimension: Product}

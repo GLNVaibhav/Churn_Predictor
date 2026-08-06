@@ -66,6 +66,31 @@ export function ReportExplorer({
     setLoadingCategory(null);
   }
 
+  function downloadReport(report: ReportItem) {
+    const content = getContent(report.id as ReportCategory);
+    const body = [
+      content.headline,
+      "",
+      content.summary,
+      "",
+      ...content.sections.flatMap((section) => [
+        section.heading,
+        section.body,
+        ...(section.metrics || []).map((metric) => `${metric.label}: ${metric.value}`),
+        "",
+      ]),
+    ].join("\n");
+    const blob = new Blob([body], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${report.id.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -116,7 +141,7 @@ export function ReportExplorer({
                 <Badge variant="outline" className={typeStyles[report.type]}>
                   {report.type}
                 </Badge>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={() => downloadReport(report)}>
                   <Download className="h-4 w-4" />
                 </Button>
               </div>

@@ -1,0 +1,9 @@
+Revenue: {aliases: [monthly_spend, monthlycharges, billing_amount]}
+DataUsage: {aliases: [data_usage, data_used]}
+VoiceUsage: {aliases: [voice_usage, call_minutes]}
+RechargeValue: {aliases: [recharge_amount, topup_value]}
+AverageRevenuePerUser: {aliases: [average_revenue_per_user, avg_revenue_per_user]}
+MessagingUsage: {aliases: [sms_usage, message_count]}
+SupportContacts: {aliases: [complaints, customer_complaints]}
+RechargeRecency: {aliases: [last_recharge_days, recharge_recency]}
+BroadbandAdoption: {aliases: [broadband_enabled, fixed_broadband_user]}

@@ -1,0 +1,17 @@
+{
+  "events": [
+    {
+      "category": "Competitor Promotion",
+      "description": "Demo unlimited-data promotion in the local market.",
+      "severity": "HIGH",
+      "affected_segments": ["High Data Users"],
+      "confidence": 0.82
+    },
+    {
+      "category": "Network Outage",
+      "description": "Demo regional service disruption.",
+      "severity": "MEDIUM",
+      "confidence": 0.91
+    }
+  ]
+}

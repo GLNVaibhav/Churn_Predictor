@@ -1,0 +1,3 @@
+InsuranceCoverage: {aliases: [insurance, insurance_flag, insurance_type]}
+MedicalSpecialty: {aliases: [doctor, diagnosis, hospital, specialty]}
+PatientVisits: {aliases: [lab_tests_6m, lab, appointment, treatment, medication]}
