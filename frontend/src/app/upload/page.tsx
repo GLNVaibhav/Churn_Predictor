@@ -52,6 +52,7 @@ export default function UploadPage() {
   const [routingMode, setRoutingMode] = useState<"auto" | "manual">("manual");
   const [businessContextText, setBusinessContextText] = useState("");
   const [step, setStep] = useState(0);
+  const submissionLockRef = useRef(false);
 
   const preview = useMemo(() => (upload.data ? mapUploadPreview(upload.data) : null), [upload.data]);
   const maxStep = preview ? 4 : 0;
@@ -94,7 +95,7 @@ export default function UploadPage() {
   }
 
   function handleFile(file?: File) {
-    if (!file) return;
+    if (!file || upload.isPending || submissionLockRef.current) return;
     const error = validate(file);
     setValidationError(error);
     if (error) return;
@@ -114,6 +115,8 @@ export default function UploadPage() {
   }
 
   async function runAnalysis() {
+    if (submissionLockRef.current || analyze.isPending) return;
+
     let businessContext: Record<string, unknown> | null = null;
     const trimmed = businessContextText.trim();
     if (trimmed) {
@@ -127,10 +130,17 @@ export default function UploadPage() {
         return;
       }
     }
+
+    submissionLockRef.current = true;
     setStep(4);
     context.setExecutionContext({ sector: selectedSector });
-    await analyze.mutateAsync({ sector: selectedSector, businessContext });
-    router.push("/workspace");
+
+    try {
+      await analyze.mutateAsync({ sector: selectedSector, businessContext });
+      router.push("/workspace");
+    } finally {
+      submissionLockRef.current = false;
+    }
   }
 
   return (
@@ -277,7 +287,7 @@ export default function UploadPage() {
                 <p className="text-sm font-semibold">Drop a customer dataset here</p>
                 <p className="mt-1 text-xs text-muted-foreground">CSV only. The workspace will preview fields, industry fit, and analysis readiness.</p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()}>Browse files</Button>
+              <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={upload.isPending}>Browse files</Button>
             </div>
             {validationError ? <ErrorBanner error={new Error(validationError)} /> : null}
             {upload.isPending ? (
@@ -367,7 +377,7 @@ export default function UploadPage() {
                     {preview.fileName} will run as {sectorLabel(selectedSector)} using {routingMode === "manual" ? "manual override" : "auto-route"} with {contextSignalCount} business context signals.
                   </p>
                 </div>
-                <Button onClick={runAnalysis} disabled={!context.uploadId || !preflightReady || analyze.isPending}>
+                <Button onClick={runAnalysis} disabled={!context.uploadId || !preflightReady || analyze.isPending || submissionLockRef.current}>
                   {analyze.isPending ? "Starting..." : "Execute Run"}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
