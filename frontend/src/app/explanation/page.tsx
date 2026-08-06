@@ -1,10 +1,5 @@
-"use client";
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
 
 export default function ExplanationPage() {
-  const router = useRouter();
-  useEffect(() => { router.replace("/workspace?tab=reasoning"); }, [router]);
-  return null;
+  redirect("/workspace?tab=reasoning");
 }

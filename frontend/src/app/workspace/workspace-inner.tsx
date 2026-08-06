@@ -161,10 +161,11 @@ export default function WorkspacePageInner() {
                 <Link
                   key={section.id}
                   href={`/workspace?tab=${section.id}`}
+                    aria-current={tab === section.id ? "page" : undefined}
                   className={cn(
-                    "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                      "rounded-md px-3 py-1.5 text-xs font-medium transition-all",
                     tab === section.id
-                      ? "bg-card text-foreground shadow-sm ring-1 ring-border/70"
+                        ? "bg-primary/10 text-primary ring-1 ring-primary/30 shadow-sm"
                       : "text-muted-foreground hover:bg-background/70 hover:text-foreground"
                   )}
                 >

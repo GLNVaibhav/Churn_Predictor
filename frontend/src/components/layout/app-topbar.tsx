@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -14,7 +15,26 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 export function AppTopbar() {
   const pathname = usePathname();
-  const meta = resolvePageMeta(pathname);
+  const [workspaceTab, setWorkspaceTab] = useState<string | null>(null);
+  useEffect(() => {
+    setWorkspaceTab(new URLSearchParams(window.location.search).get("tab"));
+  }, [pathname]);
+  const workspaceMeta = {
+    overview: { label: "Workspace Overview", description: "Predictions, explanations, reports, comparison, and run evidence." },
+    pipeline: { label: "Pipeline", description: "Step-by-step progress from intake to decision support." },
+    coverage: { label: "Coverage", description: "Schema coverage, semantic matches, and missing critical fields." },
+    semantic: { label: "Semantic", description: "Business meanings, feature trace, and semantic validation." },
+    quality: { label: "Quality", description: "Validation checks, leakage detection, and quality gates." },
+    routing: { label: "Routing", description: "Model routing decisions and selection rationale." },
+    prediction: { label: "Prediction", description: "Customer-level churn scoring and cohort output." },
+    reasoning: { label: "Reasoning", description: "Business explanation and recommendation narrative." },
+    decision: { label: "Decision", description: "Decision intelligence, readiness, and ABIL context." },
+    cli: { label: "Run Evidence", description: "Run metadata, status, and comparison evidence." },
+    reports: { label: "Reports", description: "Executive, technical, and audit report views." },
+  } as const;
+  const meta = pathname.startsWith("/workspace") && workspaceTab && workspaceTab in workspaceMeta
+    ? workspaceMeta[workspaceTab as keyof typeof workspaceMeta]
+    : resolvePageMeta(pathname);
   const health = useQuery({
     queryKey: ["api-health"],
     queryFn: ({ signal }) => apiRequest<{ status: string }>("/api/v1/health", {}, signal),
