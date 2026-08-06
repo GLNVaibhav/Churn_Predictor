@@ -1,0 +1,8 @@
+.next
+.next-local
+.next-local-build
+.next-verify*
+node_modules
+dev-server.*.log
+*.tsbuildinfo
+.env.local

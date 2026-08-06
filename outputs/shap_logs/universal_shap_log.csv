@@ -1,6 +1,0 @@
-CustomerID,top1_feature,top1_shap_value,top2_feature,top2_shap_value,top3_feature,top3_shap_value
-UNK_0,convenience_score,-0.8273,tenure_normalized,-0.5205,charge_normalized,0.5008
-UNK_1,convenience_score,-0.6721,tenure_normalized,-0.4938,lockin_risk,-0.4022
-UNK_2,charge_normalized,1.051,convenience_score,-0.824,tenure_normalized,-0.5239
-UNK_3,convenience_score,-0.7068,tenure_normalized,-0.5015,lockin_risk,-0.4286
-UNK_4,convenience_score,-0.8052,charge_normalized,0.5589,tenure_normalized,-0.5262
