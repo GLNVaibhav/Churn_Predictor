@@ -19,6 +19,7 @@ import type {
   SelectedModel,
   UploadedDatasetPreview,
 } from "@/lib/types";
+import type { UploadResponse } from "@/lib/api/upload";
 
 const stageTemplate = (
   id: string,
@@ -105,25 +106,6 @@ export interface PipelineStatusResponse {
   routing: Record<string, unknown> | null;
   prediction_count: number;
   execution_summary_text: string;
-}
-
-export interface UploadResponse {
-  upload_id: string;
-  status?: string;
-  filename: string;
-  rows: number;
-  columns: string[] | number;
-  detected_sector?: string;
-  sector?: string | null;
-  null_counts?: Record<string, number>;
-  dtypes?: Record<string, string>;
-  preview_rows?: Record<string, unknown>[];
-  column_profiles?: {
-    name: string;
-    inferredType: "numeric" | "categorical" | "boolean" | "text" | "date";
-    nullPercentage: number;
-    sampleValues: string[];
-  }[];
 }
 
 export interface AnalyzeResponse extends PipelineStatusResponse {
@@ -257,25 +239,54 @@ export function mapCanonicalPipeline(payload: Record<string, unknown> | null | u
 export function mapUploadPreview(upload: UploadResponse): UploadedDatasetPreview {
   const previewRows = upload.preview_rows || [];
   const dtypes = upload.dtypes || {};
-  const columns = upload.column_profiles || (Array.isArray(upload.columns)
-    ? upload.columns.map((name) => ({
-        name,
-        inferredType: "text" as const,
-        nullPercentage: 0,
-        sampleValues: previewRows.map((row) => String(row[name] ?? "")).filter(Boolean).slice(0, 3),
-      }))
-    : Object.keys(dtypes).map((name) => ({
-        name,
-        inferredType: String(dtypes[name]).includes("int") || String(dtypes[name]).includes("float") ? "numeric" as const : "categorical" as const,
-        nullPercentage: upload.null_counts?.[name] || 0,
-        sampleValues: previewRows.map((row) => String(row[name] ?? "")).filter(Boolean).slice(0, 3),
-      })));
+  const nullCounts = upload.null_counts || {};
+  const columnProfiles = upload.column_profiles || [];
+  const profilesByName = new Map(columnProfiles.map((profile) => [profile.name, profile]));
+  const reportedColumns = Array.isArray(upload.columns) ? upload.columns : [];
+  const columnCount = Array.isArray(upload.columns) ? upload.columns.length : upload.columns;
+  const columnNames = [...new Set([
+    ...reportedColumns,
+    ...Object.keys(dtypes),
+    ...Object.keys(nullCounts),
+    ...columnProfiles.map((profile) => profile.name),
+    ...previewRows.flatMap((row) => Object.keys(row)),
+  ])];
+  const columns = columnNames.map((name) => {
+    const hasMissingCount = Object.prototype.hasOwnProperty.call(upload.null_counts || {}, name)
+      && Number.isFinite(upload.null_counts?.[name]);
+    const missingCount = hasMissingCount ? upload.null_counts[name] : null;
+    const columnProfile = profilesByName.get(name);
+    const reportedMissingPercentage = typeof columnProfile?.nullPercentage === "number" && Number.isFinite(columnProfile.nullPercentage)
+      ? columnProfile.nullPercentage
+      : null;
+    return {
+      name,
+      backendDtype: dtypes[name] || "Not reported",
+      inferredType: typeof columnProfile?.inferredType === "string" ? columnProfile.inferredType : null,
+      missingCount,
+      missingPercentage: missingCount !== null && upload.rows > 0
+        ? (missingCount / upload.rows) * 100
+        : reportedMissingPercentage,
+      sampleValues: (columnProfile?.sampleValues?.length
+        ? columnProfile.sampleValues
+        : previewRows
+            .map((row) => row[name])
+            .filter((value) => value !== null && value !== undefined && value !== "")
+            .slice(0, 3)
+            .map((value) => typeof value === "object" ? JSON.stringify(value) : String(value))),
+    };
+  });
   return {
     fileName: upload.filename,
     rowCount: upload.rows,
-    columnCount: Array.isArray(upload.columns) ? upload.columns.length : upload.columns,
-    detectedSector: toSector(upload.detected_sector || upload.sector),
-    detectionConfidence: 100,
+    columnCount: typeof columnCount === "number" ? columnCount : columnNames.length,
+    detectedSector: upload.sector,
+    targetColumn: upload.target_column || null,
+    coverageScore: upload.coverage_score,
+    conceptConfidence: upload.concept_confidence,
+    warnings: upload.warnings || [],
+    previewRows,
+    missingCritical: upload.missing_critical || [],
     columns,
   };
 }

@@ -58,12 +58,19 @@ export interface UploadedDatasetPreview {
   fileName: string;
   rowCount: number;
   columnCount: number;
-  detectedSector: Sector;
-  detectionConfidence: number;
+  detectedSector: string | null;
+  targetColumn: string | null;
+  coverageScore: number | null;
+  conceptConfidence: number | null;
+  warnings: string[];
+  previewRows: Record<string, unknown>[];
+  missingCritical: string[];
   columns: {
     name: string;
-    inferredType: "numeric" | "categorical" | "boolean" | "text" | "date";
-    nullPercentage: number;
+    backendDtype: string;
+    inferredType: string | null;
+    missingCount: number | null;
+    missingPercentage: number | null;
     sampleValues: string[];
   }[];
 }

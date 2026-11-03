@@ -6,13 +6,21 @@ export interface UploadResponse {
   status: string;
   filename: string;
   rows: number;
-  columns: number;
+  columns: number | string[];
   null_counts: Record<string, number>;
   dtypes: Record<string, string>;
   sector: string | null;
   coverage_score: number | null;
   concept_confidence: number | null;
   preview_rows?: Record<string, unknown>[];
+  column_profiles?: {
+    name: string;
+    inferredType?: string;
+    nullPercentage?: number;
+    sampleValues?: string[];
+  }[];
+  missing_critical?: string[];
+  target_column?: string | null;
   warnings?: string[];
   created_at: string;
 }

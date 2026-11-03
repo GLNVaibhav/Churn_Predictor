@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion, useReducedMotion } from "motion/react";
 import { PageShell } from "@/components/layout/page-shell";
 import { SectionCard } from "@/components/shared/section-card";
-import { MetricCard } from "@/components/shared/metric-card";
+import { DatasetIntelligence } from "@/components/upload/dataset-intelligence";
+import AttractButton from "@/components/kokonutui/attract-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -17,27 +19,15 @@ import { sectorLabel } from "@/lib/constants/sectors";
 import { cn } from "@/lib/utils";
 import {
   ArrowRight,
-  BrainCircuit,
   CheckCircle2,
   DatabaseZap,
   FileJson,
-  FileSpreadsheet,
-  Gauge,
   Route,
-  ShieldCheck,
   UploadCloud,
 } from "lucide-react";
 
 const STEPS = ["Dataset", "Preview", "Industry", "Readiness", "Execute"] as const;
 const INDUSTRIES = ["telecom", "banking", "ecommerce", "healthcare"] as const;
-
-const typeStyles: Record<string, string> = {
-  numeric: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-200 dark:border-blue-800",
-  categorical: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-200 dark:border-violet-800",
-  boolean: "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-200 dark:border-teal-800",
-  text: "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700",
-  date: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-200 dark:border-orange-800",
-};
 
 export default function UploadPage() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -52,7 +42,10 @@ export default function UploadPage() {
   const [routingMode, setRoutingMode] = useState<"auto" | "manual">("manual");
   const [businessContextText, setBusinessContextText] = useState("");
   const [step, setStep] = useState(0);
+  const [browserFileSize, setBrowserFileSize] = useState<number | null>(null);
+  const [dragActive, setDragActive] = useState(false);
   const submissionLockRef = useRef(false);
+  const reduceMotion = useReducedMotion();
 
   const preview = useMemo(() => (upload.data ? mapUploadPreview(upload.data) : null), [upload.data]);
   const maxStep = preview ? 4 : 0;
@@ -77,7 +70,7 @@ export default function UploadPage() {
   const preflightChecks = useMemo(
     () => [
       { label: "CSV parsed", complete: Boolean(preview), detail: preview ? `${preview.rowCount.toLocaleString()} rows detected` : "Upload a customer CSV" },
-      { label: "Semantic mappings found", complete: Boolean(preview && preview.columnCount > 0 && preview.detectionConfidence > 0), detail: preview ? `${preview.detectionConfidence}% domain confidence` : "Waiting for schema scan" },
+      { label: "Dataset schema available", complete: Boolean(preview && preview.columnCount > 0), detail: preview ? `${preview.columnCount} columns returned by the upload API` : "Waiting for schema scan" },
       { label: "Context loaded", complete: contextValid, detail: contextValid ? `${contextSignalCount} business signals ready` : "Add a valid ABIL JSON context" },
     ],
     [contextSignalCount, contextValid, preview],
@@ -101,7 +94,7 @@ export default function UploadPage() {
     if (error) return;
     setProgress(0);
     setContextError(null);
-    upload.mutate({ file, onProgress: setProgress }, { onSuccess: () => setStep(1) });
+    upload.mutate({ file, onProgress: setProgress }, { onSuccess: () => { setBrowserFileSize(file.size); setStep(1); } });
   }
 
   function handleContextFile(file?: File) {
@@ -136,7 +129,7 @@ export default function UploadPage() {
     context.setExecutionContext({ sector: selectedSector });
 
     try {
-      await analyze.mutateAsync({ sector: selectedSector, businessContext });
+      await analyze.mutateAsync({ sector: selectedSector, mode: routingMode, businessContext });
       router.push("/workspace");
     } finally {
       submissionLockRef.current = false;
@@ -272,11 +265,16 @@ export default function UploadPage() {
 
           <SectionCard title="Dataset" description="Upload a CSV file for churn analysis">
             <input ref={inputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(event) => handleFile(event.target.files?.[0])} />
-            <div
-              className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-muted/25 px-6 py-10 text-center transition-colors hover:border-primary/40 hover:bg-muted/35"
-              onDragOver={(event) => event.preventDefault()}
+            <motion.div
+              className={cn("flex min-h-56 flex-col items-center justify-center gap-3 rounded-xl border border-dashed px-6 py-10 text-center transition-colors", dragActive ? "border-foreground bg-muted/50" : "border-border bg-muted/15 hover:border-foreground/40 hover:bg-muted/30", upload.isPending && "pointer-events-none opacity-60")}
+              animate={{ scale: dragActive ? 1.01 : 1 }}
+              transition={{ duration: reduceMotion ? 0 : 0.16 }}
+              onDragEnter={(event) => { event.preventDefault(); setDragActive(true); }}
+              onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragActive(false); }}
+              onDragOver={(event) => { event.preventDefault(); setDragActive(true); }}
               onDrop={(event) => {
                 event.preventDefault();
+                setDragActive(false);
                 handleFile(event.dataTransfer.files?.[0]);
               }}
             >
@@ -284,11 +282,11 @@ export default function UploadPage() {
                 <UploadCloud className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-sm font-semibold">Drop a customer dataset here</p>
+                <p className="text-sm font-semibold">{dragActive ? "Release to inspect this CSV" : "Drop a customer dataset here"}</p>
                 <p className="mt-1 text-xs text-muted-foreground">CSV only. The workspace will preview fields, industry fit, and analysis readiness.</p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={upload.isPending}>Browse files</Button>
-            </div>
+              <AttractButton type="button" onClick={() => inputRef.current?.click()} disabled={upload.isPending} className="border border-border bg-foreground text-background hover:bg-foreground/90 dark:bg-foreground dark:text-background">Browse files</AttractButton>
+            </motion.div>
             {validationError ? <ErrorBanner error={new Error(validationError)} /> : null}
             {upload.isPending ? (
               <div className="mt-4">
@@ -301,32 +299,7 @@ export default function UploadPage() {
 
           {preview ? (
             <>
-              <div className="grid gap-3 sm:grid-cols-4">
-                <MetricCard label="Rows" value={preview.rowCount.toLocaleString()} icon={FileSpreadsheet} />
-                <MetricCard label="Columns" value={String(preview.columnCount)} icon={BrainCircuit} />
-                <MetricCard label="Detected" value={sectorLabel(preview.detectedSector)} icon={ShieldCheck} />
-                <MetricCard label="Confidence" value={`${preview.detectionConfidence}%`} icon={Gauge} />
-              </div>
-
-              <SectionCard title="Data Preview" description="Detected columns, data types, and sample values">
-                <div className="overflow-hidden rounded-md border border-border/60">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
-                      <tr><th className="px-4 py-2">Column</th><th className="px-4 py-2">Type</th><th className="px-4 py-2">Null %</th><th className="px-4 py-2">Samples</th></tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/60">
-                      {preview.columns.slice(0, 12).map((col) => (
-                        <tr key={col.name} className="hover:bg-muted/30">
-                          <td className="px-4 py-2 font-mono text-xs">{col.name}</td>
-                          <td className="px-4 py-2"><Badge variant="outline" className={typeStyles[col.inferredType]}>{col.inferredType}</Badge></td>
-                          <td className="px-4 py-2 tabular-nums">{col.nullPercentage}%</td>
-                          <td className="max-w-sm truncate px-4 py-2 text-xs text-muted-foreground">{col.sampleValues.join(", ") || "-"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </SectionCard>
+              <DatasetIntelligence profile={preview} browserFileSize={browserFileSize} onBack={() => setStep(0)} onContinue={() => setStep(2)} />
 
               <SectionCard title="Business Context" description="ABIL JSON required for decision-aware execution">
                 <details className="group rounded-lg border border-border bg-muted/20" open={!contextValid}>
