@@ -50,6 +50,8 @@ dist/
 ########################################
 frontend/node_modules/
 frontend/.next/
+frontend/.next-local-build/
+frontend/.next-vdr03-build/
 frontend/out/
 frontend/.vercel/
 frontend/*.tsbuildinfo

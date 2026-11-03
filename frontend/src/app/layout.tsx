@@ -8,6 +8,7 @@ import { AuthProvider } from "@/lib/context/auth-context";
 import { ThemeProvider } from "@/lib/context/theme-context";
 import { ExecutionProvider } from "@/lib/context/execution-context";
 import { AppQueryProvider } from "@/lib/query-provider";
+import { MotionConfig } from "motion/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,6 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <MotionConfig reducedMotion="user">
         <AppQueryProvider>
           <ExecutionProvider>
             <TooltipProvider delay={150}>
@@ -47,6 +49,7 @@ export default function RootLayout({
             </TooltipProvider>
           </ExecutionProvider>
         </AppQueryProvider>
+        </MotionConfig>
       </body>
     </html>
   );

@@ -6,8 +6,8 @@ import { ApiError } from "@/lib/api/client";
 
 export function LoadingState({ label = "Loading live data..." }: { label?: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
-      <Loader2 className="h-4 w-4 animate-spin" />
+    <div role="status" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+      <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
       {label}
     </div>
   );
@@ -34,6 +34,9 @@ export function EmptyState({
 
 function errorTitle(error: unknown) {
   if (error instanceof ApiError) {
+    if (error.status === 404) return "Requested execution or resource was not found";
+    if (error.status === 401) return "Authentication required";
+    if (error.status === 403) return "Access denied";
     if (error.kind === "validation") return "Validation error";
     if (error.kind === "network") return "Network error";
     if (error.kind === "execution") return "Execution failure";

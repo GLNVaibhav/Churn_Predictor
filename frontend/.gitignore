@@ -47,6 +47,8 @@ dist/
 ########################################
 frontend/node_modules/
 frontend/.next/
+frontend/.next-local-build/
+frontend/.next-verify-real2/
 frontend/out/
 frontend/.vercel/
 frontend/*.tsbuildinfo

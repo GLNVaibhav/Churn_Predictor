@@ -6,9 +6,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { NAV_ITEMS, WORKSPACE_SECTIONS } from "@/lib/navigation";
 import { useExecutionContext } from "@/lib/context/execution-context";
-import type { Sector } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { FileSpreadsheet, FlaskConical, Search } from "lucide-react";
+import { FileSpreadsheet, Search } from "lucide-react";
 
 type CommandAction = {
   id: string;
@@ -16,7 +15,6 @@ type CommandAction = {
   description: string;
   href: string;
   keywords: string;
-  demoSector?: Sector;
 };
 
 export function CommandMenu() {
@@ -36,25 +34,19 @@ export function CommandMenu() {
     const workspaceActions = WORKSPACE_SECTIONS.map((section) => ({
       id: `workspace-${section.id}`,
       label: `Open ${section.label}`,
-      description: "Jump to analysis workspace section",
-      href: `/workspace?tab=${section.id}`,
+      description: ctx.executionId ? "Open this section for the selected execution" : "Select an execution from history to use this section",
+      href: ctx.executionId
+        ? `/workspace?execution_id=${encodeURIComponent(ctx.executionId)}&tab=${section.id}`
+        : `/workspace?tab=${section.id}`,
       keywords: `workspace ${section.label} analysis prediction evidence reports decision comparison`,
     }));
     return [
       { id: "upload-csv", label: "Upload CSV", description: "Start a new churn run from a customer dataset", href: "/upload", keywords: "new run upload csv dataset analysis" },
       { id: "landing", label: "Open product page", description: "View UCIF landing page", href: "/", keywords: "home landing product ucif" },
-      ...(["telecom", "banking", "ecommerce", "healthcare"] as Sector[]).map((sector) => ({
-        id: `demo-${sector}`,
-        label: `Load ${sector === "ecommerce" ? "E-commerce" : sector[0].toUpperCase() + sector.slice(1)} Demo`,
-        description: "Preview a populated workspace without uploading data",
-        href: `/workspace?demo=${sector}`,
-        keywords: `demo sample ${sector} workspace report run analysis`,
-        demoSector: sector,
-      })),
       ...navActions,
       ...workspaceActions,
     ];
-  }, []);
+  }, [ctx.executionId]);
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -83,9 +75,6 @@ export function CommandMenu() {
   }, []);
 
   function run(action: CommandAction) {
-    if (action.demoSector) {
-      ctx.setExecutionContext({ executionId: null, uploadId: null, sector: action.demoSector, status: "demo" });
-    }
     setOpen(false);
     setQuery("");
     router.push(action.href);
@@ -104,7 +93,7 @@ export function CommandMenu() {
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Upload CSV, load Banking demo, open reports..."
+            placeholder="Upload CSV, open analysis workspace, find reports…"
             className="h-10 border-0 px-0 text-sm focus-visible:ring-0"
           />
           <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">Esc</kbd>
@@ -122,7 +111,7 @@ export function CommandMenu() {
                 )}
               >
                 <span className="flex items-center gap-2 text-sm font-medium">
-                  {action.demoSector ? <FlaskConical className="h-3.5 w-3.5 text-muted-foreground" /> : action.id === "upload-csv" ? <FileSpreadsheet className="h-3.5 w-3.5 text-muted-foreground" /> : null}
+                  {action.id === "upload-csv" ? <FileSpreadsheet className="h-3.5 w-3.5 text-muted-foreground" /> : null}
                   {action.label}
                 </span>
                 <span className="mt-0.5 text-xs text-muted-foreground">{action.description}</span>

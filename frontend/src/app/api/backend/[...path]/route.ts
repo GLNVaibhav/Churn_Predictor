@@ -9,24 +9,20 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-function getBackendOrigin() {
-  return (
-    process.env.BACKEND_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    (process.env.NODE_ENV === "production"
-      ? "https://churn-framework-api.vercel.app"
-      : "http://localhost:8000")
-  ).replace(/\/$/, "");
-}
-
-const BACKEND_ORIGIN = getBackendOrigin();
+const BACKEND_ORIGIN =
+  process.env.BACKEND_URL ||
+  (process.env.VERCEL ? "https://churn-framework-api.vercel.app" : "http://localhost:8000");
 
 async function proxy(req: NextRequest, path: string[]) {
   const target = `${BACKEND_ORIGIN}/${path.join("/")}${req.nextUrl.search}`;
 
-  const headers = new Headers(req.headers);
-  headers.delete("host");
-  headers.delete("content-length");
+  const headers = new Headers();
+  const contentType = req.headers.get("content-type");
+  const accept = req.headers.get("accept");
+  const authorization = req.headers.get("authorization");
+  if (contentType) headers.set("content-type", contentType);
+  if (accept) headers.set("accept", accept);
+  if (authorization) headers.set("authorization", authorization);
 
   const init: RequestInit = {
     method: req.method,

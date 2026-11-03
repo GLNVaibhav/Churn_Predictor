@@ -94,9 +94,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-muted-foreground">{auth.user?.email || "No account signed in"}</p>
               </div>
             </div>
-            <Link href="/signin">
-              <Button variant="outline" size="sm" className="mt-4 w-full">{auth.user ? "Switch account" : "Sign in"}</Button>
-            </Link>
+            <Button variant="outline" size="sm" className="mt-4 w-full" render={<Link href="/signin" />}>{auth.user ? "Switch account" : "Sign in"}</Button>
           </SectionCard>
 
           <SectionCard title="Security" description="Customer access controls">
