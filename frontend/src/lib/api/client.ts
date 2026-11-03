@@ -21,21 +21,14 @@ export class ApiError extends Error {
 }
 
 function baseUrl() {
-  const url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
-  if (!url) {
-    if (process.env.NODE_ENV === "production") {
-      return "https://churn-framework-api.vercel.app";
-    }
-    return "/api/backend";
-  }
+  const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+  const isLocalApi = configuredUrl ? /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(configuredUrl) : false;
+  const isLocalBrowser = typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname);
 
-  const isLocalApi = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(url);
-  const isLocalBrowser =
-    typeof window !== "undefined" &&
-    ["localhost", "127.0.0.1"].includes(window.location.hostname);
-
-  if (isLocalApi && !isLocalBrowser) return "/api/backend";
-  return url;
+  // Production and local same-origin traffic uses the Next proxy, so backend origins
+  // remain server-side configuration and browser requests do not bypass the proxy.
+  if (!configuredUrl || !isLocalBrowser || isLocalApi) return "/api/backend";
+  return configuredUrl;
 }
 
 function classify(status: number): ApiErrorKind {

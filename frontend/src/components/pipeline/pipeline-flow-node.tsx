@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import { Handle, Position } from "@xyflow/react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { StageStatusBadge } from "@/components/shared/status-badge";
 import type { PipelineStage } from "@/lib/types";
@@ -31,7 +31,7 @@ function PipelineFlowNodeInner({ data }: { data: PipelineFlowNodeData }) {
       className={cn(
         "w-[220px] cursor-pointer rounded-xl border bg-card px-4 py-3 shadow-sm transition-colors",
         isSelected ? "border-primary/70 ring-1 ring-primary/40 shadow-md" : "border-border/60 hover:border-primary/40",
-        isRunning && "border-blue-500/60 ring-1 ring-blue-500/30"
+        isRunning && "border-info/60 ring-1 ring-info/30"
       )}
     >
       <Handle type="target" position={Position.Top} className="!bg-border !h-2 !w-2 !border-0" />

@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api/client";
+import { ApiError, apiRequest } from "@/lib/api/client";
 import { API } from "@/lib/api/endpoints";
 
 export type ExecutionStatus = "PENDING" | "RUNNING" | "SUCCEEDED" | "SUCCESS" | "FAILED" | "CANCELLED";
@@ -46,8 +46,17 @@ export function listExecutions(signal?: AbortSignal) {
   return apiRequest<ExecutionSummaryResponse[]>(API.executions, {}, signal);
 }
 
-export function getExecution(executionId: string, signal?: AbortSignal) {
-  return apiRequest<ExecutionDetailResponse>(API.execution(executionId), {}, signal);
+export async function getExecution(executionId: string, signal?: AbortSignal) {
+  try {
+    return await apiRequest<ExecutionDetailResponse>(API.execution(executionId), {}, signal);
+  } catch (error) {
+    // Prefer the detailed repository contract; fall back to history for older runtimes.
+    if (!(error instanceof ApiError) || error.status !== 404) throw error;
+    const executions = await listExecutions(signal);
+    const execution = executions.find((item) => item.execution_id === executionId);
+    if (!execution) throw error;
+    return { execution: execution as ExecutionSummaryResponse & Record<string, unknown> };
+  }
 }
 
 export function getExecutionPipeline(executionId: string, signal?: AbortSignal) {

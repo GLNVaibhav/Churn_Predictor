@@ -30,6 +30,8 @@ export function useExecution(executionId?: string | null) {
     queryKey: ["execution", id],
     enabled: Boolean(id),
     queryFn: ({ signal }) => getExecution(id as string, signal),
+    retry: (failureCount, error) => !isMissingExecution(error) && failureCount < 2,
+    retryDelay: (attempt) => Math.min(500 * 2 ** attempt, 2000),
     refetchInterval: (query) => {
       const status = String(query.state.data?.execution?.status || "");
       return isExecutionActive(status) ? 2000 : false;
@@ -38,7 +40,7 @@ export function useExecution(executionId?: string | null) {
 
   useEffect(() => {
     if (isMissingExecution(query.error)) {
-      ctx.clearExecutionContext();
+      if (ctx.executionId === id) ctx.clearExecutionContext();
       return;
     }
     const execution = query.data?.execution;
@@ -62,24 +64,25 @@ export function useExecution(executionId?: string | null) {
   };
 }
 
-export function useExecutionPipeline(executionId?: string | null, status?: string | null) {
+export function useExecutionPipeline(executionId?: string | null, status?: string | null, enabled = true) {
   const ctx = useExecutionContext();
   const id = executionId || ctx.executionId;
   return useQuery({
     queryKey: ["pipeline", id],
-    enabled: Boolean(id),
+    enabled: Boolean(id) && enabled,
     queryFn: ({ signal }) => getExecutionPipeline(id as string, signal),
     refetchInterval: () => (isExecutionActive(status) ? 2000 : false),
   });
 }
 
-export function useExecutionPredictions(executionId?: string | null) {
+export function useExecutionPredictions(executionId?: string | null, status?: string | null, enabled = true) {
   const ctx = useExecutionContext();
   const id = executionId || ctx.executionId;
   return useQuery({
     queryKey: ["predictions", id],
-    enabled: Boolean(id),
+    enabled: Boolean(id) && enabled,
     queryFn: ({ signal }) => getExecutionPredictions(id as string, signal),
+    refetchInterval: () => (isExecutionActive(status) ? 2000 : false),
   });
 }
 
@@ -152,8 +155,11 @@ export function useStartExecution() {
   const ctx = useExecutionContext();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (options?: { sector?: string | null; businessContext?: Record<string, unknown> | null }) =>
-      startAnalysis(ctx.uploadId as string, options?.sector ?? ctx.sector, options?.businessContext),
+    mutationFn: (options?: { sector?: string | null; mode?: string; businessContext?: Record<string, unknown> | null }) =>
+      startAnalysis(ctx.uploadId as string, options?.sector ?? ctx.sector, {
+        mode: options?.mode,
+        businessContext: options?.businessContext,
+      }),
     onSuccess: (analysis) => {
       ctx.setExecutionContext({
         uploadId: analysis.upload_id,

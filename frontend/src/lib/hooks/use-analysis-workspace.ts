@@ -6,16 +6,14 @@ import { ApiError } from "@/lib/api/client";
 import { getExecution, isExecutionActive } from "@/lib/api/executions";
 import { useExecutionContext } from "@/lib/context/execution-context";
 import { canonicalPayload } from "@/lib/api/view-models";
+import { markInvalidExecution } from "@/lib/hooks/use-latest-run-selection";
 
 function isMissingExecution(error: unknown) {
   if (error instanceof ApiError && error.status === 404) return true;
   return error instanceof Error && /execution not found/i.test(error.message);
 }
 
-/**
- * Single-fetch hook for the Analysis Workspace.
- * Loads execution once and reuses cached data across all sections.
- */
+/** Loads one selected execution and keeps its valid identity in local context. */
 export function useAnalysisWorkspace(executionId?: string | null) {
   const ctx = useExecutionContext();
   const id = executionId || ctx.executionId;
@@ -24,56 +22,57 @@ export function useAnalysisWorkspace(executionId?: string | null) {
     queryKey: ["workspace", id],
     enabled: Boolean(id),
     queryFn: ({ signal }) => getExecution(id as string, signal),
+    retry: (failureCount, error) => !isMissingExecution(error) && failureCount < 2,
+    retryDelay: (attempt) => Math.min(500 * 2 ** attempt, 2000),
     staleTime: 30_000,
     refetchInterval: (q) => {
       const payload = canonicalPayload(q.state.data);
-      const inner = payload?.execution as Record<string, unknown> | undefined;
-      const status = String(inner?.status || payload?.status || "");
+      const execution = payload?.execution as Record<string, unknown> | undefined;
+      const status = String(execution?.status || payload?.status || "");
       return isExecutionActive(status) ? 2000 : false;
     },
   });
 
   useEffect(() => {
     if (isMissingExecution(query.error)) {
-      ctx.clearExecutionContext();
+      if (id) markInvalidExecution(id);
+      if (ctx.executionId === id) ctx.clearExecutionContext();
       return;
     }
     const payload = canonicalPayload(query.data);
     if (!payload || !id) return;
-    const inner = payload.execution as Record<string, unknown> | undefined;
-    ctx.setExecutionContext({
+    const execution = payload.execution as Record<string, unknown> | undefined;
+    const dataset = payload.dataset as Record<string, unknown> | undefined;
+    const sameContext = ctx.executionId === id;
+    const next = {
       executionId: id,
-      uploadId: String(payload.upload_id || ctx.uploadId || ""),
-      filename: String((payload.dataset as Record<string, unknown> | undefined)?.filename || ctx.filename || ""),
-      sector: String((payload.dataset as Record<string, unknown> | undefined)?.sector || ctx.sector || ""),
-      status: String(inner?.status || payload.status || ctx.status || ""),
-    });
+      uploadId: typeof payload.upload_id === "string" ? payload.upload_id : sameContext ? ctx.uploadId : null,
+      filename: typeof dataset?.filename === "string" ? dataset.filename : sameContext ? ctx.filename : null,
+      sector:
+        typeof dataset?.sector === "string"
+          ? dataset.sector
+          : typeof payload.sector === "string"
+            ? payload.sector
+            : sameContext ? ctx.sector : null,
+      status:
+        typeof execution?.status === "string"
+          ? execution.status
+          : typeof payload.status === "string"
+            ? payload.status
+            : sameContext ? ctx.status : null,
+    };
+    if (
+      ctx.executionId !== next.executionId || ctx.uploadId !== next.uploadId || ctx.filename !== next.filename ||
+      ctx.sector !== next.sector || ctx.status !== next.status
+    ) ctx.setExecutionContext(next);
   }, [query.data, query.error, id, ctx]);
-
-  const payload = canonicalPayload(query.data);
-  const missingExecution = isMissingExecution(query.error);
 
   return {
     ...query,
-    error: missingExecution ? null : query.error,
-    isError: missingExecution ? false : query.isError,
     executionId: id,
-    payload,
-    predictions: (payload?.predictions as Record<string, unknown>[] | undefined) || [],
-    coverage: (payload?.coverage as Record<string, unknown> | undefined) || null,
-    quality: (payload?.quality as Record<string, unknown> | undefined) || null,
-    routing: (payload?.routing as Record<string, unknown> | undefined) || null,
-    prediction: (payload?.prediction as Record<string, unknown> | undefined) || null,
-    reasoning: (payload?.prediction_explanation as Record<string, unknown> | undefined) || null,
-    decision: (payload?.decision as Record<string, unknown> | undefined) || null,
-    pipeline: (payload?.pipeline as Record<string, unknown> | undefined) || null,
-    metadata: (payload?.metadata as Record<string, unknown> | undefined) || null,
-    reports: (payload?.reports as Record<string, unknown>[] | undefined) || [],
-    reportTexts: (payload?.report_texts as Record<string, string> | undefined) || {},
-    featureEngineering: (payload?.feature_engineering as Record<string, unknown> | undefined) || null,
-    semanticIntelligence: (payload?.semantic_intelligence as Record<string, unknown> | undefined) || null,
-    frameworkMapper: (payload?.framework_mapper as Record<string, unknown> | undefined) || null,
-    diagnostics: (payload?.diagnostics as Record<string, unknown> | undefined) || null,
-    executionState: (payload?.execution_state as Record<string, unknown> | undefined) || null,
+    payload: canonicalPayload(query.data),
+    reports: Array.isArray(canonicalPayload(query.data)?.reports)
+      ? canonicalPayload(query.data)?.reports as Record<string, unknown>[]
+      : [],
   };
 }
