@@ -2,3 +2,12 @@ fastapi==0.139.0
 starlette==1.3.1
 pydantic==2.13.4
 python-multipart==0.0.32
+uvicorn==0.50.2
+
+# Direct dependencies used by the active upload, analysis, and prediction path.
+numpy==2.4.6
+pandas==3.0.3
+scikit-learn==1.8.0
+imbalanced-learn==0.14.1
+xgboost==3.2.0
+joblib==1.5.3
