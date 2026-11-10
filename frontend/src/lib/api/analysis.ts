@@ -10,7 +10,7 @@ export interface AnalyzeStartResponse {
 export function startAnalysis(
   uploadId: string,
   sector?: string | null,
-  options?: { mode?: string; businessContext?: Record<string, unknown> | null },
+  options?: { mode?: string; businessContext?: Record<string, unknown> },
   signal?: AbortSignal,
 ) {
   return apiRequest<AnalyzeStartResponse>(
@@ -23,7 +23,7 @@ export function startAnalysis(
         mode: options?.mode || "auto",
         explain: true,
         include_reports: true,
-        business_context: options?.businessContext || undefined,
+        business_context: options?.businessContext,
       }),
     },
     signal,

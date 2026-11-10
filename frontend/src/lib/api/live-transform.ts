@@ -242,10 +242,7 @@ export function mapUploadPreview(upload: UploadResponse): UploadedDatasetPreview
   const nullCounts = upload.null_counts || {};
   const columnProfiles = upload.column_profiles || [];
   const profilesByName = new Map(columnProfiles.map((profile) => [profile.name, profile]));
-  const reportedColumns = Array.isArray(upload.columns) ? upload.columns : [];
-  const columnCount = Array.isArray(upload.columns) ? upload.columns.length : upload.columns;
   const columnNames = [...new Set([
-    ...reportedColumns,
     ...Object.keys(dtypes),
     ...Object.keys(nullCounts),
     ...columnProfiles.map((profile) => profile.name),
@@ -279,7 +276,7 @@ export function mapUploadPreview(upload: UploadResponse): UploadedDatasetPreview
   return {
     fileName: upload.filename,
     rowCount: upload.rows,
-    columnCount: typeof columnCount === "number" ? columnCount : columnNames.length,
+    columnCount: upload.columns,
     detectedSector: upload.sector,
     targetColumn: upload.target_column || null,
     coverageScore: upload.coverage_score,

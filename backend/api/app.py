@@ -52,9 +52,16 @@ def create_app() -> FastAPI:
     # Exception handlers
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request, exc: RequestValidationError):
+        # Pydantic v2 errors can carry exception objects in ``ctx`` and
+        # submitted values in ``input``. Return only safe JSON fields; do not
+        # echo raw request bodies (which may contain customer/context data).
+        errors = [
+            {key: value for key, value in error.items() if key not in {"ctx", "input"}}
+            for error in exc.errors()
+        ]
         return JSONResponse(
             status_code=422,
-            content={"detail": exc.errors(), "body": exc.body},
+            content={"detail": errors},
         )
 
     @app.exception_handler(Exception)

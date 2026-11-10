@@ -9,6 +9,7 @@ them into the persisted platform payload.
 """
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
@@ -19,6 +20,11 @@ from ..contracts.pipeline import PipelineStageInfo, PipelineSummary
 from ..models.execution_result import ExecutionResult
 from ..presentation import build_prediction_summary
 from ..utils import safe_get, to_serializable
+
+
+def _public_filename(path: Any) -> str:
+    """Expose the basename of an input file, never its server filesystem path."""
+    return Path(str(path).replace("\\", "/")).name
 
 
 def build_framework_metadata(sector: Optional[str] = None) -> FrameworkMetadata:
@@ -133,7 +139,7 @@ def build_framework_mapper_section(result: ExecutionResult) -> Dict[str, Any]:
 
 def build_cli_output_section(result: ExecutionResult, pipeline: PipelineSummary) -> Dict[str, Any]:
     """Render the CLI-style execution output for API/UI consumers."""
-    dataset_name = result.metadata.input_path or "uploaded dataset"
+    dataset_name = _public_filename(result.metadata.input_path) if result.metadata.input_path else "uploaded dataset"
     coverage = result.coverage or {}
     quality = result.quality or {}
     routing = result.routing
@@ -309,6 +315,8 @@ def enrich_platform_payload(
     payload = response.to_dict()
     dataset = payload.get("dataset") if isinstance(payload.get("dataset"), dict) else {}
     if isinstance(dataset, dict):
+        if dataset.get("filename"):
+            dataset["filename"] = _public_filename(dataset["filename"])
         dataset["sector"] = dataset.get("sector") or execution_result.sector
         payload["dataset"] = dataset
         payload["sector"] = dataset.get("sector")
@@ -366,5 +374,11 @@ def enrich_platform_payload(
         payload["upload_id"] = upload_id
 
     payload["execution_result"] = execution_result.to_dict(include_dataframe=False)
+    result_metadata = payload["execution_result"].get("metadata")
+    if isinstance(result_metadata, dict) and result_metadata.get("input_path"):
+        result_metadata["input_path"] = _public_filename(result_metadata["input_path"])
+    execution_state = payload.get("execution_state")
+    if isinstance(execution_state, dict) and execution_state.get("input_path"):
+        execution_state["input_path"] = _public_filename(execution_state["input_path"])
 
     return payload

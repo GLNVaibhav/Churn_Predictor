@@ -155,7 +155,7 @@ export function useStartExecution() {
   const ctx = useExecutionContext();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (options?: { sector?: string | null; mode?: string; businessContext?: Record<string, unknown> | null }) =>
+    mutationFn: (options?: { sector?: string | null; mode?: string; businessContext?: Record<string, unknown> }) =>
       startAnalysis(ctx.uploadId as string, options?.sector ?? ctx.sector, {
         mode: options?.mode,
         businessContext: options?.businessContext,

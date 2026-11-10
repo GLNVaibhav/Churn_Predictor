@@ -54,12 +54,18 @@ class ExecutionRepository:
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     data = json.load(f)
+                if not isinstance(data, dict):
+                    continue
                 execution = data.get("execution") if isinstance(data.get("execution"), dict) else data
+                status = execution.get("status")
+                if not status:
+                    # Upload profiles share this repository but are not executions.
+                    continue
                 execution_id = execution.get("execution_id") or fname.replace(".json", "")
                 dataset = data.get("dataset") or {}
                 summaries.append({
                     "execution_id": execution_id,
-                    "status": execution.get("status"),
+                    "status": status,
                     "created_at": execution.get("created_at") or execution.get("started_at"),
                     "started_at": execution.get("started_at"),
                     "completed_at": execution.get("completed_at"),

@@ -6,7 +6,7 @@ export interface UploadResponse {
   status: string;
   filename: string;
   rows: number;
-  columns: number | string[];
+  columns: number;
   null_counts: Record<string, number>;
   dtypes: Record<string, string>;
   sector: string | null;

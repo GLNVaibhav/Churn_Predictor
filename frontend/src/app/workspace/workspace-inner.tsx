@@ -166,6 +166,7 @@ export default function WorkspacePageInner() {
     ? "Partially completed"
     : status ? status.replaceAll("_", " ") : "Unavailable";
   const hasDetailPredictionRows = Array.isArray(payload?.predictions) && payload.predictions.length > 0;
+  const executionError = typeof payload?.error === "string" ? payload.error : null;
   const shouldLoadPredictionEndpoint = Boolean(selectedExecutionId && workspace.isSuccess && payload && !hasDetailPredictionRows);
   const predictionQuery = useExecutionPredictions(selectedExecutionId, status, shouldLoadPredictionEndpoint);
   const notFound = workspace.error instanceof ApiError && workspace.error.status === 404;
@@ -223,6 +224,7 @@ export default function WorkspacePageInner() {
               {typeof execution.progress === "number" && Number.isFinite(execution.progress) ? <WorkspaceMeta icon={Clock3} label="Progress (API value)" value={String(execution.progress)} /> : null}
             </div>
           </section>
+          {(["FAILED", "CANCELLED"].includes(status)) ? <ErrorBanner error={new Error(executionError || (status === "CANCELLED" ? "This execution was cancelled." : "Analysis did not complete. Review the dataset and selected sector, then retry."))} /> : null}
 
           <nav aria-label="Execution analysis sections" className="sticky top-0 z-20 -mx-4 border-y border-border/80 bg-background/95 px-4 py-2 backdrop-blur sm:-mx-5 sm:px-5 lg:-mx-6 lg:px-6">
             <div ref={sectionNavRef} className="flex gap-1 overflow-x-auto">

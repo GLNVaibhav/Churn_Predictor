@@ -38,8 +38,7 @@ function classify(status: number): ApiErrorKind {
   return "unknown";
 }
 
-async function parseBody(res: Response) {
-  const text = await res.text();
+function parseTextBody(text: string) {
   if (!text) return null;
   try {
     return JSON.parse(text);
@@ -48,16 +47,22 @@ async function parseBody(res: Response) {
   }
 }
 
+async function parseBody(res: Response) {
+  return parseTextBody(await res.text());
+}
+
 export async function apiRequest<T>(
   path: string,
   init: RequestInit = {},
   signal?: AbortSignal,
 ): Promise<T> {
   let res: Response;
+  const timeoutSignal = AbortSignal.timeout(30_000);
+  const requestSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
   try {
     res = await fetch(`${baseUrl()}${path}`, {
       ...init,
-      signal,
+      signal: requestSignal,
       cache: "no-store",
       headers: {
         ...(init.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
@@ -66,6 +71,7 @@ export async function apiRequest<T>(
     });
   } catch (error) {
     if (signal?.aborted) throw error;
+    if (timeoutSignal.aborted) throw new ApiError("API request timed out. Please retry.", "network");
     throw new ApiError("API unavailable. Check that the FastAPI contract service is running.", "backend_unavailable");
   }
 
@@ -91,6 +97,7 @@ export function uploadWithProgress<T>(
     try {
       xhr = new XMLHttpRequest();
       xhr.open("POST", `${baseUrl()}${path}`);
+      xhr.timeout = 120_000;
     } catch (error) {
       reject(error);
       return;
@@ -110,7 +117,7 @@ export function uploadWithProgress<T>(
 
     xhr.onload = () => {
       signal?.removeEventListener("abort", abort);
-      const body = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+      const body = parseTextBody(xhr.responseText);
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve(body as T);
         return;
@@ -120,6 +127,10 @@ export function uploadWithProgress<T>(
     xhr.onerror = () => {
       signal?.removeEventListener("abort", abort);
       reject(new ApiError("API unavailable. Check that the FastAPI contract service is running.", "backend_unavailable"));
+    };
+    xhr.ontimeout = () => {
+      signal?.removeEventListener("abort", abort);
+      reject(new ApiError("Dataset upload timed out. Please retry.", "network"));
     };
     xhr.send(formData);
   });

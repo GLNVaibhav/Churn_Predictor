@@ -10,17 +10,8 @@ _REQUIRED = {"category", "description", "severity", "confidence"}
 _SEVERITIES = {"LOW", "MEDIUM", "HIGH", "CRITICAL"}
 
 
-def load_business_context(path: str | None) -> tuple[dict[str, Any], ...]:
-    """Load and validate a context document; absence deliberately yields no evidence."""
-    if path is None:
-        return ()
-    source = Path(path)
-    if not source.is_file():
-        raise ValueError(f"Business context file was not found: {source}")
-    try:
-        document = json.loads(source.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"Business context is not valid JSON: {exc}") from exc
+def validate_business_context(document: Any) -> tuple[dict[str, Any], ...]:
+    """Validate the ABIL document shape shared by API and CLI ingestion."""
     if not isinstance(document, dict) or not isinstance(document.get("events"), list):
         raise ValueError("Business context must be an object containing an 'events' list.")
     validated = []
@@ -38,3 +29,17 @@ def load_business_context(path: str | None) -> tuple[dict[str, Any], ...]:
             raise ValueError(f"Context event {index} confidence must be between 0 and 1.")
         validated.append({**event, "severity": severity, "confidence": confidence})
     return tuple(validated)
+
+
+def load_business_context(path: str | None) -> tuple[dict[str, Any], ...]:
+    """Load and validate a context document; absence deliberately yields no evidence."""
+    if path is None:
+        return ()
+    source = Path(path)
+    if not source.is_file():
+        raise ValueError(f"Business context file was not found: {source}")
+    try:
+        document = json.loads(source.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Business context is not valid JSON: {exc}") from exc
+    return validate_business_context(document)

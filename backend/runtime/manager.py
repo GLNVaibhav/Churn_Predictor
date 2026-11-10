@@ -1,8 +1,11 @@
 import asyncio
+import logging
 import uuid
 from typing import Callable, Awaitable, Dict, Any, Optional
 from .repository import ExecutionRepository
 from ..contracts.execution import ExecutionInfo
+
+logger = logging.getLogger(__name__)
 
 class ExecutionManager:
     """Manages background execution tasks and updates their state.
@@ -18,7 +21,11 @@ class ExecutionManager:
         self._tasks: Dict[str, asyncio.Task] = {}
         self._cancel_flags: Dict[str, asyncio.Event] = {}
 
-    def start_execution(self, coro_factory: Callable[[str, asyncio.Event], Awaitable[Dict[str, Any]]]) -> str:
+    def start_execution(
+        self,
+        coro_factory: Callable[[str, asyncio.Event], Awaitable[Dict[str, Any]]],
+        initial_data: Optional[Dict[str, Any]] = None,
+    ) -> str:
         """Create a new execution entry and schedule the coroutine.
 
         Parameters
@@ -35,10 +42,11 @@ class ExecutionManager:
         # initialise repository entry with PENDING status
         exec_info = ExecutionInfo.start()
         exec_info.execution_id = execution_id  # overwrite generated id with our own
-        self.repo.save(execution_id, exec_info.to_dict())
+        initial_payload = {**exec_info.to_dict(), **(initial_data or {})}
+        self.repo.save(execution_id, initial_payload)
         cancel_event = asyncio.Event()
         self._cancel_flags[execution_id] = cancel_event
-        task = asyncio.create_task(self._run_task(execution_id, coro_factory, cancel_event))
+        task = asyncio.create_task(self._run_task(execution_id, coro_factory, cancel_event, initial_data or {}))
         self._tasks[execution_id] = task
         return execution_id
 
@@ -47,6 +55,7 @@ class ExecutionManager:
         execution_id: str,
         coro_factory: Callable[[str, asyncio.Event], Awaitable[Dict[str, Any]]],
         cancel_event: asyncio.Event,
+        initial_data: Dict[str, Any],
     ) -> None:
         """Execute the underlying coroutine and persist results.
         Updates the repository with intermediate status changes.
@@ -54,19 +63,31 @@ class ExecutionManager:
         exec_info = ExecutionInfo.start()
         exec_info.execution_id = execution_id
         exec_info.status = "RUNNING"
-        self.repo.save(execution_id, exec_info.to_dict())
+        self.repo.save(execution_id, {**exec_info.to_dict(), **initial_data})
         try:
             result = await coro_factory(execution_id, cancel_event)
             exec_info = exec_info.mark_succeeded()
-            payload = {**exec_info.to_dict(), **result}
+            payload = {**exec_info.to_dict(), **initial_data, **result}
             self.repo.save(execution_id, payload)
         except asyncio.CancelledError:
             exec_info = exec_info.mark_failed()
             exec_info.status = "CANCELLED"
-            self.repo.save(execution_id, exec_info.to_dict())
-        except Exception:
+            self.repo.save(execution_id, {**exec_info.to_dict(), **initial_data, "error": "Execution was cancelled."})
+        except Exception as exc:
+            logger.exception("Execution %s failed", execution_id)
             exec_info = exec_info.mark_failed()
-            self.repo.save(execution_id, exec_info.to_dict())
+            # Keep internal exception details in server logs; only a safe,
+            # actionable summary is persisted for frontend consumers.
+            message = str(exc).lower()
+            if isinstance(exc, FileNotFoundError):
+                detail = "The uploaded dataset is no longer available. Upload it again and retry."
+            elif any(token in message for token in ("target", "churn column", "required column")):
+                detail = "The dataset does not contain a usable churn target for the selected sector. Review its columns and sector selection."
+            elif any(token in message for token in ("csv", "parser", "unicode")):
+                detail = "The uploaded file could not be read as a valid CSV. Check its encoding and delimiter."
+            else:
+                detail = "Analysis did not complete. Review the dataset and selected sector, then retry."
+            self.repo.save(execution_id, {**exec_info.to_dict(), **initial_data, "error": detail})
         finally:
             self._tasks.pop(execution_id, None)
             self._cancel_flags.pop(execution_id, None)

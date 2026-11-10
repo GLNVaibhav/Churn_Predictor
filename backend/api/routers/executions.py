@@ -29,7 +29,10 @@ def list_executions(repo=Depends(get_execution_repository)):
 
 def _load_execution(execution_id: str, repo) -> dict:
     data = repo.load(execution_id)
-    if data is None:
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Execution not found")
+    execution = data.get("execution") if isinstance(data.get("execution"), dict) else data
+    if not isinstance(execution, dict) or not execution.get("status"):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Execution not found")
     return data
 

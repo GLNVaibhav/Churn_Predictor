@@ -20,20 +20,26 @@ async def upload_file(
     repo = Depends(get_execution_repository),
     service = Depends(get_upload_service),
 ):
-    if not file.filename.lower().endswith('.csv'):
+    filename = Path((file.filename or "").replace("\\", "/")).name
+    if not filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only .csv files are supported")
+
+    contents = await file.read(settings.MAX_UPLOAD_SIZE + 1)
+    if len(contents) > settings.MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=413, detail="CSV files must be 10 MB or smaller")
+    if not contents:
+        raise HTTPException(status_code=400, detail="The uploaded CSV is empty")
 
     upload_id = uuid.uuid4().hex
     upload_dir = Path(settings.UPLOAD_ROOT) / upload_id
     upload_dir.mkdir(parents=True, exist_ok=True)
-    file_path = upload_dir / file.filename
+    file_path = upload_dir / filename
 
     # Save uploaded file
-    contents = await file.read()
     file_path.write_bytes(contents)
 
     # Process profiling and business logic via service
-    profiling = service.process_upload(file_path, file.filename)
+    profiling = service.process_upload(file_path, filename)
 
     # Persist upload metadata in repository (using upload_id as key)
     repo.save(upload_id, {"upload_id": upload_id, **profiling})
@@ -41,7 +47,7 @@ async def upload_file(
     return UploadResponse(
         upload_id=upload_id,
         status="READY",
-        filename=file.filename,
+        filename=filename,
         rows=profiling["rows"],
         columns=profiling["columns"],
         null_counts=profiling["null_counts"],

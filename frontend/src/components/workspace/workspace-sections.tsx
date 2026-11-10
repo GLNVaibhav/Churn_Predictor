@@ -465,6 +465,7 @@ function DecisionSection({ payload, executionId }: { payload: JsonObject; execut
   const decision = object(payload.decision);
   const explanation = object(payload.prediction_explanation);
   const adaptive = object(payload.adaptive_business);
+  const contextAssessment = object(adaptive?.assessment);
   const prediction = object(payload.prediction);
   const contractRuntime = isContractRuntimeResponse(payload);
   const signals = array(adaptive?.signals)?.map(object).filter((signal): signal is JsonObject => Boolean(signal)) || [];
@@ -499,6 +500,8 @@ function DecisionSection({ payload, executionId }: { payload: JsonObject; execut
       </div>
 
       <SectionCard title="Business context signals" description="External context supplied to or returned by this execution; signal confidence is not churn probability or causal evidence." action={<DataSourceBadge kind={signals.length ? "available" : "unavailable"} label={signals.length ? `${signals.length} returned signals` : "No signals returned"} />}>
+        {contextAssessment ? <section className="mb-4 grid gap-3 sm:grid-cols-3" aria-label="ABIL context assessment"><Metric label="Context priority" value={display(contextAssessment.priority)} /><Metric label="Dominant context signal" value={display(contextAssessment.dominant_driver)} /><Metric label="Signals evaluated" value={display(contextAssessment.signals_evaluated)} /></section> : null}
+        {contextAssessment ? <p className="mb-4 text-xs leading-5 text-muted-foreground">Context priority is ranked from supplied signal severity. It is separate from model churn probability, customer-level prediction, and causal evidence.</p> : null}
         {signals.length ? <div className="grid gap-3 lg:grid-cols-2">{signals.map((signal, index) => <article key={`${display(signal.name)}-${index}`} className="rounded-xl border border-border bg-muted/10 p-4"><div className="flex flex-wrap items-start justify-between gap-2"><h3 className="font-semibold">{display(signal.name)}</h3>{present(signal, "impact") ? <Badge variant="outline">Reported impact · {display(signal.impact)}</Badge> : null}</div>{present(signal, "value") ? <p className="mt-3 text-sm leading-6">{display(signal.value)}</p> : null}<dl className="mt-3 grid gap-2 sm:grid-cols-2">{present(signal, "confidence") ? <Field label="Signal confidence" value={formattedPercent(signal.confidence)} /> : null}{present(signal, "department") ? <Field label="Department" value={display(signal.department)} /> : null}{present(signal, "source") ? <Field label="Source" value={display(signal.source)} /> : null}</dl>{present(signal, "recommendation_influence") ? <p className="mt-3 border-t border-border pt-3 text-xs leading-5 text-muted-foreground">{display(signal.recommendation_influence)}</p> : null}</article>)}</div> : <Unavailable text="No adaptive business signals were returned for this execution." />}
       </SectionCard>
 
