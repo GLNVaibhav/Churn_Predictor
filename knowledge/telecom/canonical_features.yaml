@@ -4,7 +4,9 @@ CustomerTenure:
   optional_evidence: [Lifecycle, ActivityRecency]
   derivation_strategy: direct_or_mean_numeric
   confidence_rules: {direct: 1.0, derived: 0.75, minimum: 0.60}
-  supported_raw_concepts: [CustomerTenure, Lifecycle]
+  # A generic lifecycle label is not a duration measurement. Only an
+  # explicitly resolved tenure concept may populate this model feature.
+  supported_raw_concepts: [CustomerTenure]
 RecurringRevenue:
   description: Recurring customer revenue or recharge value.
   required_evidence: [RechargeValue, AverageRevenuePerUser, Revenue]

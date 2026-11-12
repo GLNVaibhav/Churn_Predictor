@@ -25,6 +25,7 @@ def _airtel_frame() -> pd.DataFrame:
 def test_builder_aligns_canonical_order_and_exports_no_raw_feature_columns(tmp_path):
     dataset = build_universal_training_dataset(
         [DatasetInput("Airtel", _airtel_frame(), "Churn")], sector="telecom",
+        validation_config=DatasetValidationConfig(minimum_coverage=0.50, allow_partial=True),
     )
     assert dataset.accepted_origins == ("Airtel",)
     assert tuple(dataset.rows.columns[:len(dataset.canonical_features)]) == dataset.canonical_features
@@ -61,3 +62,4 @@ def test_critical_concepts_can_be_governed_without_fabricating_them():
     assert result.readiness is DatasetReadiness.INSUFFICIENT
     assert result.accepted is False
     assert "CustomerTenure" in result.missing_critical_concepts
+    assert "CustomerTenure" not in dataset.dataset_reports[0].accepted_features
