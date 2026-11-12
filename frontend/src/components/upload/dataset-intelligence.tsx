@@ -159,6 +159,13 @@ export function DatasetIntelligence({ profile, browserFileSize, onBack, onContin
           </div>
           <Badge variant="outline">{profile.detectedSector || "Sector not reported"}</Badge>
         </div>
+        {profile.sectorDetection ? (
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            {profile.sectorDetection.status === "DETECTED"
+              ? `Automatic schema match: ${profile.sectorDetection.signatureHits} domain-specific column signatures.`
+              : "Automatic sector is uncertain. Select Manual Override and confirm the industry before running analysis."}
+          </p>
+        ) : null}
 
         <dl className="mt-5 grid grid-cols-2 gap-2 lg:grid-cols-4">
           <Metric label="Rows" value={profile.rowCount.toLocaleString()} icon={<FileSpreadsheet className="h-3.5 w-3.5" />} />

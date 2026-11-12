@@ -6,6 +6,7 @@ All functions are pure (no side effects on disk or global state).
 from __future__ import annotations
 import numpy as np
 import pandas as pd
+import re
 from .config import SECTOR_SIGNATURES, MIN_SIGNATURE_HITS
 
 
@@ -89,23 +90,30 @@ def derive_temporal_features(df: pd.DataFrame) -> pd.DataFrame:
     return df_out
 
 
+def sector_signature_scores(df: pd.DataFrame) -> dict[str, int]:
+    """Return domain-signature hit counts for a dataset's column schema."""
+    normalized_cols = {
+        re.sub(r"[^a-z0-9]", "", str(column).casefold())
+        for column in df.columns
+    }
+    scores: dict[str, int] = {}
+    for sector, variants in SECTOR_SIGNATURES.items():
+        scores[sector] = max(
+            (len(normalized_cols & {
+                re.sub(r"[^a-z0-9]", "", str(signature).casefold())
+                for signature in variant
+            }) for variant in variants),
+            default=0,
+        )
+    return scores
+
+
 def detect_sector(df: pd.DataFrame) -> str:
     """
     Inspect a DataFrame's column names and return the best-matching sector key.
     Raises ValueError if no sector reaches MIN_SIGNATURE_HITS or if there's a tie.
     """
-    normalized_cols = {
-        c.strip().lower().replace(' ', '').replace('_', '')
-        for c in df.columns
-    }
-    scores = {}
-    for sector, variants in SECTOR_SIGNATURES.items():
-        best = 0
-        for signature in variants:
-            # FIX: replace '_' with '' (not ' ') so 'visits_last_year' → 'visitslastyear'
-            sig_norm = {s.replace(' ', '').replace('_', '') for s in signature}
-            best = max(best, len(normalized_cols & sig_norm))
-        scores[sector] = best
+    scores = sector_signature_scores(df)
 
     best_sector = max(scores, key=scores.get)
     best_score = scores[best_sector]
@@ -113,7 +121,8 @@ def detect_sector(df: pd.DataFrame) -> str:
     if best_score < MIN_SIGNATURE_HITS:
         raise ValueError(
             f"Could not auto-detect sector (best: '{best_sector}' with only "
-            f"{best_score} signature columns). Pass --sector explicitly. "
+            f"{best_score} signature columns; scores={scores}). "
+            "Select the sector manually to continue. "
             f"Columns seen: {list(df.columns)}"
         )
 
@@ -121,7 +130,8 @@ def detect_sector(df: pd.DataFrame) -> str:
     if len(top_sectors) > 1:
         raise ValueError(
             f"Ambiguous sector match between {top_sectors} "
-            f"(each scored {best_score} hits). Pass --sector explicitly."
+            f"(each scored {best_score} hits; scores={scores}). "
+            "Select the sector manually to continue."
         )
 
     return best_sector

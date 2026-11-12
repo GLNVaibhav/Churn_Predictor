@@ -278,6 +278,12 @@ export function mapUploadPreview(upload: UploadResponse): UploadedDatasetPreview
     rowCount: upload.rows,
     columnCount: upload.columns,
     detectedSector: upload.sector,
+    sectorDetection: upload.sector_detection ? {
+      status: upload.sector_detection.status,
+      sector: upload.sector_detection.sector,
+      signatureHits: upload.sector_detection.signature_hits,
+      candidateScores: upload.sector_detection.candidate_scores,
+    } : null,
     targetColumn: upload.target_column || null,
     coverageScore: upload.coverage_score,
     conceptConfidence: upload.concept_confidence,

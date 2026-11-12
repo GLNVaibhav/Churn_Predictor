@@ -10,6 +10,7 @@ class UploadResponse(BaseModel):
     null_counts: Dict[str, int]
     dtypes: Dict[str, str]
     sector: Optional[str] = None
+    sector_detection: Optional[Dict[str, Any]] = None
     coverage_score: Optional[float] = None
     concept_confidence: Optional[float] = None
     preview_rows: Optional[List[Dict]] = None  # first 5 rows

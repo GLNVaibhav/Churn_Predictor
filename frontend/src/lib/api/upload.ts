@@ -10,6 +10,12 @@ export interface UploadResponse {
   null_counts: Record<string, number>;
   dtypes: Record<string, string>;
   sector: string | null;
+  sector_detection?: {
+    status: "DETECTED" | "UNCERTAIN";
+    sector: string | null;
+    signature_hits: number;
+    candidate_scores: Record<string, number>;
+  };
   coverage_score: number | null;
   concept_confidence: number | null;
   preview_rows?: Record<string, unknown>[];

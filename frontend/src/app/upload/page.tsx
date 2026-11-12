@@ -42,8 +42,8 @@ export default function UploadPage() {
   const [progress, setProgress] = useState(0);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [contextError, setContextError] = useState<string | null>(null);
-  const [selectedSector, setSelectedSector] = useState<string>("telecom");
-  const [routingMode, setRoutingMode] = useState<"auto" | "manual">("manual");
+  const [selectedSector, setSelectedSector] = useState<string>("");
+  const [routingMode, setRoutingMode] = useState<"auto" | "manual">("auto");
   const [businessContextText, setBusinessContextText] = useState("");
   const [step, setStep] = useState(0);
   const [browserFileSize, setBrowserFileSize] = useState<number | null>(null);
@@ -69,6 +69,9 @@ export default function UploadPage() {
           (event.affected_segments === undefined || (Array.isArray(event.affected_segments) && event.affected_segments.every((segment) => typeof segment === "string"))) &&
           (event.source === undefined || typeof event.source === "string") &&
           (event.recommendation === undefined || typeof event.recommendation === "string") &&
+          (event.recommended_action === undefined || typeof event.recommended_action === "string") &&
+          (event.department === undefined || typeof event.department === "string") &&
+          (event.priority === undefined || (Number.isInteger(event.priority) && Number(event.priority) >= 1 && Number(event.priority) <= 5)) &&
           (event.timestamp === undefined || typeof event.timestamp === "string")
         )
       );
@@ -90,6 +93,13 @@ export default function UploadPage() {
       { label: "CSV parsed", complete: Boolean(preview), detail: preview ? `${preview.rowCount.toLocaleString()} rows detected` : "Upload a customer CSV" },
       { label: "Dataset schema available", complete: Boolean(preview && preview.columnCount > 0), detail: preview ? `${preview.columnCount} columns returned by the upload API` : "Waiting for schema scan" },
       {
+        label: "Sector selection",
+        complete: routingMode === "manual" ? Boolean(selectedSector) : Boolean(preview?.detectedSector),
+        detail: routingMode === "manual"
+          ? selectedSector ? `Manual override: ${sectorLabel(selectedSector)}` : "Choose an industry for manual routing"
+          : preview?.detectedSector ? `Detected: ${sectorLabel(preview.detectedSector)}` : "Automatic sector is uncertain; choose Manual Override and confirm an industry",
+      },
+      {
         label: "Context preview (optional)",
         complete: true,
         detail: contextValid
@@ -99,7 +109,7 @@ export default function UploadPage() {
             : "No context supplied; analysis can continue without ABIL",
       },
     ],
-    [businessContextText, contextSignalCount, contextValid, preview],
+    [businessContextText, contextSignalCount, contextValid, preview, routingMode, selectedSector],
   );
   const preflightReady = preflightChecks.every((item) => item.complete);
 
@@ -136,6 +146,14 @@ export default function UploadPage() {
 
   async function runAnalysis() {
     if (submissionLockRef.current || analyze.isPending) return;
+    if (routingMode === "auto" && !preview?.detectedSector) {
+      setContextError("Automatic sector detection is uncertain. Choose Manual Override and select the industry to continue.");
+      return;
+    }
+    if (!selectedSector) {
+      setContextError("Select an industry before starting analysis.");
+      return;
+    }
 
     const trimmed = businessContextText.trim();
     let businessContext: Record<string, unknown> | undefined;
@@ -164,7 +182,7 @@ export default function UploadPage() {
       // The UI's manual option means an explicit sector model. The backend
       // accepts only `sector`, `universal`, or `auto` as execution modes.
       await analyze.mutateAsync({
-        sector: selectedSector,
+        sector: routingMode === "manual" ? selectedSector : undefined,
         mode: routingMode === "manual" ? "sector" : "auto",
         businessContext,
       });
@@ -236,9 +254,9 @@ export default function UploadPage() {
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Industry</p>
-                  <Select value={selectedSector} onValueChange={(value) => value && setSelectedSector(value)}>
+                  <Select value={selectedSector || undefined} onValueChange={(value) => value && setSelectedSector(value)}>
                     <SelectTrigger className="mt-2 bg-background">
-                      <SelectValue />
+                      <SelectValue placeholder="Select an industry" />
                     </SelectTrigger>
                     <SelectContent>
                       {INDUSTRIES.map((industry) => (
@@ -251,7 +269,9 @@ export default function UploadPage() {
                   <p className="mt-2 text-xs leading-5 text-muted-foreground">
                     {routingMode === "manual"
                       ? "Manual selection will be used for this run."
-                      : `Auto-route is using ${sectorLabel(preview?.detectedSector || selectedSector)} from dataset detection.`}
+                      : preview?.detectedSector
+                        ? `Automatic routing detected ${sectorLabel(preview.detectedSector)}. The backend will independently detect the schema for execution.`
+                        : "Automatic routing is unavailable for this schema. Confirm an industry using Manual Override."}
                   </p>
                 </div>
                 <label className="flex cursor-pointer items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted">
@@ -386,7 +406,7 @@ export default function UploadPage() {
                 <div>
                   <p className="text-sm font-semibold">Ready to execute</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {preview.fileName} will run as {sectorLabel(selectedSector)} using {routingMode === "manual" ? "manual override" : "auto-route"}. {contextValid ? `${contextSignalCount} ABIL signals will inform decision support only;` : "No ABIL context is attached;"} model predictions remain independent of business context.
+                    {preview.fileName} will run {routingMode === "manual" ? `as ${sectorLabel(selectedSector)} using manual override` : `using automatic ${preview.detectedSector ? sectorLabel(preview.detectedSector) : "unconfirmed sector"} routing`}. {contextValid ? `${contextSignalCount} ABIL signals will inform decision support only;` : "No ABIL context is attached;"} model predictions remain independent of business context.
                   </p>
                 </div>
                 <Button onClick={runAnalysis} disabled={!context.uploadId || !preflightReady || analyze.isPending || submissionLockRef.current}>

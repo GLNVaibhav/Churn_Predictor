@@ -126,10 +126,19 @@ SECTOR_SIGNATURES = {
     'telecom': [
         {'monthlycharges', 'totalcharges', 'contract', 'internetservice',
          'phoneservice', 'multiplelines', 'streamingtv'},
+        {'tenuremonths', 'arpu', 'dayssincerecharge', 'datausagegb',
+         'networkquality', 'calldrops', 'rechargecount', 'simagedays',
+         'voiceminutes', 'roamingdays', 'networktype'},
     ],
     'ecommerce': [
         {'cashbackamount', 'daysincelastorder', 'couponused', 'ordercount',
          'warehousetohome', 'hourspendonapp', 'preferredpaymentmode'},
+        {'orderslastyear', 'dayssincelastorder', 'annualspend', 'returncount',
+         'wishlistcount', 'couponusage', 'cartabandonments', 'avgdeliverytime',
+         'browsinghours', 'rewardpoints', 'appsessions'},
+        {'annualorders', 'yearlyspend', 'wishlistitems', 'offerusage',
+         'abandonedcarts', 'deliverydays', 'supercoins', 'topcategory',
+         'appvisits', 'paymentmode'},
     ],
     'banking': [
         {'rownumber', 'surname', 'creditscore', 'geography', 'numofproducts',

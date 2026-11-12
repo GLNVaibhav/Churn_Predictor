@@ -87,6 +87,7 @@ async def upload_file(
         null_counts=profiling["null_counts"],
         dtypes=profiling["dtypes"],
         sector=profiling.get("sector"),
+        sector_detection=profiling.get("sector_detection"),
         coverage_score=profiling.get("coverage_score"),
         concept_confidence=profiling.get("concept_confidence"),
         preview_rows=profiling.get("preview_rows"),

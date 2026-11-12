@@ -9,7 +9,7 @@ from pandas.api.types import is_bool_dtype, is_datetime64_any_dtype, is_numeric_
 from backend.adapters.framework_adapter import FrameworkAdapter
 from universal_churn.config import SECTOR_CONFIG
 from universal_churn.intelligence_pipeline import infer_intelligence
-from universal_churn.preprocessing import detect_sector
+from universal_churn.preprocessing import detect_sector, sector_signature_scores
 
 
 class UploadService:
@@ -82,19 +82,38 @@ class UploadService:
     def process_upload(self, file_path: Path, original_name: str) -> dict:
         df = pd.read_csv(file_path)
         profiling = self._profile(df)
+        warnings: List[str] = []
+        signature_scores = sector_signature_scores(df)
 
         try:
             sector = detect_sector(df)
+            sector_detection = {
+                "status": "DETECTED",
+                "sector": sector,
+                "signature_hits": signature_scores[sector],
+                "candidate_scores": signature_scores,
+            }
+        except ValueError as exc:
+            sector = None
+            sector_detection = {
+                "status": "UNCERTAIN",
+                "sector": None,
+                "signature_hits": 0,
+                "candidate_scores": signature_scores,
+            }
+            warnings.append(str(exc))
+
+        try:
             intelligence = infer_intelligence(df)
             coverage_score = self._extract_coverage_score(intelligence.coverage)
             concept_confidence = self._extract_concept_confidence(intelligence.coverage)
             coverage_contract = FrameworkAdapter._coverage_contract(intelligence.coverage) or {}
             missing_critical = coverage_contract.get("missing_critical", [])
         except Exception:
-            sector = None
             coverage_score = None
             concept_confidence = None
             missing_critical = []
+            warnings.append("Feature coverage could not be assessed from the uploaded schema.")
 
         target_column = None
         target_name = SECTOR_CONFIG.get(sector, {}).get("target_col") if sector else None
@@ -105,12 +124,11 @@ class UploadService:
             )
 
         created_at = datetime.utcnow().isoformat() + "Z"
-        warnings: List[str] = []
-
         return {
             "filename": original_name,
             **profiling,
             "sector": sector,
+            "sector_detection": sector_detection,
             "coverage_score": coverage_score,
             "concept_confidence": concept_confidence,
             "target_column": target_column,

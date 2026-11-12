@@ -26,6 +26,8 @@ def test_upload_profile_uses_dataset_values_and_framework_coverage(tmp_path: Pat
     assert result["columns"] == 3
     assert result["null_counts"]["MonthlyCharges"] == 1
     assert result["target_column"] == "Churn"
+    assert result["sector_detection"]["status"] == "DETECTED"
+    assert result["sector_detection"]["sector"] == "telecom"
     assert result["missing_critical"] == ["Contract"]
     assert result["column_profiles"] == [
         {"name": "Churn", "inferredType": "numeric", "nullPercentage": 0.0, "sampleValues": ["0", "1"]},
@@ -48,3 +50,20 @@ def test_upload_profile_counts_whitespace_as_missing_and_infers_numeric_text(tmp
     assert total_charges["sampleValues"] == ["42.5"]
     # Profiling is descriptive: the source frame passed to analysis is intact.
     assert frame["TotalCharges"].iloc[1] == "   "
+
+
+def test_upload_profile_reports_uncertain_sector_without_fabricating_selection(tmp_path: Path, monkeypatch):
+    source = tmp_path / "unrecognized.csv"
+    source.write_text("age,gender,customer_id\n41,F,abc\n", encoding="utf-8")
+    monkeypatch.setattr(
+        upload_service,
+        "infer_intelligence",
+        lambda _frame: SimpleNamespace(coverage=SimpleNamespace(summary=None)),
+    )
+
+    result = UploadService().process_upload(source, "unrecognized.csv")
+
+    assert result["sector"] is None
+    assert result["sector_detection"]["status"] == "UNCERTAIN"
+    assert result["sector_detection"]["candidate_scores"]["telecom"] == 0
+    assert any("Select the sector manually" in warning for warning in result["warnings"])

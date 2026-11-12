@@ -59,6 +59,12 @@ export interface UploadedDatasetPreview {
   rowCount: number;
   columnCount: number;
   detectedSector: string | null;
+  sectorDetection: {
+    status: "DETECTED" | "UNCERTAIN";
+    sector: string | null;
+    signatureHits: number;
+    candidateScores: Record<string, number>;
+  } | null;
   targetColumn: string | null;
   coverageScore: number | null;
   conceptConfidence: number | null;
