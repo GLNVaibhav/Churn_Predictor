@@ -24,7 +24,7 @@ const sectorLabel: Record<string, string> = {
 };
 
 const typeStyles: Record<string, string> = {
-  "Execution Summary": "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  "Execution Summary": "bg-muted text-foreground border-border",
   "Prediction Explanation": "bg-purple-500/10 text-purple-400 border-purple-500/20",
   "Business Reasoning": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   "Drift Monitoring": "bg-amber-500/10 text-amber-400 border-amber-500/20",

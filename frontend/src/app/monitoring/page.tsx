@@ -7,11 +7,16 @@ import { ErrorBanner, LoadingState } from "@/components/shared/query-states";
 import { useExecutionHistory } from "@/lib/hooks/use-execution";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api/client";
+import { executionMetrics, serviceHealthState } from "@/lib/monitoring-metrics";
 import { sectorLabel } from "@/lib/constants/sectors";
 import { Activity, Clock, Gauge, Layers, ShieldCheck } from "lucide-react";
 
 type ServiceInfo = {
   supported_sectors: string[];
+};
+
+type HealthInfo = {
+  status: string;
 };
 
 export default function MonitoringPage() {
@@ -20,17 +25,27 @@ export default function MonitoringPage() {
     queryKey: ["framework"],
     queryFn: ({ signal }) => apiRequest<ServiceInfo>("/api/v1/framework", {}, signal),
   });
+  const health = useQuery({
+    queryKey: ["health"],
+    queryFn: ({ signal }) => apiRequest<HealthInfo>("/api/v1/health", {}, signal),
+    refetchInterval: 30_000,
+  });
 
   const runs = history.data || [];
-  const succeeded = runs.filter((run) => run.status === "SUCCEEDED").length;
-  const failed = runs.filter((run) => run.status === "FAILED").length;
-  const avgRuntime = runs.reduce((sum, run) => sum + Number(run.execution_time_ms || 0), 0) / (runs.length || 1);
-  const successRate = runs.length ? Math.round((succeeded / runs.length) * 100) : 100;
+  const metrics = executionMetrics(runs);
+  const healthState = serviceHealthState(health.data?.status, health.isPending, health.isError);
+  const healthStyles = {
+    HEALTHY: "border-emerald-500/25 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200",
+    DEGRADED: "border-amber-500/25 bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200",
+    UNAVAILABLE: "border-destructive/25 bg-destructive/10 text-destructive",
+    UNKNOWN: "border-border bg-muted text-muted-foreground",
+  }[healthState];
 
   return (
     <PageShell>
       {history.error ? <ErrorBanner error={history.error} onRetry={() => history.refetch()} /> : null}
       {service.error ? <ErrorBanner error={service.error as Error} onRetry={() => service.refetch()} /> : null}
+      {health.error ? <ErrorBanner error={health.error as Error} onRetry={() => health.refetch()} /> : null}
       {history.isLoading || service.isLoading ? <LoadingState label="Loading activity data..." /> : null}
 
       <div className="premium-panel p-6">
@@ -44,26 +59,26 @@ export default function MonitoringPage() {
               Monitor service availability, recent run volume, completion rate, and supported industries without exposing implementation details.
             </p>
           </div>
-          <div className="flex items-center gap-2 rounded-md border border-emerald-500/25 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200">
-            <ShieldCheck className="h-4 w-4" />
-            Operational
+          <div role="status" className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold ${healthStyles}`}>
+            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+            {healthState.charAt(0) + healthState.slice(1).toLowerCase()}
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <MetricCard label="Service" value="Online" icon={Activity} description="Analysis engine reachable" />
-        <MetricCard label="Recent Analyses" value={String(runs.length)} icon={Layers} description={`${succeeded} completed, ${failed} failed`} />
-        <MetricCard label="Avg Runtime" value={`${Math.round(avgRuntime)} ms`} icon={Clock} description="Across saved runs" />
-        <MetricCard label="Success Rate" value={`${successRate}%`} icon={Gauge} description="Current workspace" />
+        <MetricCard label="Backend Health" value={healthState.charAt(0) + healthState.slice(1).toLowerCase()} icon={Activity} description={health.data?.status ? `API status: ${health.data.status}` : "Health endpoint has not reported a status"} />
+        <MetricCard label="Recent Analyses" value={String(metrics.total)} icon={Layers} description={`${metrics.succeeded} completed, ${metrics.failed} failed`} />
+        <MetricCard label="Avg Runtime" value={metrics.averageRuntimeMs === null ? "—" : `${Math.round(metrics.averageRuntimeMs)} ms`} icon={Clock} description={metrics.total ? "Across saved runs" : "No execution timings available"} />
+        <MetricCard label="Success Rate" value={metrics.successRatePercent === null ? "—" : `${metrics.successRatePercent}%`} icon={Gauge} description={metrics.total ? "Current workspace executions" : "No executions to calculate a rate"} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SectionCard title="Analysis Reliability" description="Recent execution health for this workspace">
           <div className="space-y-3">
             {[
-              ["Completed analyses", succeeded],
-              ["Failed analyses", failed],
+              ["Completed analyses", metrics.succeeded],
+              ["Failed analyses", metrics.failed],
               ["Saved analyses", runs.length],
             ].map(([label, value]) => (
               <div key={label} className="flex items-center justify-between rounded-md border border-border bg-background/75 px-3 py-2 text-sm">
