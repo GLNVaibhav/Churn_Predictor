@@ -24,18 +24,10 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.metrics import (
-    accuracy_score, classification_report,
-    f1_score, precision_score, recall_score, roc_auc_score,
-)
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-from imblearn.over_sampling import SMOTE
 from xgboost import XGBClassifier
 from .config import (
     SECTOR_CONFIG, SECTOR_NORM_COLUMNS,
     UNIVERSAL_MODEL_PATH, UNIVERSAL_SCALER_PATH,
-    UNIVERSAL_FEATURES_PATH, UNIVERSAL_NORM_STATS_PATH,
     GLOBAL_CONCEPT_MAP,
 )
 from .feature_engineering import (
@@ -53,14 +45,26 @@ from .coverage import CoverageResult
 from .routing import RoutingDecision
 from .intelligence_pipeline import IntelligenceResult, infer_intelligence
 from .explainability import write_shap_log, summarize_shap_directions
+from .leakage_safe_training import (
+    classification_metrics, dataframe_fingerprint, fit_candidate, holdout_split,
+    write_candidate_artifacts,
+)
 
 
 def train_universal_model(tune_metric: str | None = None) -> None:
-    """Phase B: Merge all 4 sectors into universal feature space. Unchanged — no routing here."""
+    """Train a non-promoted universal candidate with per-sector raw holdouts.
+
+    Each source dataset is split before normalization statistics or engineered
+    features are learned. The final pooled holdout is never used for model
+    selection, preprocessing, or resampling.
+    """
     print("\n" + "=" * 55)
     print("  PHASE B — Training Universal Cross-Sector Model")
     print("=" * 55)
-    all_data = []
+    development_parts: list[pd.DataFrame] = []
+    holdout_parts: list[pd.DataFrame] = []
+    group_parts: list[pd.Series] = []
+    fingerprints: dict[str, str] = {}
     norm_stats: dict = {}
     for sector, config in SECTOR_CONFIG.items():
         path = config['data_path']
@@ -69,99 +73,95 @@ def train_universal_model(tune_metric: str | None = None) -> None:
             continue
         print(f"  Loading {sector}...")
         df = pd.read_csv(path)
-        if 'TotalCharges' in df.columns:
-            df['TotalCharges'] = pd.to_numeric(
-                df['TotalCharges'], errors='coerce').fillna(0)
-        for col in df.select_dtypes(include='number').columns:
-            df[col] = df[col].fillna(df[col].median())
-        for col in df.select_dtypes(include=['object', 'string']).columns:
-            df[col] = df[col].fillna(df[col].mode()[0])
-        norm_stats.update(
-            compute_norm_stats(df, sector, SECTOR_NORM_COLUMNS.get(sector, [])))
-        feat_df = extract_universal_features(
-            df, sector, config['target_col'], norm_stats=norm_stats)
-        all_data.append(feat_df)
-        print(f"  {sector}: {len(feat_df)} rows extracted")
-    if not all_data:
+        target_col = config['target_col']
+        if target_col not in df:
+            raise ValueError(f"{sector} dataset lacks target {target_col!r}.")
+        y = pd.Series(normalize_target(df[target_col]), index=df.index)
+        excluded = {target_col, *config.get('drop_cols', [])}
+        raw_predictors = df.drop(columns=[c for c in excluded if c in df])
+        entity_col = next((
+            c for c in config.get('drop_cols', [])
+            if c in df and 'id' in c.lower()
+        ), None)
+        split = holdout_split(
+            raw_predictors, y,
+            groups=df[entity_col] if entity_col else None,
+            group_column=entity_col,
+            random_state=42,
+        )
+        train_raw = df.iloc[split.train_indices].copy()
+        holdout_raw = df.iloc[split.holdout_indices].copy()
+        # Normalization maxima are learned only from this sector's development rows.
+        sector_stats = compute_norm_stats(
+            train_raw, sector, SECTOR_NORM_COLUMNS.get(sector, []))
+        norm_stats.update(sector_stats)
+        train_features = extract_universal_features(
+            train_raw, sector, target_col, norm_stats=sector_stats)
+        holdout_features = extract_universal_features(
+            holdout_raw, sector, target_col, norm_stats=sector_stats)
+        dev_ids = train_raw[entity_col].astype(str) if entity_col else pd.Series(train_raw.index.astype(str), index=train_raw.index)
+        group_parts.append(pd.Series([f"{sector}:{value}" for value in dev_ids], index=train_features.index))
+        development_parts.append(train_features)
+        holdout_parts.append(holdout_features)
+        fingerprints[sector] = dataframe_fingerprint(df)
+        print(f"  {sector}: {len(train_features)} development / {len(holdout_features)} untouched holdout rows; split={split.strategy}")
+    if not development_parts:
         raise RuntimeError("No sector data found. Check data paths.")
-    combined = pd.concat(all_data, ignore_index=True)
-    print(f"\n  Combined dataset: {combined.shape[0]} rows")
-    balanced_parts = []
-    for _, group in combined.groupby('Sector'):
-        counts = group['Churn'].value_counts()
-        if len(counts) < 2:
-            balanced_parts.append(group)
-            continue
-        majority_n = counts.max()
-        minority_class = counts.idxmin()
-        minority = group[group['Churn'] == minority_class]
-        majority = group[group['Churn'] != minority_class]
-        balanced_parts.append(pd.concat([
-            majority, minority.sample(n=majority_n, replace=True, random_state=42)]))
-    combined = pd.concat(balanced_parts, ignore_index=True)
-    le_sector = LabelEncoder()
-    combined['Sector_Encoded'] = le_sector.fit_transform(combined['Sector'])
-    combined.drop(columns=['Sector'], inplace=True)
-    combined = combined.replace([np.inf, -np.inf], np.nan).fillna(0)
-
-    # fix: each sector's extract_universal_features() may emit Churn in
-    # a different raw representation (e.g. one sector's source CSV uses
-    # "Yes"/"No", another already uses 0/1). Concatenating across
-    # sectors before normalizing produced a mixed-type Churn column,
-    # which crashed train_test_split(..., stratify=y) deep inside NumPy
-    # with "'<' not supported between instances of 'str' and 'int'".
-    # normalize_target() is the single shared source of truth for this
-    # — same function SectorPipeline uses — so both pipelines apply
-    # identical label rules instead of duplicated/diverging logic.
-    combined['Churn'] = normalize_target(combined['Churn'])
-
-    X = combined.drop(columns=['Churn'])
-    y = combined['Churn'].values
-    feature_names = X.columns.tolist()
-
-    # fix: pre-flight check immediately before stratify=y, per the
-    # shared validation contract — fails loudly with an actionable
-    # message if normalization above somehow left mixed types, rather
-    # than surfacing as a cryptic error inside scikit-learn/NumPy.
-    validate_target_types(y, context="train_universal_model")
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y)
-    scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
-    smote = SMOTE(random_state=42)
-    X_train_sm, y_train_sm = smote.fit_resample(X_train, y_train)
+    development = pd.concat(development_parts, ignore_index=True)
+    untouched = pd.concat(holdout_parts, ignore_index=True)
+    development['Churn'] = normalize_target(development['Churn'])
+    untouched['Churn'] = normalize_target(untouched['Churn'])
+    X_train = development.drop(columns=['Churn'])
+    y_train = development['Churn'].astype(int)
+    X_holdout = untouched.drop(columns=['Churn'])
+    y_holdout = untouched['Churn'].astype(int)
+    groups = pd.concat(group_parts, ignore_index=True)
+    validate_target_types(y_train.to_numpy(), context="train_universal_model")
+    base = XGBClassifier(
+        n_estimators=300, learning_rate=0.05, max_depth=5,
+        subsample=0.8, colsample_bytree=0.8, random_state=42,
+        eval_metric='logloss', verbosity=0,
+    )
     if tune_metric:
         param_grid = {
-            'n_estimators': [200, 300, 400], 'max_depth': [4, 5, 6],
-            'learning_rate': [0.03, 0.05, 0.1],
-            'subsample': [0.8, 1.0], 'colsample_bytree': [0.8, 1.0],
+            'model__n_estimators': [200, 300], 'model__max_depth': [4, 5],
+            'model__learning_rate': [0.03, 0.05],
         }
-        base = XGBClassifier(random_state=42, use_label_encoder=False,
-                             eval_metric='logloss', verbosity=0)
-        search = GridSearchCV(base, param_grid, scoring=tune_metric,
-                              cv=3, n_jobs=-1, verbose=0)
-        search.fit(X_train_sm, y_train_sm)
-        model = search.best_estimator_
     else:
-        model = XGBClassifier(
-            n_estimators=300, learning_rate=0.05, max_depth=5,
-            subsample=0.8, colsample_bytree=0.8, random_state=42,
-            use_label_encoder=False, eval_metric='logloss', verbosity=0)
-        model.fit(X_train_sm, y_train_sm)
-    y_pred = model.predict(X_test)
-    y_proba = model.predict_proba(X_test)[:, 1]
-    print(f"\n  Universal Model — Test Set Results:")
-    print(f"  Accuracy  : {accuracy_score(y_test, y_pred):.4f}")
-    print(f"  ROC-AUC   : {roc_auc_score(y_test, y_proba):.4f}")
-    UNIVERSAL_MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(model, UNIVERSAL_MODEL_PATH)
-    joblib.dump(scaler, UNIVERSAL_SCALER_PATH)
-    joblib.dump(le_sector, str(UNIVERSAL_MODEL_PATH).replace('.pkl', '_le_sector.pkl'))
-    joblib.dump(norm_stats, UNIVERSAL_NORM_STATS_PATH)
-    pd.Series(feature_names).to_csv(UNIVERSAL_FEATURES_PATH, index=False)
-    print(f"  Universal model saved : {UNIVERSAL_MODEL_PATH}")
+        param_grid = None
+    groups.index = X_train.index
+    result = fit_candidate(
+        X_train, y_train, base, groups=groups, group_column='sector-prefixed-entity',
+        parameter_grid=param_grid, selection_metric=tune_metric or 'roc_auc',
+        final_holdout=(X_holdout, y_holdout),
+        split_description='Per-sector stratified raw holdout before feature normalization; pooled final holdout',
+    )
+    sector_holdout_metrics = {}
+    for sector_frame in holdout_parts:
+        sector_name = str(sector_frame['Sector'].iloc[0])
+        sector_target = normalize_target(sector_frame['Churn'])
+        sector_features = sector_frame.drop(columns=['Churn'])
+        positive_index = list(result['model'].classes_).index(1)
+        sector_probabilities = result['model'].predict_proba(sector_features)[:, positive_index]
+        sector_holdout_metrics[sector_name] = {
+            "rows": len(sector_frame),
+            "metrics": classification_metrics(sector_target, sector_probabilities),
+        }
+    report = {
+        "candidate_only": True, "model": "Universal XGBClassifier",
+        "dataset_fingerprints": fingerprints,
+        "targets": {sector: SECTOR_CONFIG[sector]['target_col'] for sector in fingerprints},
+        "random_state": 42, "sector_specific_normalization": norm_stats,
+        "preprocessing": "per-sector raw development-only normalization; fold-local imputation/encoding/scaling",
+        "imbalance": "fold-local RandomOverSampler after encoding; no pre-split duplication",
+        "cross_domain_claim": "Not established; this is a pooled random holdout, not leave-one-sector-out validation.",
+        "per_sector_holdout_metrics": sector_holdout_metrics,
+    }
+    out = Path('outputs/evaluation/candidates/universal-per-sector')
+    model_path, report_path = write_candidate_artifacts(
+        result, output_directory=out, model_name='universal_xgb', metadata=report)
+    print(f"\n  Universal candidate holdout metrics: {result['holdout_metrics']}")
+    print(f"  Candidate only (not promoted): {model_path}; report: {report_path}")
 
 
 def predict_universal(

@@ -16,11 +16,6 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from imblearn.over_sampling import SMOTE, SMOTENC
-from sklearn.metrics import (
-    accuracy_score, f1_score, precision_score, recall_score, roc_auc_score,
-)
-from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from xgboost import XGBClassifier
 from .config import SECTOR_CONFIG, GLOBAL_CONCEPT_MAP
@@ -36,6 +31,7 @@ from .preprocessing import (
 from .reporting import attach_common_metadata
 from .utils import positive_class_probabilities, verify_prediction_variance
 from .udif import active_run
+from .leakage_safe_training import fit_candidate, dataframe_fingerprint, write_candidate_artifacts
 
 
 def _print_telecom_pre_prediction_diagnostics(
@@ -108,6 +104,7 @@ class SectorPipeline:
         self.scaler = StandardScaler()
         self.label_encoders: dict = {}
         self.feature_names: list[str] = []
+        self._candidate_raw_features: list[str] | None = None
 
     def _load_data(self) -> pd.DataFrame:
         path = self.config['data_path']
@@ -186,61 +183,48 @@ class SectorPipeline:
     def fit(self) -> 'SectorPipeline':
         print(f"\n{'='*50}\n  Training pipeline — {self.sector.upper()}\n{'='*50}")
         df = self._load_data()
-        df = self._clean(df)
         target_col = self.config['target_col']
-        y = normalize_target(df[target_col])
+        if target_col not in df:
+            raise ValueError(f"Target column {target_col!r} is missing for {self.sector}.")
+        y = pd.Series(normalize_target(df[target_col]), index=df.index, name=target_col)
         print("\nTarget classes:")
-        print(pd.Series(y).value_counts())
-        df.drop(columns=[target_col], inplace=True)
-        df = self._encode(df, fit=True)
-        scale_cols = [c for c in self.config['scale_cols'] if c in df.columns]
-        df[scale_cols] = self.scaler.fit_transform(df[scale_cols])
-        self.feature_names = df.columns.tolist()
-        df = df.replace([np.inf, -np.inf], np.nan)
-        if df.isna().sum().sum() > 0:
-            df = df.fillna(0)
-        X = df.values
-        y = y.values
-        # fix: pre-flight check immediately before stratify=y, per the
-        # shared validation contract (same check train_universal_model
-        # now runs) — catches a mixed/non-binary target here with an
-        # actionable message instead of a cryptic NumPy error.
-        validate_target_types(y, context=f"SectorPipeline.fit[{self.sector}]")
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42, stratify=y)
-        smote = SMOTE(random_state=42)
-        X_train_sm, y_train_sm = smote.fit_resample(X_train, y_train)
-        if self.tune_metric:
-            param_grid = {'n_estimators': [100, 200, 300],
-                          'max_depth': [3, 4, 6],
-                          'learning_rate': [0.05, 0.1, 0.2]}
-            base = XGBClassifier(random_state=42, use_label_encoder=False,
-                                 eval_metric='logloss', verbosity=0)
-            search = GridSearchCV(base, param_grid, scoring=self.tune_metric,
-                                  cv=3, n_jobs=-1, verbose=0)
-            search.fit(X_train_sm, y_train_sm)
-            self.model = search.best_estimator_
-        else:
-            self.model = XGBClassifier(
-                n_estimators=200, learning_rate=0.1, max_depth=4,
-                random_state=42, use_label_encoder=False,
-                eval_metric='logloss', verbosity=0)
-            self.model.fit(X_train_sm, y_train_sm)
-        y_pred = self.model.predict(X_test)
-        y_proba = self.model.predict_proba(X_test)[:, 1]
-        print(f"  Accuracy  : {accuracy_score(y_test, y_pred):.4f}")
-        print(f"  ROC-AUC   : {roc_auc_score(y_test, y_proba):.4f}")
-        model_path = Path(self.config['model_path'])
-        scaler_path = Path(self.config['scaler_path'])
-        feature_path = Path(self.config['features_path'])
-        for p in (model_path, scaler_path, feature_path):
-            p.parent.mkdir(parents=True, exist_ok=True)
-        joblib.dump(self.model, model_path)
-        joblib.dump(self.scaler, scaler_path)
-        joblib.dump(self.label_encoders,
-                    str(feature_path).replace('.csv', '_le.pkl'))
-        pd.Series(self.feature_names).to_csv(feature_path, index=False)
-        print(f"  Model saved  : {model_path}")
+        print(y.value_counts())
+        excluded = {target_col, *self.config.get('drop_cols', [])}
+        X = df.drop(columns=[c for c in excluded if c in df.columns]).copy()
+        entity_col = next((
+            c for c in self.config.get('drop_cols', [])
+            if c in df and 'id' in c.lower()
+        ), None)
+        groups = df[entity_col].copy() if entity_col else None
+        validate_target_types(y.to_numpy(), context=f"SectorPipeline.fit[{self.sector}]")
+        estimator = XGBClassifier(
+            n_estimators=200, learning_rate=0.1, max_depth=4,
+            random_state=42, eval_metric='logloss', verbosity=0,
+        )
+        grid = ({"model__max_depth": [3, 4, 6],
+                 "model__learning_rate": [0.05, 0.1],
+                 "model__n_estimators": [100, 200]} if self.tune_metric else None)
+        result = fit_candidate(
+            X, y, estimator, groups=groups,
+            group_column=entity_col,
+            parameter_grid=grid, selection_metric=self.tune_metric or 'roc_auc',
+        )
+        self.model = result['model']
+        self._candidate_raw_features = list(X.columns)
+        self.feature_names = list(X.columns)
+        print(f"  Untouched holdout: {result['holdout_metrics']}")
+        report = {
+            "candidate_only": True, "sector": self.sector,
+            "dataset_fingerprint": dataframe_fingerprint(df),
+            "target": target_col, "sample_count": len(df),
+            "random_state": 42, "model": "XGBClassifier",
+            "preprocessing": "fold-local median/mode imputation, one-hot encoding, numeric StandardScaler",
+            "imbalance": "fold-local RandomOverSampler; categorical-safe",
+        }
+        out = Path('outputs/evaluation/candidates') / f"sector-{self.sector}"
+        model_path, report_path = write_candidate_artifacts(
+            result, output_directory=out, model_name='sector_xgb', metadata=report)
+        print(f"  Candidate only (not promoted): {model_path}; report: {report_path}")
         return self
 
     def load(self) -> 'SectorPipeline':
@@ -318,25 +302,37 @@ class SectorPipeline:
         id_cols = ['customerID', 'CustomerID', 'Customer ID', 'CustomerId',
                    'RowNumber', 'PatientID', 'patientid']
         id_series = next((df_raw[c].copy() for c in df_raw.columns if c in id_cols), None)
-        df = self._clean(df_mapped)
-        df = self._encode(df, fit=False)
-        default_features: list[str] = []
-        for col in self.feature_names:
-            if col not in df.columns:
-                default_features.append(col)
-                if hasattr(self.scaler, 'mean_') and col in self.config.get('scale_cols', []):
-                    idx = list(self.config['scale_cols']).index(col)
-                    df[col] = self.scaler.mean_[idx]
-                else:
-                    df[col] = 0
-        df = df[self.feature_names]
-        if hasattr(self.scaler, 'feature_names_in_'):
-            scale_cols = [c for c in self.scaler.feature_names_in_ if c in df.columns]
+        if self._candidate_raw_features is not None:
+            # Candidate pipelines own their fitted preprocessing. Keep the
+            # incoming rows raw so imputation/encoding/scaling match training.
+            df = df_mapped.drop(columns=[self.config['target_col']], errors='ignore')
+            df = df.drop(columns=self.config.get('drop_cols', []), errors='ignore')
+            for col in self._candidate_raw_features:
+                if col not in df:
+                    df[col] = np.nan
+            df = df[self._candidate_raw_features]
+            default_features = [c for c in self._candidate_raw_features if c not in df_mapped]
+            X = df
         else:
-            scale_cols = [c for c in self.config['scale_cols'] if c in df.columns]
-        if scale_cols:
-            df[scale_cols] = self.scaler.transform(df[scale_cols])
-        X = df.values
+            df = self._clean(df_mapped)
+            df = self._encode(df, fit=False)
+            default_features = []
+            for col in self.feature_names:
+                if col not in df.columns:
+                    default_features.append(col)
+                    if hasattr(self.scaler, 'mean_') and col in self.config.get('scale_cols', []):
+                        idx = list(self.config['scale_cols']).index(col)
+                        df[col] = self.scaler.mean_[idx]
+                    else:
+                        df[col] = 0
+            df = df[self.feature_names]
+            if hasattr(self.scaler, 'feature_names_in_'):
+                scale_cols = [c for c in self.scaler.feature_names_in_ if c in df.columns]
+            else:
+                scale_cols = [c for c in self.config['scale_cols'] if c in df.columns]
+            if scale_cols:
+                df[scale_cols] = self.scaler.transform(df[scale_cols])
+            X = df.values
         # The standard UDIF model-input capture supplies the final shape,
         # feature names, missing values, constant/near-constant counts, and
         # numeric spread when diagnostics are enabled.  The Telecom report
