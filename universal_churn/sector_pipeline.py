@@ -34,7 +34,7 @@ from .preprocessing import (
     normalize_target, validate_target_types,
 )
 from .reporting import attach_common_metadata
-from .utils import verify_prediction_variance
+from .utils import positive_class_probabilities, verify_prediction_variance
 from .udif import active_run
 
 
@@ -360,7 +360,7 @@ class SectorPipeline:
                 raw_feature_sources=raw_feature_sources,
                 canonical_by_raw_column=_canonical_by_raw_column or {},
             )
-        probas = self.model.predict_proba(X)[:, 1]
+        probas = positive_class_probabilities(self.model, X)
         if diagnostic_run is not None:
             diagnostic_run.capture_predictions(probas)
         try:

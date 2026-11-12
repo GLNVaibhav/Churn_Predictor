@@ -47,7 +47,7 @@ from .preprocessing import (
     normalize_target, validate_target_types,
 )
 from .reporting import attach_common_metadata
-from .utils import verify_prediction_variance
+from .utils import positive_class_probabilities, verify_prediction_variance
 from .quality_gate import run_quality_gate
 from .coverage import CoverageResult
 from .routing import RoutingDecision
@@ -250,7 +250,7 @@ def predict_universal(
         X_scaled = scaler.transform(X_processed.values)
     if diagnostic_run is not None:
         diagnostic_run.capture_model_input(X_scaled, list(X_processed.columns))
-    probas = model.predict_proba(X_scaled)[:, 1]
+    probas = positive_class_probabilities(model, X_scaled)
     if diagnostic_run is not None:
         diagnostic_run.capture_predictions(probas)
     preds = model.predict(X_scaled)
