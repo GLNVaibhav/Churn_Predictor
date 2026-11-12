@@ -65,6 +65,7 @@ def train_universal_model(tune_metric: str | None = None) -> None:
     holdout_parts: list[pd.DataFrame] = []
     group_parts: list[pd.Series] = []
     fingerprints: dict[str, str] = {}
+    dataset_details: dict[str, dict] = {}
     norm_stats: dict = {}
     for sector, config in SECTOR_CONFIG.items():
         path = config['data_path']
@@ -104,6 +105,15 @@ def train_universal_model(tune_metric: str | None = None) -> None:
         development_parts.append(train_features)
         holdout_parts.append(holdout_features)
         fingerprints[sector] = dataframe_fingerprint(df)
+        dataset_details[sector] = {
+            "origin": path,
+            "shape": [int(df.shape[0]), int(df.shape[1])],
+            "target": target_col,
+            "target_distribution": y.value_counts().sort_index().to_dict(),
+            "development_rows": len(train_raw),
+            "untouched_holdout_rows": len(holdout_raw),
+            "split_strategy": split.strategy,
+        }
         print(f"  {sector}: {len(train_features)} development / {len(holdout_features)} untouched holdout rows; split={split.strategy}")
     if not development_parts:
         raise RuntimeError("No sector data found. Check data paths.")
@@ -150,6 +160,7 @@ def train_universal_model(tune_metric: str | None = None) -> None:
     report = {
         "candidate_only": True, "model": "Universal XGBClassifier",
         "dataset_fingerprints": fingerprints,
+        "datasets": dataset_details,
         "targets": {sector: SECTOR_CONFIG[sector]['target_col'] for sector in fingerprints},
         "random_state": 42, "sector_specific_normalization": norm_stats,
         "preprocessing": "per-sector raw development-only normalization; fold-local imputation/encoding/scaling",

@@ -322,6 +322,7 @@ def write_candidate_artifacts(
             "cv_selection_metric": result["cv_selection_metric"],
             "cv_best_mean_score": result["cv_best_mean_score"],
             "best_parameters": result["best_parameters"],
+            "model_configuration": result["model"].named_steps["model"].get_params(deep=False),
             "holdout_metrics": result["holdout_metrics"],
             "training_seconds": result["training_seconds"],
             "probability_calibration": "Not calibrated; Brier score is diagnostic only.",

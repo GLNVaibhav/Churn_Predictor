@@ -216,7 +216,11 @@ class SectorPipeline:
         report = {
             "candidate_only": True, "sector": self.sector,
             "dataset_fingerprint": dataframe_fingerprint(df),
+            "dataset_origin": self.config['data_path'],
+            "dataset_shape": [int(df.shape[0]), int(df.shape[1])],
             "target": target_col, "sample_count": len(df),
+            "target_distribution": y.value_counts().sort_index().to_dict(),
+            "feature_columns": list(X.columns),
             "random_state": 42, "model": "XGBClassifier",
             "preprocessing": "fold-local median/mode imputation, one-hot encoding, numeric StandardScaler",
             "imbalance": "fold-local RandomOverSampler; categorical-safe",
