@@ -161,7 +161,13 @@ export default function UploadPage() {
     context.setExecutionContext({ sector: selectedSector });
 
     try {
-      await analyze.mutateAsync({ sector: selectedSector, mode: routingMode, businessContext });
+      // The UI's manual option means an explicit sector model. The backend
+      // accepts only `sector`, `universal`, or `auto` as execution modes.
+      await analyze.mutateAsync({
+        sector: selectedSector,
+        mode: routingMode === "manual" ? "sector" : "auto",
+        businessContext,
+      });
       router.push("/workspace");
     } finally {
       submissionLockRef.current = false;

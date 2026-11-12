@@ -7,6 +7,34 @@ from ..contracts.execution import ExecutionInfo
 
 logger = logging.getLogger(__name__)
 
+
+def _safe_failure_detail(exc: Exception) -> str:
+    """Map the underlying failure to a safe user message.
+
+    Wrapped errors often include the uploaded path (and therefore the `.csv`
+    extension). Inspecting that wrapper text alone mislabels unrelated failures
+    such as an unsupported model mode as CSV parsing errors.
+    """
+    cause: BaseException = exc
+    seen: set[int] = set()
+    while id(cause) not in seen:
+        seen.add(id(cause))
+        next_cause = cause.__cause__ or cause.__context__
+        if next_cause is None:
+            break
+        cause = next_cause
+
+    if isinstance(cause, FileNotFoundError):
+        return "The uploaded dataset is no longer available. Upload it again and retry."
+
+    message = str(cause).lower()
+    if any(token in message for token in ("target", "churn column", "required column")):
+        return "The dataset does not contain a usable churn target for the selected sector. Review its columns and sector selection."
+    if any(token in message for token in ("csv", "parser", "delimiter", "unicode", "decode")):
+        return "The uploaded file could not be read as a valid CSV. Check its encoding and delimiter."
+    return "Analysis did not complete. Review the dataset and selected sector, then retry."
+
+
 class ExecutionManager:
     """Manages background execution tasks and updates their state.
 
@@ -78,15 +106,7 @@ class ExecutionManager:
             exec_info = exec_info.mark_failed()
             # Keep internal exception details in server logs; only a safe,
             # actionable summary is persisted for frontend consumers.
-            message = str(exc).lower()
-            if isinstance(exc, FileNotFoundError):
-                detail = "The uploaded dataset is no longer available. Upload it again and retry."
-            elif any(token in message for token in ("target", "churn column", "required column")):
-                detail = "The dataset does not contain a usable churn target for the selected sector. Review its columns and sector selection."
-            elif any(token in message for token in ("csv", "parser", "unicode")):
-                detail = "The uploaded file could not be read as a valid CSV. Check its encoding and delimiter."
-            else:
-                detail = "Analysis did not complete. Review the dataset and selected sector, then retry."
+            detail = _safe_failure_detail(exc)
             self.repo.save(execution_id, {**exec_info.to_dict(), **initial_data, "error": detail})
         finally:
             self._tasks.pop(execution_id, None)
