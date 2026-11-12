@@ -65,6 +65,8 @@ async def run_analysis_task(
                     "affected_segments": item["affected_segments"],
                     "action": item["recommendation_influence"],
                     "severity": item["impact"],
+                    "department": item.get("department"),
+                    "priority": item.get("priority"),
                     "evidence_id": item["evidence_id"],
                 }
                 for item in adaptive_business["signals"]
@@ -73,9 +75,12 @@ async def run_analysis_task(
         if isinstance(report_texts, dict) and signal_count:
             appendix = ["", "ADAPTIVE BUSINESS CONTEXT", adaptive_summary]
             for item in adaptive_business["signals"]:
+                organization = f"; department {item['department']}" if item.get("department") else ""
+                priority = f"; priority {item['priority']}" if item.get("priority") is not None else ""
                 appendix.append(
                     f"[{item['impact']}] {item['name']}: {item['value']} "
-                    f"(confidence {item['confidence']:.0%}); recommendation: {item['recommendation_influence']}"
+                    f"(confidence {item['confidence']:.0%}{organization}{priority}); "
+                    f"recommendation: {item['recommendation_influence']}"
                 )
             existing = report_texts.get("decision_report_text") or ""
             report_texts["decision_report_text"] = (existing + "\n" + "\n".join(appendix)).strip()

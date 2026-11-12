@@ -23,6 +23,9 @@ class BusinessContextEvent(BaseModel):
     affected_segments: list[str] = Field(default_factory=list, max_length=50)
     source: str | None = Field(default=None, max_length=160)
     recommendation: str | None = Field(default=None, max_length=1000)
+    recommended_action: str | None = Field(default=None, max_length=1000)
+    department: str | None = Field(default=None, max_length=120)
+    priority: int | None = Field(default=None, ge=1, le=5)
     timestamp: str | None = Field(default=None, max_length=80)
 
 
@@ -79,6 +82,12 @@ async def start_analysis(
             raise HTTPException(status_code=422, detail="Business context sector must match the selected analysis sector.")
 
     business_context = request.business_context.model_dump(exclude_none=True) if request.business_context else None
+    if business_context:
+        for event in business_context["events"]:
+            # ABIL source documents use `recommended_action`; the evaluator's
+            # canonical event contract calls the same field `recommendation`.
+            if not event.get("recommendation") and event.get("recommended_action"):
+                event["recommendation"] = event["recommended_action"]
     try:
         input_path, temporary_input = storage.materialize(request.upload_id, upload)
     except Exception as exc:

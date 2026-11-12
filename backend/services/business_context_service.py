@@ -16,6 +16,7 @@ def evaluate_business_context(
         execution_id=execution_id,
         events=tuple(document.get("events") or []),
     ))
+    source_events = tuple(document.get("events") or [])
     signals = [
         {
             "name": item.category,
@@ -27,8 +28,10 @@ def evaluate_business_context(
             "affected_segments": list(item.affected_segments),
             "recommendation_influence": item.recommendation,
             "evidence_id": item.evidence_id,
+            "department": source_events[index].get("department") if index < len(source_events) else None,
+            "priority": source_events[index].get("priority") if index < len(source_events) else None,
         }
-        for item in bundle.evidences
+        for index, item in enumerate(bundle.evidences)
     ]
     return {
         "status": "AVAILABLE" if signals else "NO_SIGNALS",
