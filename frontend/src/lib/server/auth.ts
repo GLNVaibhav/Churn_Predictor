@@ -5,9 +5,10 @@ import { MongoClient, ObjectId, type Db } from "mongodb";
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 
 const COOKIE_NAME = "ucif_session";
-const MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+const MAX_AGE_SECONDS = 60 * 60 * 12;
 
 type SessionPayload = {
+  sid: string;
   userId: string;
   email: string;
   name: string;
@@ -27,16 +28,18 @@ type UserDoc = {
 };
 
 let clientPromise: Promise<MongoClient> | null = null;
+let indexesPromise: Promise<void> | null = null;
 
 function authSecret() {
   return process.env.AUTH_SECRET || "";
 }
 
 export function authConfigStatus() {
+  const hasStrongSecret = authSecret().length >= 32;
   return {
     database: Boolean(process.env.MONGODB_URI),
-    secret: Boolean(authSecret()),
-    ready: Boolean(process.env.MONGODB_URI && authSecret()),
+    secret: hasStrongSecret,
+    ready: Boolean(process.env.MONGODB_URI && hasStrongSecret),
   };
 }
 
@@ -50,8 +53,7 @@ export async function authRuntimeStatus() {
     await db.command({ ping: 1 });
     return { ...config, connected: true, error: null };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "MongoDB connection failed";
-    return { ...config, connected: false, error: message };
+    return { ...config, connected: false, error: authErrorMessage(error) };
   }
 }
 
@@ -63,7 +65,9 @@ export function authErrorMessage(error: unknown) {
   if (message.toLowerCase().includes("ssl") || message.toLowerCase().includes("network")) {
     return "MongoDB is not reachable from this deployment. Check Atlas Network Access.";
   }
-  return message;
+  if (message === "Invalid email or password") return message;
+  if (message === "Account already exists") return message;
+  return "Authentication request failed. Check the server configuration and try again.";
 }
 
 async function getDb(): Promise<Db> {
@@ -74,6 +78,20 @@ async function getDb(): Promise<Db> {
   }
   const client = await clientPromise;
   return client.db(process.env.MONGODB_DB || "ucif");
+}
+
+async function ensureAuthIndexes(db: Db) {
+  if (!indexesPromise) {
+    indexesPromise = Promise.all([
+      db.collection<UserDoc>("users").createIndex({ email: 1 }, { unique: true }),
+      db.collection("sessions").createIndex({ sid: 1 }, { unique: true }),
+      db.collection("sessions").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    ]).then(() => undefined).catch((error) => {
+      indexesPromise = null;
+      throw error;
+    });
+  }
+  await indexesPromise;
 }
 
 function hashPassword(password: string, salt = randomBytes(16).toString("hex")) {
@@ -97,8 +115,15 @@ function decode(value: string) {
 
 function sign(payload: string) {
   const secret = authSecret();
-  if (!secret) throw new Error("Auth secret is not configured");
+  if (secret.length < 32) throw new Error("Auth secret is not configured");
   return createHmac("sha256", secret).update(payload).digest("base64url");
+}
+
+export function constantTimeSecretEqual(expected: string, provided: string) {
+  if (!expected || !provided) return false;
+  const expectedBytes = Buffer.from(expected);
+  const providedBytes = Buffer.from(provided);
+  return expectedBytes.length === providedBytes.length && timingSafeEqual(expectedBytes, providedBytes);
 }
 
 function createToken(payload: SessionPayload) {
@@ -114,12 +139,19 @@ function verifyToken(token?: string): SessionPayload | null {
   const provided = Buffer.from(signature);
   const calculated = Buffer.from(expected);
   if (provided.length !== calculated.length || !timingSafeEqual(provided, calculated)) return null;
-  const payload = JSON.parse(decode(body)) as SessionPayload;
-  return payload.exp > Date.now() ? payload : null;
+  try {
+    const payload = JSON.parse(decode(body)) as SessionPayload;
+    if (!payload.sid || !payload.userId || !payload.email || !Number.isFinite(payload.exp)) return null;
+    if (payload.role !== "admin" && payload.role !== "member") return null;
+    return payload.exp > Date.now() ? payload : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function createUser(email: string, password: string, name: string, role: "admin" | "member" = "member") {
   const db = await getDb();
+  await ensureAuthIndexes(db);
   const normalizedEmail = email.trim().toLowerCase();
   const existing = await db.collection<UserDoc>("users").findOne({ email: normalizedEmail });
   if (existing) throw new Error("Account already exists");
@@ -144,24 +176,61 @@ export async function authenticateUser(email: string, password: string) {
   return { userId: user._id.toString(), email: user.email, name: user.name, role: user.role || "member" };
 }
 
-export async function setSession(user: { userId: string; email: string; name: string }) {
-  const token = createToken({ ...user, exp: Date.now() + MAX_AGE_SECONDS * 1000 });
+export async function setSession(user: { userId: string; email: string; name: string; role?: "admin" | "member" }) {
+  const sid = randomBytes(32).toString("base64url");
+  const expiresAt = new Date(Date.now() + MAX_AGE_SECONDS * 1000);
+  const db = await getDb();
+  await ensureAuthIndexes(db);
+  await db.collection("sessions").insertOne({ sid, userId: user.userId, expiresAt });
+  const token = createToken({ ...user, role: user.role || "member", sid, exp: expiresAt.getTime() });
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "strict",
     path: "/",
     maxAge: MAX_AGE_SECONDS,
   });
 }
 
+export function isSameOriginRequest(request: Request) {
+  const origin = request.headers.get("origin");
+  if (!origin) return process.env.NODE_ENV !== "production";
+  try {
+    return new URL(origin).origin === new URL(request.url).origin;
+  } catch {
+    return false;
+  }
+}
+
 export async function clearSession() {
   const cookieStore = await cookies();
+  const existing = verifyToken(cookieStore.get(COOKIE_NAME)?.value);
+  if (existing && process.env.MONGODB_URI) {
+    try {
+      const db = await getDb();
+      await db.collection("sessions").deleteOne({ sid: existing.sid, userId: existing.userId });
+    } catch {
+      // Clearing the browser cookie still completes logout if the session DB
+      // is temporarily unavailable; server-side expiry remains bounded.
+    }
+  }
   cookieStore.delete(COOKIE_NAME);
 }
 
 export async function currentSession() {
   const cookieStore = await cookies();
-  return verifyToken(cookieStore.get(COOKIE_NAME)?.value);
+  const session = verifyToken(cookieStore.get(COOKIE_NAME)?.value);
+  if (!session) return null;
+  try {
+    const db = await getDb();
+    const active = await db.collection("sessions").findOne({
+      sid: session.sid,
+      userId: session.userId,
+      expiresAt: { $gt: new Date() },
+    });
+    return active ? session : null;
+  } catch {
+    return null;
+  }
 }

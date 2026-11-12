@@ -22,6 +22,17 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
         return response
 
 def create_app() -> FastAPI:
+    if settings.AUTH_MODE == "production":
+        missing = []
+        if len(settings.UCIF_PROXY_SECRET) < 32:
+            missing.append("UCIF_PROXY_SECRET (at least 32 characters)")
+        if not settings.DATABASE_URL:
+            missing.append("DATABASE_URL")
+        if settings.OBJECT_STORAGE_BACKEND != "s3" or not settings.S3_BUCKET:
+            missing.append("OBJECT_STORAGE_BACKEND=s3 and S3_BUCKET")
+        if missing:
+            raise RuntimeError("Production API configuration is incomplete: " + ", ".join(missing))
+
     app = FastAPI(
         title="Universal Churn Intelligence Framework API",
         version=settings.API_VERSION,

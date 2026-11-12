@@ -16,7 +16,12 @@ with a ``.value`` attribute, since that's the only thing
 """
 from __future__ import annotations
 
+import os
 from types import SimpleNamespace
+
+# Tests use the explicit local-only mode; production behavior is fail-closed
+# unless UCIF_AUTH_MODE=development is configured by the operator.
+os.environ.setdefault("UCIF_AUTH_MODE", "development")
 
 import pandas as pd
 import pytest

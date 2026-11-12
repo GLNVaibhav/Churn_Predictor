@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { authConfigStatus, authErrorMessage, createUser, setSession } from "@/lib/server/auth";
+import { authConfigStatus, authErrorMessage, constantTimeSecretEqual, createUser, isSameOriginRequest, setSession } from "@/lib/server/auth";
 
 export async function POST(req: Request) {
+  if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Cross-origin request rejected." }, { status: 403 });
   const setupToken = process.env.ADMIN_SETUP_TOKEN;
   const provided = req.headers.get("x-admin-setup-token");
-  if (!setupToken || provided !== setupToken) {
+  if (!constantTimeSecretEqual(setupToken || "", provided || "")) {
     return NextResponse.json({ error: "Admin setup is not authorized." }, { status: 401 });
   }
   if (!authConfigStatus().ready) {

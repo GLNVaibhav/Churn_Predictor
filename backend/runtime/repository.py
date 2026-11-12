@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from typing import Dict, List, Any, Optional
 
 from .repository_protocol import ExecutionRepositoryProtocol
@@ -17,6 +18,8 @@ class ExecutionRepository:
         os.makedirs(self.base_dir, exist_ok=True)
 
     def _file_path(self, execution_id: str) -> str:
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", execution_id):
+            raise ValueError("Invalid record identifier")
         return os.path.join(self.base_dir, f"{execution_id}.json")
 
     def save(self, execution_id: str, data: Dict[str, Any]) -> None:
@@ -27,7 +30,10 @@ class ExecutionRepository:
         os.replace(tmp, path)
 
     def load(self, execution_id: str) -> Optional[Dict[str, Any]]:
-        path = self._file_path(execution_id)
+        try:
+            path = self._file_path(execution_id)
+        except ValueError:
+            return None
         if not os.path.exists(path):
             return None
         try:
@@ -37,7 +43,10 @@ class ExecutionRepository:
             return None
 
     def delete(self, execution_id: str) -> bool:
-        path = self._file_path(execution_id)
+        try:
+            path = self._file_path(execution_id)
+        except ValueError:
+            return False
         if os.path.exists(path):
             os.remove(path)
             return True
@@ -65,6 +74,7 @@ class ExecutionRepository:
                 dataset = data.get("dataset") or {}
                 summaries.append({
                     "execution_id": execution_id,
+                    "owner_id": data.get("owner_id"),
                     "status": status,
                     "created_at": execution.get("created_at") or execution.get("started_at"),
                     "started_at": execution.get("started_at"),

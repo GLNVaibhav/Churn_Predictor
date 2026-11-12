@@ -1,15 +1,22 @@
 # dependencies for FastAPI layer
 import uuid
 from backend.runtime.repository import ExecutionRepository
+from backend.runtime.postgres_repository import PostgresExecutionRepository
 from backend.runtime.manager import ExecutionManager
 from backend.services.analysis_service import AnalysisService
 from backend.services.upload_service import UploadService
 from backend.config import settings
+from backend.services.upload_storage import create_upload_storage
 
 # Singleton instances (created once at import time)
-execution_repository = ExecutionRepository(base_dir=str(settings.RUN_ROOT))
+execution_repository = (
+    PostgresExecutionRepository(settings.DATABASE_URL)
+    if settings.DATABASE_URL
+    else ExecutionRepository(base_dir=str(settings.RUN_ROOT))
+)
 execution_manager = ExecutionManager(repository=execution_repository)
 analysis_service = AnalysisService()
+upload_storage = create_upload_storage()
 
 # Dependency factories
 
@@ -31,3 +38,7 @@ def get_analysis_service() -> AnalysisService:
 def get_upload_service() -> UploadService:
     """Return a new UploadService instance."""
     return UploadService()
+
+
+def get_upload_storage():
+    return upload_storage

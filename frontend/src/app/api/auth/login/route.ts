@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { authConfigStatus, authErrorMessage, authenticateUser, setSession } from "@/lib/server/auth";
+import { authConfigStatus, authErrorMessage, authenticateUser, isSameOriginRequest, setSession } from "@/lib/server/auth";
 
 export async function POST(req: Request) {
+  if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Cross-origin request rejected." }, { status: 403 });
   if (!authConfigStatus().ready) {
     return NextResponse.json({ error: "Authentication database is not configured." }, { status: 503 });
   }
