@@ -18,7 +18,7 @@ class RecordingSampler(BaseEstimator):
 
 
 def test_preprocessor_learns_only_from_development_rows_and_ignores_unknown_category():
-    X_train = pd.DataFrame({"number": [0.0, 2.0, 4.0, 6.0], "kind": ["a", "a", "b", "b"]})
+    X_train = pd.DataFrame({"number": [0.0, np.nan, 4.0, 6.0], "kind": ["a", "a", None, "b"]})
     y_train = pd.Series([0, 0, 1, 1])
     X_holdout = pd.DataFrame({"number": [1000.0, 8.0], "kind": ["holdout-only", "a"]})
     y_holdout = pd.Series([1, 0])
@@ -28,8 +28,11 @@ def test_preprocessor_learns_only_from_development_rows_and_ignores_unknown_cate
     )
     prep = result["model"].named_steps["preprocess"]
     numeric = prep.named_transformers_["numeric"]
-    assert numeric.named_steps["scale"].mean_[0] == 3.0
-    categorical = prep.named_transformers_["categorical"].named_steps["encode"]
+    assert numeric.named_steps["imputer"].statistics_[0] == 4.0
+    assert numeric.named_steps["scale"].mean_[0] == 3.5
+    categorical_pipe = prep.named_transformers_["categorical"]
+    assert categorical_pipe.named_steps["imputer"].statistics_[0] == "a"
+    categorical = categorical_pipe.named_steps["encode"]
     assert list(categorical.categories_[0]) == ["a", "b"]
     assert result["holdout_rows"] == 2
     assert len(result["holdout_metrics"]["confusion_matrix_labels_0_1"]) == 2
