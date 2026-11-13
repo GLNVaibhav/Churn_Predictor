@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Tuple, Set
+from typing import List, Dict, Any, Tuple, Set, Optional
 
 from .business_meaning import BusinessMeaning
 from .context_validation import ContextValidation
