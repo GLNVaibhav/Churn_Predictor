@@ -43,9 +43,14 @@ def test_analysis_execution_persists_and_exposes_adaptive_business_context(monke
     assert recommendations[0]["evidence_id"].startswith("ABIL-execution-1-")
     assert recommendations[0]["department"] == "Network Operations"
     assert recommendations[0]["priority"] == 1
+    assert "network or service-reliability" in recommendations[0]["action"]
+    assert recommendations[0]["source_recommendation"] == "Restore the northern link."
+    assert recommendations[0]["evidence_id"] == "ABIL-execution-1-1"
     assert "ADAPTIVE BUSINESS CONTEXT" in result["report_texts"]["decision_report_text"]
     assert "department Network Operations" in result["report_texts"]["decision_report_text"]
     assert "priority 1" in result["report_texts"]["decision_report_text"]
+    assert "evidence_id: ABIL-execution-1-1" in result["report_texts"]["decision_report_text"]
+    assert "limitation: Validate the source event" in result["report_texts"]["decision_report_text"]
     assert result["execution_result"] == {"prediction_count": 1}
 
 

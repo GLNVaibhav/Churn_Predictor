@@ -74,7 +74,14 @@ def test_contextless_analysis_remains_backward_compatible():
 
 
 def test_abil_generates_execution_scoped_signals_without_prediction_fields():
-    document = {**SAMPLE, "events": [SAMPLE["events"][0]]}
+    source_event = {
+        **SAMPLE["events"][0],
+        "category": "Network Outage",
+        "department": "Network Operations",
+        "priority": 1,
+        "recommended_action": "Run the source-provided action.",
+    }
+    document = {**SAMPLE, "events": [source_event]}
     result = evaluate_business_context(document, sector="telecom", execution_id="run-123")
 
     assert result["status"] == "AVAILABLE"
@@ -83,4 +90,42 @@ def test_abil_generates_execution_scoped_signals_without_prediction_fields():
     assert result["signals"][0]["evidence_id"] == "ABIL-run-123-1"
     assert result["signals"][0]["affected_segments"] == ["High Data Users"]
     assert result["signals"][0]["confidence"] == 0.82
+    assert result["signals"][0]["department"] == "Network Operations"
+    assert result["signals"][0]["priority"] == 1
+    assert result["signals"][0]["source_recommendation"] == "Run the source-provided action."
+    assert result["signals"][0]["action"] != "Run the source-provided action."
+    assert "network" in result["signals"][0]["action"].lower()
+    assert "does not establish" in result["signals"][0]["rationale"]
+    assert result["assessment"]["recommended_action"] == result["signals"][0]["action"]
     assert not {"predictions", "churn_probability", "probabilities"}.intersection(result)
+
+
+@pytest.mark.parametrize(
+    ("sector", "category", "expected"),
+    [
+        ("telecom", "Network Quality", "network or service-reliability"),
+        ("banking", "Cybersecurity", "authorized case review"),
+        ("ecommerce", "Logistics", "fulfillment, return, or inventory"),
+        ("healthcare", "Patient Safety", "clinical or safety signal"),
+    ],
+)
+def test_abil_follow_up_is_sector_specific_and_evidence_bounded(sector, category, expected):
+    result = evaluate_business_context(
+        {"events": [{
+            "category": category,
+            "description": "A supplied operational event description.",
+            "severity": "HIGH",
+            "confidence": 0.83,
+            "department": "Strategy",
+            "priority": 1,
+        }]},
+        sector=sector,
+        execution_id="run-sector",
+    )
+
+    signal = result["signals"][0]
+    assert expected in signal["action"]
+    assert signal["priority"] == 1
+    assert signal["department"] == "Strategy"
+    assert signal["evidence_id"] == "ABIL-run-sector-1"
+    assert "does not establish" in signal["rationale"]
