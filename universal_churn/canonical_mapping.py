@@ -446,7 +446,10 @@ def infer_canonical_mapping(
     conflicting_counter = 0
 
     for idx, bm in enumerate(business_meanings):
-        column_name = f"col_{idx}_{bm.primary_business_concept}"
+        column_name = str(
+            bm.supporting_features.get("source_column")
+            or f"col_{idx}_{bm.primary_business_concept}"
+        )
         candidates = _generate_candidates(bm, semantic_graph, context)
         ranked = _rank_candidates(candidates)
         top = ranked[0]
@@ -460,9 +463,14 @@ def infer_canonical_mapping(
         if confidence >= _HIGH_CONFIDENCE_THRESHOLD:
             high_conf_counter += 1
         if duplicate_counter[dup_key] > 1:
-            prev = [m for m in mappings if m.chosen_concept.name == dup_key]
-            for p in prev:
-                prev_entity = _infer_entity_type(p.column_name.split('_', 2)[-1])
+            prev_indices = [
+                prev_idx for prev_idx, previous in enumerate(mappings)
+                if previous.chosen_concept.name == dup_key
+            ]
+            for prev_idx in prev_indices:
+                prev_entity = _infer_entity_type(
+                    business_meanings[prev_idx].primary_business_concept
+                )
                 curr_entity = _infer_entity_type(bm.primary_business_concept)
                 if prev_entity != curr_entity:
                     conflicting_counter += 1

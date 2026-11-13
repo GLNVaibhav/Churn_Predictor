@@ -1244,6 +1244,7 @@ def _build_business_meaning(
         f"Metric inferred as '{metric}' and customer dimension as '{dimension}'."
     )
     supporting = {
+        "source_column": profile.raw_column,
         "tokens": profile.tokens,
         "units": profile.units,
         "temporal_indicators": profile.temporal_indicators,
@@ -1305,6 +1306,7 @@ def _build_business_meaning_with_context(
         + (" | ".join(context_parts) if context_parts else "No dataset context available.")
     )
     supporting = {
+        "source_column": profile.raw_column,
         "tokens": profile.tokens,
         "units": profile.units,
         "temporal_indicators": profile.temporal_indicators,
@@ -1361,7 +1363,8 @@ def infer_business_meaning(profile: ColumnProfile) -> BusinessMeaning:
             confidence=confidence.score,
             reasoning=f"Sector knowledge pack resolved '{profile.raw_column}' as '{pack['concept']}'. {confidence.reason}",
             supporting_features={"knowledge_pack": pack["key"], "canonical": pack["canonical"],
-                                 "profile": profile.statistical_profile},
+                                 "profile": profile.statistical_profile,
+                                 "source_column": profile.raw_column},
             semantic_confidence=confidence,
         )
     evidence = _extract_concept_evidence(profile)
@@ -1411,7 +1414,8 @@ def infer_business_meanings(profiles: List[ColumnProfile]) -> List[BusinessMeani
                 confidence=confidence.score,
                 reasoning=f"Sector knowledge pack resolved '{profile.raw_column}' as '{pack['concept']}'. {confidence.reason}",
                 supporting_features={"knowledge_pack": pack["key"], "canonical": pack["canonical"],
-                                     "profile": profile.statistical_profile},
+                                     "profile": profile.statistical_profile,
+                                     "source_column": profile.raw_column},
                 semantic_confidence=confidence,
             )
             pack_meanings.append((idx, meaning))

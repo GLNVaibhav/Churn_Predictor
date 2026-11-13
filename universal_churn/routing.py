@@ -75,7 +75,7 @@ class RoutingDecision:
     Attributes
     ----------
     selected_pipeline: str – name of the pipeline selected.
-    confidence: float – overall routing confidence (the final_score of the selected candidate).
+    confidence: float – deterministic routing score, not a calibrated probability.
     fallback_used: bool – True if the GenericPipeline was chosen due to insufficient coverage.
     reasoning: str – deterministic explanation of the decision.
     """
@@ -119,14 +119,14 @@ _PIPELINE_MAP: Dict[str, str] = {
     "Generic": "GenericPipeline",
 }
 
-# Factor weight configuration – sum of all factor weights = 0.6 (see RoutingCandidate.final_score)
+# Factor weights sum to 0.6; the candidate prior contributes the other 0.4.
 _FACTOR_WEIGHTS: Dict[str, float] = {
-    "coverage_gatekeeper": 0.30,
-    "domain_agreement": 0.25,
-    "canonical_coverage": 0.15,
-    "business_meaning_confidence": 0.10,
-    "semantic_consistency": 0.10,
-    "overall_confidence": 0.10,
+    "coverage_gatekeeper": 0.18,
+    "domain_agreement": 0.15,
+    "canonical_coverage": 0.09,
+    "business_meaning_confidence": 0.06,
+    "semantic_consistency": 0.06,
+    "overall_confidence": 0.06,
 }
 
 # ---------------------------------------------------------------------------
