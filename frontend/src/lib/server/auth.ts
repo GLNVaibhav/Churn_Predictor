@@ -93,8 +93,9 @@ async function verifyAuthIndexes(db: Db) {
       const indexes = await db.collection(required.collection).listIndexes().toArray();
       const key = JSON.stringify(required.key);
       const existing = indexes.find((index) => JSON.stringify(index.key) === key);
+      const requiresUnique = "unique" in required && required.unique;
       const compatible = existing
-        && existing.unique === ("unique" in required ? required.unique : false)
+        && (requiresUnique ? existing.unique === true : existing.unique !== true)
         && existing.expireAfterSeconds === ("expireAfterSeconds" in required ? required.expireAfterSeconds : undefined)
         && !existing.sparse
         && !existing.partialFilterExpression

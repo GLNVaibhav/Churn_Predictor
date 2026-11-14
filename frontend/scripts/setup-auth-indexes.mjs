@@ -24,7 +24,7 @@ function sameKey(actual, expected) {
 
 function indexMatches(index, required) {
   return sameKey(index.key, required.key)
-    && index.unique === (required.unique === true)
+    && (required.unique === true ? index.unique === true : index.unique !== true)
     && index.expireAfterSeconds === required.expireAfterSeconds
     && !index.sparse
     && !index.partialFilterExpression
