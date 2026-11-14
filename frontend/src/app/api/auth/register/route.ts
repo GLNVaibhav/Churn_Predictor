@@ -13,20 +13,11 @@ export async function POST(req: Request) {
   if (!email.includes("@") || password.length < 8) {
     return NextResponse.json({ error: "Enter a valid email and a password with at least 8 characters." }, { status: 400 });
   }
-  let phase: "create_user" | "create_session" = "create_user";
   try {
     const user = await createUser(email, password, name);
-    phase = "create_session";
     await setSession(user);
     return NextResponse.json({ user });
   } catch (error) {
-    const diagnostic = error as { name?: unknown; code?: unknown; codeName?: unknown };
-    console.error("[auth/register]", {
-      phase,
-      errorName: typeof diagnostic?.name === "string" ? diagnostic.name : "UnknownError",
-      mongoCode: typeof diagnostic?.code === "number" || typeof diagnostic?.code === "string" ? diagnostic.code : undefined,
-      mongoCodeName: typeof diagnostic?.codeName === "string" ? diagnostic.codeName : undefined,
-    });
     return NextResponse.json({ error: authErrorMessage(error) }, { status: 400 });
   }
 }

@@ -27,11 +27,32 @@ type UserDoc = {
   updatedAt: Date;
 };
 
+type RegistrationOperation = "mongodb_connection_authentication" | "index_creation" | "existing_user_lookup" | "user_insertion";
+
 let clientPromise: Promise<MongoClient> | null = null;
 let indexesPromise: Promise<void> | null = null;
 
 function authSecret() {
   return process.env.AUTH_SECRET || "";
+}
+
+async function withRegistrationDiagnostic<T>(operation: RegistrationOperation, action: () => Promise<T>): Promise<T> {
+  try {
+    return await action();
+  } catch (error) {
+    const diagnostic = error as { name?: unknown; code?: unknown; codeName?: unknown };
+    const safeIdentifier = (value: unknown) =>
+      typeof value === "string" && /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(value) ? value : undefined;
+    const safeCode = (value: unknown) =>
+      typeof value === "number" || (typeof value === "string" && /^[A-Za-z0-9_.-]{1,64}$/.test(value)) ? value : undefined;
+    console.error("[auth/register]", {
+      operation,
+      errorName: safeIdentifier(diagnostic?.name) || "UnknownError",
+      code: safeCode(diagnostic?.code),
+      codeName: safeIdentifier(diagnostic?.codeName),
+    });
+    throw error;
+  }
 }
 
 export function authConfigStatus() {
@@ -150,22 +171,26 @@ function verifyToken(token?: string): SessionPayload | null {
 }
 
 export async function createUser(email: string, password: string, name: string, role: "admin" | "member" = "member") {
-  const db = await getDb();
-  await ensureAuthIndexes(db);
+  const db = await withRegistrationDiagnostic("mongodb_connection_authentication", getDb);
+  await withRegistrationDiagnostic("index_creation", () => ensureAuthIndexes(db));
   const normalizedEmail = email.trim().toLowerCase();
-  const existing = await db.collection<UserDoc>("users").findOne({ email: normalizedEmail });
+  const existing = await withRegistrationDiagnostic("existing_user_lookup", () =>
+    db.collection<UserDoc>("users").findOne({ email: normalizedEmail }),
+  );
   if (existing) throw new Error("Account already exists");
   const hashed = hashPassword(password);
   const now = new Date();
-  const result = await db.collection<UserDoc>("users").insertOne({
-    _id: new ObjectId(),
-    email: normalizedEmail,
-    name: name.trim() || normalizedEmail.split("@")[0],
-    role,
-    ...hashed,
-    createdAt: now,
-    updatedAt: now,
-  });
+  const result = await withRegistrationDiagnostic("user_insertion", () =>
+    db.collection<UserDoc>("users").insertOne({
+      _id: new ObjectId(),
+      email: normalizedEmail,
+      name: name.trim() || normalizedEmail.split("@")[0],
+      role,
+      ...hashed,
+      createdAt: now,
+      updatedAt: now,
+    }),
+  );
   return { userId: result.insertedId.toString(), email: normalizedEmail, name: name.trim() || normalizedEmail.split("@")[0], role };
 }
 
