@@ -27,131 +27,11 @@ type UserDoc = {
   updatedAt: Date;
 };
 
-type RegistrationOperation =
-  | "mongodb_connection_authentication"
-  | "index_users_email_unique"
-  | "index_sessions_sid_unique"
-  | "index_sessions_expires_at_ttl"
-  | "existing_user_lookup"
-  | "user_insertion";
-
 let clientPromise: Promise<MongoClient> | null = null;
 let indexesPromise: Promise<void> | null = null;
 
 function authSecret() {
   return process.env.AUTH_SECRET || "";
-}
-
-function safeIdentifier(value: unknown) {
-  return typeof value === "string" && /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(value) ? value : undefined;
-}
-
-function safeCode(value: unknown) {
-  return typeof value === "number" || (typeof value === "string" && /^[A-Za-z0-9_.-]{1,64}$/.test(value)) ? value : undefined;
-}
-
-function safeMongoRejectionReason(error: unknown) {
-  const message = error instanceof Error ? error.message : "";
-  const denied = message.match(/not authorized to do action\s+\[([A-Za-z]+)\]\s+on\s+\[([A-Za-z0-9_.-]+)\]/i);
-  if (denied) return `not_authorized:${denied[1]}:${denied[2]}`;
-  if (/bad auth|authentication failed/i.test(message)) return "authentication_rejected";
-  if (/indexoptionsconflict|already exists.*different options/i.test(message)) return "index_options_conflict";
-  if (/duplicate key|e11000/i.test(message)) return "duplicate_key_conflict";
-  if (/too many indexes|index.*limit/i.test(message)) return "index_limit";
-  if (/quota|storage.*limit/i.test(message)) return "storage_or_quota_limit";
-  if (/index build|createindex/i.test(message)) return "index_build_rejected";
-  return "unclassified_mongo_rejection";
-}
-
-async function safeIndexAuthorizationContext(db: Db) {
-  try {
-    const status = await db.command({ connectionStatus: 1, showPrivileges: true });
-    const authInfo = status.authInfo || {};
-    const authenticationDatabases = [...new Set(
-      (authInfo.authenticatedUsers || []).map((user: { db?: unknown }) => safeIdentifier(user?.db)).filter(Boolean),
-    )];
-    const effectiveRoles = [...new Set(
-      (authInfo.authenticatedUserRoles || []).map((role: { role?: unknown; db?: unknown }) => {
-        const name = safeIdentifier(role?.role);
-        const database = safeIdentifier(role?.db);
-        return name && database ? `${name}@${database}` : undefined;
-      }).filter(Boolean),
-    )];
-    const hasCreateIndexPrivilege = (authInfo.authenticatedUserPrivileges || []).some((privilege: {
-      resource?: { db?: unknown };
-      actions?: unknown;
-    }) => {
-      const resourceDatabase = privilege.resource?.db;
-      return (resourceDatabase === db.databaseName || resourceDatabase === "")
-        && Array.isArray(privilege.actions)
-        && privilege.actions.includes("createIndex");
-    });
-    return {
-      selectedDatabase: db.databaseName,
-      authenticationDatabases,
-      effectiveRoles,
-      hasCreateIndexPrivilege,
-    };
-  } catch {
-    return { selectedDatabase: db.databaseName, authorizationContext: "unavailable" };
-  }
-}
-
-async function safeExistingIndexes(db: Db, collection: "users" | "sessions") {
-  try {
-    const indexes = await db.collection(collection).listIndexes().toArray();
-    return indexes.map((index) => ({
-      name: safeIdentifier(index.name),
-      keys: Object.fromEntries(
-        Object.entries(index.key || {}).flatMap(([field, direction]) => {
-          const safeField = safeIdentifier(field);
-          return safeField ? [[safeField, typeof direction === "number" ? direction : safeIdentifier(direction)]] : [];
-        }),
-      ),
-      unique: index.unique === true,
-      expireAfterSeconds: typeof index.expireAfterSeconds === "number" ? index.expireAfterSeconds : undefined,
-    }));
-  } catch {
-    return "unavailable";
-  }
-}
-
-async function withRegistrationDiagnostic<T>(operation: RegistrationOperation, action: () => Promise<T>): Promise<T> {
-  try {
-    return await action();
-  } catch (error) {
-    const diagnostic = error as { name?: unknown; code?: unknown; codeName?: unknown };
-    console.error("[auth/register]", {
-      operation,
-      errorName: safeIdentifier(diagnostic?.name) || "UnknownError",
-      code: safeCode(diagnostic?.code),
-      codeName: safeIdentifier(diagnostic?.codeName),
-    });
-    throw error;
-  }
-}
-
-async function withIndexDiagnostic<T>(
-  operation: RegistrationOperation,
-  db: Db,
-  collection: "users" | "sessions",
-  action: () => Promise<T>,
-): Promise<T> {
-  try {
-    return await action();
-  } catch (error) {
-    const diagnostic = error as { name?: unknown; code?: unknown; codeName?: unknown };
-    console.error("[auth/register]", {
-      operation,
-      errorName: safeIdentifier(diagnostic?.name) || "UnknownError",
-      code: safeCode(diagnostic?.code),
-      codeName: safeIdentifier(diagnostic?.codeName),
-      rejectionReason: safeMongoRejectionReason(error),
-      ...await safeIndexAuthorizationContext(db),
-      existingIndexes: await safeExistingIndexes(db, collection),
-    });
-    throw error;
-  }
 }
 
 export function authConfigStatus() {
@@ -171,6 +51,7 @@ export async function authRuntimeStatus() {
   try {
     const db = await getDb();
     await db.command({ ping: 1 });
+    await verifyAuthIndexes(db);
     return { ...config, connected: true, error: null };
   } catch (error) {
     return { ...config, connected: false, error: authErrorMessage(error) };
@@ -200,19 +81,28 @@ async function getDb(): Promise<Db> {
   return client.db(process.env.MONGODB_DB || "ucif");
 }
 
-async function ensureAuthIndexes(db: Db) {
+const REQUIRED_AUTH_INDEXES = [
+  { collection: "users", key: { email: 1 }, unique: true, name: "users.email_1" },
+  { collection: "sessions", key: { sid: 1 }, unique: true, name: "sessions.sid_1" },
+  { collection: "sessions", key: { expiresAt: 1 }, expireAfterSeconds: 0, name: "sessions.expiresAt_1" },
+] as const;
+
+async function verifyAuthIndexes(db: Db) {
   if (!indexesPromise) {
-    indexesPromise = Promise.all([
-      withIndexDiagnostic("index_users_email_unique", db, "users", () =>
-        db.collection<UserDoc>("users").createIndex({ email: 1 }, { unique: true }),
-      ),
-      withIndexDiagnostic("index_sessions_sid_unique", db, "sessions", () =>
-        db.collection("sessions").createIndex({ sid: 1 }, { unique: true }),
-      ),
-      withIndexDiagnostic("index_sessions_expires_at_ttl", db, "sessions", () =>
-        db.collection("sessions").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
-      ),
-    ]).then(() => undefined).catch((error) => {
+    indexesPromise = Promise.all(REQUIRED_AUTH_INDEXES.map(async (required) => {
+      const indexes = await db.collection(required.collection).listIndexes().toArray();
+      const key = JSON.stringify(required.key);
+      const existing = indexes.find((index) => JSON.stringify(index.key) === key);
+      const compatible = existing
+        && existing.unique === ("unique" in required ? required.unique : false)
+        && existing.expireAfterSeconds === ("expireAfterSeconds" in required ? required.expireAfterSeconds : undefined)
+        && !existing.sparse
+        && !existing.partialFilterExpression
+        && !existing.collation;
+      if (!compatible) {
+        throw new Error(`Authentication database index ${required.name} is missing or incompatible. Run the development index setup script.`);
+      }
+    })).then(() => undefined).catch((error) => {
       indexesPromise = null;
       throw error;
     });
@@ -276,31 +166,31 @@ function verifyToken(token?: string): SessionPayload | null {
 }
 
 export async function createUser(email: string, password: string, name: string, role: "admin" | "member" = "member") {
-  const db = await withRegistrationDiagnostic("mongodb_connection_authentication", getDb);
-  await ensureAuthIndexes(db);
+  const db = await getDb();
+  await verifyAuthIndexes(db);
   const normalizedEmail = email.trim().toLowerCase();
-  const existing = await withRegistrationDiagnostic("existing_user_lookup", () =>
-    db.collection<UserDoc>("users").findOne({ email: normalizedEmail }),
-  );
+  const existing = await db.collection<UserDoc>("users").findOne({ email: normalizedEmail });
   if (existing) throw new Error("Account already exists");
   const hashed = hashPassword(password);
   const now = new Date();
-  const result = await withRegistrationDiagnostic("user_insertion", () =>
-    db.collection<UserDoc>("users").insertOne({
-      _id: new ObjectId(),
-      email: normalizedEmail,
-      name: name.trim() || normalizedEmail.split("@")[0],
-      role,
-      ...hashed,
-      createdAt: now,
-      updatedAt: now,
-    }),
-  );
+  const result = await db.collection<UserDoc>("users").insertOne({
+    _id: new ObjectId(),
+    email: normalizedEmail,
+    name: name.trim() || normalizedEmail.split("@")[0],
+    role,
+    ...hashed,
+    createdAt: now,
+    updatedAt: now,
+  }).catch((error: unknown) => {
+    if ((error as { code?: unknown })?.code === 11000) throw new Error("Account already exists");
+    throw error;
+  });
   return { userId: result.insertedId.toString(), email: normalizedEmail, name: name.trim() || normalizedEmail.split("@")[0], role };
 }
 
 export async function authenticateUser(email: string, password: string) {
   const db = await getDb();
+  await verifyAuthIndexes(db);
   const user = await db.collection<UserDoc>("users").findOne({ email: email.trim().toLowerCase() });
   if (!user || !verifyPassword(password, user)) throw new Error("Invalid email or password");
   return { userId: user._id.toString(), email: user.email, name: user.name, role: user.role || "member" };
@@ -310,7 +200,7 @@ export async function setSession(user: { userId: string; email: string; name: st
   const sid = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + MAX_AGE_SECONDS * 1000);
   const db = await getDb();
-  await ensureAuthIndexes(db);
+  await verifyAuthIndexes(db);
   await db.collection("sessions").insertOne({ sid, userId: user.userId, expiresAt });
   const token = createToken({ ...user, role: user.role || "member", sid, exp: expiresAt.getTime() });
   const cookieStore = await cookies();
@@ -354,6 +244,7 @@ export async function currentSession() {
   if (!session) return null;
   try {
     const db = await getDb();
+    await verifyAuthIndexes(db);
     const active = await db.collection("sessions").findOne({
       sid: session.sid,
       userId: session.userId,

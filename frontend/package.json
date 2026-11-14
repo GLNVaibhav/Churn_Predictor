@@ -6,7 +6,8 @@
     "dev": "next dev -H 0.0.0.0 -p 5000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "setup:auth-indexes": "node scripts/setup-auth-indexes.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
