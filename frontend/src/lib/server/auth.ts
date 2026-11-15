@@ -6,6 +6,7 @@ import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 
 const COOKIE_NAME = "ucif_session";
 const MAX_AGE_SECONDS = 60 * 60 * 12;
+const DEMO_MAX_AGE_SECONDS = 60 * 60 * 2;
 
 type SessionPayload = {
   sid: string;
@@ -13,6 +14,8 @@ type SessionPayload = {
   email: string;
   name: string;
   role?: "admin" | "member";
+  accountType?: "demo";
+  roleLabel?: "Research Demonstrator";
   exp: number;
 };
 
@@ -34,12 +37,30 @@ function authSecret() {
   return process.env.AUTH_SECRET || "";
 }
 
+export function isDemoAuthEnabled() {
+  const backendUrl = process.env.BACKEND_URL;
+  let secureBackend = false;
+  try {
+    secureBackend = Boolean(backendUrl && new URL(backendUrl).protocol === "https:");
+  } catch {
+    secureBackend = false;
+  }
+  return process.env.UCIF_DEMO_ENABLED === "true"
+    && process.env.NODE_ENV === "production"
+    && process.env.VERCEL_ENV === "preview"
+    && process.env.VERCEL_GIT_COMMIT_REF === "dev"
+    && authSecret().length >= 32
+    && secureBackend
+    && (process.env.UCIF_PROXY_SECRET || "").length >= 32;
+}
+
 export function authConfigStatus() {
   const hasStrongSecret = authSecret().length >= 32;
   return {
     database: Boolean(process.env.MONGODB_URI),
     secret: hasStrongSecret,
     ready: Boolean(process.env.MONGODB_URI && hasStrongSecret),
+    demoEnabled: isDemoAuthEnabled(),
   };
 }
 
@@ -160,6 +181,12 @@ function verifyToken(token?: string): SessionPayload | null {
     const payload = JSON.parse(decode(body)) as SessionPayload;
     if (!payload.sid || !payload.userId || !payload.email || !Number.isFinite(payload.exp)) return null;
     if (payload.role !== "admin" && payload.role !== "member") return null;
+    if (payload.accountType !== undefined && payload.accountType !== "demo") return null;
+    if (payload.accountType === "demo"
+      && (!isDemoAuthEnabled()
+        || !payload.userId.startsWith("ucif-demo:")
+        || payload.role !== "member"
+        || payload.roleLabel !== "Research Demonstrator")) return null;
     return payload.exp > Date.now() ? payload : null;
   } catch {
     return null;
@@ -214,6 +241,37 @@ export async function setSession(user: { userId: string; email: string; name: st
   });
 }
 
+export async function createDemoSession() {
+  if (!isDemoAuthEnabled()) throw new Error("Demo access is not enabled for this deployment");
+  const expiresAt = new Date(Date.now() + DEMO_MAX_AGE_SECONDS * 1000);
+  const user: SessionPayload = {
+    userId: `ucif-demo:${randomBytes(18).toString("hex")}`,
+    email: "demo@ucif.local",
+    name: "UCIF Demo User",
+    role: "member",
+    accountType: "demo",
+    roleLabel: "Research Demonstrator",
+    sid: randomBytes(32).toString("base64url"),
+    exp: expiresAt.getTime(),
+  };
+  const cookieStore = await cookies();
+  cookieStore.set(COOKIE_NAME, createToken(user), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: DEMO_MAX_AGE_SECONDS,
+  });
+  return {
+    userId: user.userId,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    accountType: user.accountType,
+    roleLabel: user.roleLabel,
+  };
+}
+
 export function isSameOriginRequest(request: Request) {
   const origin = request.headers.get("origin");
   if (!origin) return process.env.NODE_ENV !== "production";
@@ -227,7 +285,7 @@ export function isSameOriginRequest(request: Request) {
 export async function clearSession() {
   const cookieStore = await cookies();
   const existing = verifyToken(cookieStore.get(COOKIE_NAME)?.value);
-  if (existing && process.env.MONGODB_URI) {
+  if (existing && existing.accountType !== "demo" && process.env.MONGODB_URI) {
     try {
       const db = await getDb();
       await db.collection("sessions").deleteOne({ sid: existing.sid, userId: existing.userId });
@@ -243,6 +301,7 @@ export async function currentSession() {
   const cookieStore = await cookies();
   const session = verifyToken(cookieStore.get(COOKIE_NAME)?.value);
   if (!session) return null;
+  if (session.accountType === "demo") return session;
   try {
     const db = await getDb();
     await verifyAuthIndexes(db);

@@ -100,6 +100,9 @@ export function AppTopbar() {
         </Link>
         {auth.user ? (
           <button type="button" onClick={() => auth.logout()} className="flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1 text-xs font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            {auth.user.accountType === "demo" ? (
+              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-primary" aria-label="Research Demonstrator demo account">DEMO</span>
+            ) : null}
             <Avatar className="h-7 w-7 border border-border">
               <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
                 {auth.user.name.slice(0, 2).toUpperCase()}

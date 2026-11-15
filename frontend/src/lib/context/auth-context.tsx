@@ -3,15 +3,25 @@
 import { createContext, useContext } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-type AuthUser = { userId: string; email: string; name: string; role?: "admin" | "member" };
+type AuthUser = {
+  userId: string;
+  email: string;
+  name: string;
+  role?: "admin" | "member";
+  accountType?: "demo";
+  roleLabel?: "Research Demonstrator";
+};
 type AuthContextValue = {
   configured: boolean;
   connected: boolean;
   error: string | null;
+  demoEnabled: boolean;
+  demoPending: boolean;
   user: AuthUser | null;
   isLoading: boolean;
   login: (input: { email: string; password: string }) => Promise<void>;
   register: (input: { email: string; password: string; name: string }) => Promise<void>;
+  enterDemo: () => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -30,9 +40,14 @@ async function authRequest<T>(path: string, body?: Record<string, unknown>): Pro
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
+  const demoStatus = useQuery({
+    queryKey: ["auth", "demo-status"],
+    queryFn: () => authRequest<{ enabled: boolean }>("/api/auth/demo/status"),
+    retry: 0,
+  });
   const me = useQuery({
     queryKey: ["auth", "me"],
-    queryFn: () => authRequest<{ configured: boolean; connected: boolean; error: string | null; user: AuthUser | null }>("/api/auth/me"),
+    queryFn: () => authRequest<{ configured: boolean; connected: boolean; error: string | null; demoEnabled: boolean; user: AuthUser | null }>("/api/auth/me"),
     retry: 0,
   });
   const loginMutation = useMutation({
@@ -41,6 +56,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
   const registerMutation = useMutation({
     mutationFn: (input: { email: string; password: string; name: string }) => authRequest("/api/auth/register", input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["auth", "me"] }),
+  });
+  const demoMutation = useMutation({
+    mutationFn: () => authRequest<{ user: AuthUser }>("/api/auth/demo", {}),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["auth", "me"] }),
   });
   const logoutMutation = useMutation({
@@ -54,10 +73,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         configured: Boolean(me.data?.configured),
         connected: Boolean(me.data?.connected),
         error: me.data?.error || null,
+        demoEnabled: Boolean(demoStatus.data?.enabled),
+        demoPending: demoMutation.isPending,
         user: me.data?.user || null,
         isLoading: me.isLoading,
         login: async (input) => { await loginMutation.mutateAsync(input); },
         register: async (input) => { await registerMutation.mutateAsync(input); },
+        enterDemo: async () => { await demoMutation.mutateAsync(); },
         logout: async () => { await logoutMutation.mutateAsync(); },
       }}
     >

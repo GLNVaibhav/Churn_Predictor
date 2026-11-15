@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/context/auth-context";
-import { ArrowLeft, LockKeyhole, ShieldCheck, UserPlus } from "lucide-react";
+import { ArrowLeft, LockKeyhole, Presentation, ShieldCheck, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { UcifLogo } from "@/components/brand/ucif-logo";
 
@@ -33,6 +33,19 @@ export default function SignInPage() {
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Authentication failed.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function enterDemo() {
+    setPending(true);
+    setError(null);
+    try {
+      await auth.enterDemo();
+      router.replace("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Demo access could not be started.");
     } finally {
       setPending(false);
     }
@@ -74,12 +87,25 @@ export default function SignInPage() {
         >
           <div className="mb-4 flex items-center justify-between rounded-md border border-border bg-muted/20 px-3 py-2">
             <span className="text-xs font-medium text-muted-foreground">Authentication</span>
-            <Badge variant="outline">{auth.connected ? "Connected" : "Database not connected"}</Badge>
+            <Badge variant="outline">{auth.demoEnabled ? "Demo access enabled" : auth.connected ? "Connected" : "Database not connected"}</Badge>
           </div>
-          {auth.error ? (
+          {auth.error && !auth.demoEnabled ? (
             <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
               {auth.error}
             </p>
+          ) : null}
+
+          {auth.demoEnabled ? (
+            <div className="mb-5 rounded-md border border-primary/25 bg-primary/5 p-4">
+              <div className="text-sm font-medium">UCIF Demo User</div>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Research Demonstrator access. Demo analyses use temporary backend storage and may not survive a service restart.
+              </p>
+              <Button type="button" variant="outline" className="mt-3 w-full" onClick={enterDemo} disabled={pending || auth.demoPending}>
+                <Presentation className="mr-2 h-4 w-4" />
+                {pending || auth.demoPending ? "Opening demo..." : "Enter Demo"}
+              </Button>
+            </div>
           ) : null}
 
           <form className="space-y-4" onSubmit={submit}>
