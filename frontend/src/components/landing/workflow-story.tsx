@@ -188,10 +188,10 @@ export function PinnedWorkflowStory() {
         }),
         defaults: { ease: "linear" },
       })
-        .add(sticky, { backgroundColor: ["#EDEDED", "#E3E0DA"], color: ["#111111", "#111111"], duration: 700 }, 0)
-        .add(sticky, { backgroundColor: ["#E3E0DA", "#CCC9C1"], color: ["#111111", "#111111"], duration: 700 }, 700)
-        .add(sticky, { backgroundColor: ["#CCC9C1", "#3A3937"], color: ["#111111", "#EDEDED"], duration: 700 }, 1400)
-        .add(sticky, { backgroundColor: ["#3A3937", "#090909"], color: ["#EDEDED", "#EDEDED"], duration: 700 }, 2100)
+        .add(sticky, { backgroundColor: ["#EDEDED", "#E3E0DA"], color: ["#111111", "#111111"], duration: 700, ease: "inOutSine" }, 0)
+        .add(sticky, { backgroundColor: ["#E3E0DA", "#CCC9C1"], color: ["#111111", "#111111"], duration: 700, ease: "inOutSine" }, 700)
+        .add(sticky, { backgroundColor: ["#CCC9C1", "#3A3937"], color: ["#111111", "#EDEDED"], duration: 700, ease: "inOutSine" }, 1400)
+        .add(sticky, { backgroundColor: ["#3A3937", "#090909"], color: ["#EDEDED", "#EDEDED"], duration: 700, ease: "inOutSine" }, 2100)
         .add(route, { strokeDashoffset: 0, duration: 2800 }, 0)
         .add(".story-stage-step", { opacity: [0.38, 1], x: [-10, 0], delay: stagger(70), duration: 430 }, 0);
 
@@ -199,10 +199,10 @@ export function PinnedWorkflowStory() {
         if (index > 0) {
           const position = 360 + (index - 1) * 560;
           timeline
-            .add(scenes[index - 1], { opacity: [1, 0], y: [0, -12], duration: 360 }, position)
-            .add(scene, { opacity: [0, 1], y: [16, 0], duration: 360 }, position)
-            .add(objects[index - 1], { opacity: [1, 0], scale: [1, 0.92], duration: 360 }, position)
-            .add(objects[index], { opacity: [0, 1], scale: [0.92, 1], duration: 360 }, position);
+            .add(scenes[index - 1], { opacity: [1, 0], y: [0, -8], duration: 210, ease: "inCubic" }, position)
+            .add(scene, { opacity: [0, 1], y: [10, 0], duration: 290, ease: "outCubic" }, position + 180)
+            .add(objects[index - 1], { opacity: [1, 0], scale: [1, 0.96], duration: 220, ease: "inCubic" }, position)
+            .add(objects[index], { opacity: [0, 1], scale: [0.96, 1], duration: 300, ease: "outCubic" }, position + 180);
         }
       });
     });

@@ -38,6 +38,11 @@ def test_analysis_execution_persists_and_exposes_adaptive_business_context(monke
 
     assert result["context"]["business_context"] == context
     assert result["adaptive_business"]["signal_count"] == 2
+    assert result["adaptive_business"]["comparative_report"]["status"] == "COMPARISON_AVAILABLE"
+    assert result["adaptive_business"]["comparative_report"]["dominant_business_driver"] == "Network Outage"
+    assert result["adaptive_business"]["comparative_report"]["individual_assessments"][0]["supplied_recommendation"] == "Restore the northern link."
+    assert "COMPARATIVE ABIL CONTEXT REPORT" in result["report_texts"]["decision_report_text"]
+    assert "Highest reported impact is HIGH across 1 of 2 supplied contexts." in result["report_texts"]["decision_report_text"]
     recommendations = result["decision"]["context_recommendations"]
     assert len(recommendations) == 2
     assert recommendations[0]["evidence_id"].startswith("ABIL-execution-1-")

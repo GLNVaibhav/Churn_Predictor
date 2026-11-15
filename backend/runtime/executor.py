@@ -77,7 +77,11 @@ async def run_analysis_task(
             ]
         report_texts = payload.get("report_texts")
         if isinstance(report_texts, dict) and signal_count:
-            appendix = ["", "ADAPTIVE BUSINESS CONTEXT", adaptive_summary]
+            comparative = adaptive_business.get("comparative_report") or {}
+            appendix = ["", "ADAPTIVE BUSINESS CONTEXT", adaptive_summary, "", "COMPARATIVE ABIL CONTEXT REPORT"]
+            appendix.extend(comparative.get("comparative_findings") or [])
+            if comparative.get("decision_justification"):
+                appendix.append(f"Decision justification: {comparative['decision_justification']}")
             for item in adaptive_business["signals"]:
                 organization = f"; department {item['department']}" if item.get("department") else ""
                 priority = f"; priority {item['priority']}" if item.get("priority") is not None else ""

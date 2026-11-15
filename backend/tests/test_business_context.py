@@ -100,6 +100,40 @@ def test_abil_generates_execution_scoped_signals_without_prediction_fields():
     assert not {"predictions", "churn_probability", "probabilities"}.intersection(result)
 
 
+def test_comparative_abil_report_uses_existing_multi_event_assessment():
+    result = evaluate_business_context(SAMPLE, sector="telecom", execution_id="run-compare")
+
+    report = result["comparative_report"]
+    assert report["status"] == "COMPARISON_AVAILABLE"
+    assert report["context_count"] == 2
+    assert [item["business_driver"] for item in report["individual_assessments"]] == [
+        "Competitor Promotion", "Network Outage",
+    ]
+    assert report["dominant_business_driver"] == result["assessment"]["dominant_driver"]
+    assert report["dominant_business_driver"] == "Competitor Promotion"
+    assert "severity first, then supplied confidence" in report["decision_justification"]
+    assert "Highest reported impact is HIGH" in report["comparative_findings"][0]
+    assert report["individual_assessments"][0]["reported_confidence"] == 0.82
+    assert any("not calibrated churn probabilities" in item for item in report["limitations"])
+
+
+def test_comparative_abil_report_handles_single_and_missing_contexts():
+    single = evaluate_business_context(
+        {"events": [SAMPLE["events"][0]]}, sector="telecom", execution_id="run-single",
+    )["comparative_report"]
+    empty = evaluate_business_context(
+        {"events": []}, sector="telecom", execution_id="run-empty",
+    )["comparative_report"]
+
+    assert single["status"] == "SINGLE_CONTEXT"
+    assert single["context_count"] == 1
+    assert single["comparative_findings"] == ["One supplied context was assessed; there are no peer contexts to compare."]
+    assert empty["status"] == "NO_CONTEXT"
+    assert empty["context_count"] == 0
+    assert empty["individual_assessments"] == []
+    assert empty["dominant_business_driver"] is None
+
+
 @pytest.mark.parametrize(
     ("sector", "category", "expected"),
     [

@@ -354,7 +354,7 @@
   }
   .story-visual__node {
     opacity: 0.4;
-    transition: opacity 180ms ease, transform 180ms ease;
+    transition: opacity 260ms cubic-bezier(.22, 1, .36, 1), transform 260ms cubic-bezier(.22, 1, .36, 1);
   }
   .story-visual__node.is-active {
     opacity: 1;
@@ -382,7 +382,7 @@
     color: currentColor;
     opacity: 0;
     transform: translate(-50%, -50%) scale(.92);
-    transition: background-color 320ms ease, color 320ms ease;
+    transition: background-color 320ms cubic-bezier(.22, 1, .36, 1), color 320ms cubic-bezier(.22, 1, .36, 1);
     backdrop-filter: blur(10px);
   }
   .story-object span {

@@ -561,6 +561,9 @@ export function mapDecisionIntelligenceReport(content: Record<string, unknown>):
   const inferences = (content["inferences"] as Record<string, Record<string, unknown>>) || {};
   const concepts = Object.keys(inferences);
   const adaptive = (content["adaptive_business"] || {}) as Record<string, unknown>;
+  const comparative = (adaptive["comparative_report"] || {}) as Record<string, unknown>;
+  const comparativeFindings = Array.isArray(comparative["comparative_findings"]) ? comparative["comparative_findings"] : [];
+  const comparativeContexts = Array.isArray(comparative["individual_assessments"]) ? comparative["individual_assessments"] : [];
   return {
     category: "Decision Intelligence",
     headline: `Decision Intelligence - ${String(content["decision_readiness"] || content["sector"] || "RUN")} Run`,
@@ -582,6 +585,19 @@ export function mapDecisionIntelligenceReport(content: Record<string, unknown>):
           { label: "Impact", value: String(adaptive["overall_business_impact"] || "NOT_PROVIDED") },
           { label: "Evidence Confidence", value: `${pct(adaptive["evidence_confidence"]).toFixed(1)}%` },
           { label: "Signals", value: String(adaptive["signal_count"] || 0) },
+        ],
+      },
+      {
+        heading: "Comparative ABIL Context Report",
+        body: [
+          ...comparativeFindings.map(String),
+          typeof comparative["decision_justification"] === "string" ? comparative["decision_justification"] : "",
+          ...(Array.isArray(comparative["limitations"]) ? comparative["limitations"].map((item) => `Limitation: ${String(item)}`) : []),
+        ].filter(Boolean).join("\n") || "No comparative ABIL report was returned for this execution.",
+        metrics: [
+          { label: "Comparison status", value: String(comparative["status"] || "NOT_RETURNED") },
+          { label: "Supplied contexts", value: String(comparative["context_count"] ?? comparativeContexts.length) },
+          { label: "Dominant business driver", value: String(comparative["dominant_business_driver"] || "Not reported") },
         ],
       },
     ],

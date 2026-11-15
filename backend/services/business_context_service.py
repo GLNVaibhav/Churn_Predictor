@@ -53,6 +53,78 @@ def _priority(event: dict[str, Any]) -> tuple[int, str]:
     return {"CRITICAL": 1, "HIGH": 1, "MEDIUM": 2, "LOW": 3}.get(severity, 3), "derived_from_severity"
 
 
+def _comparative_report(signals: list[dict[str, Any]], assessment: dict[str, Any] | None) -> dict[str, Any]:
+    """Summarize the ABIL assessment across the supplied events without rescoring it."""
+    count = len(signals)
+    if count == 0:
+        return {
+            "status": "NO_CONTEXT",
+            "context_count": 0,
+            "individual_assessments": [],
+            "comparative_findings": [],
+            "dominant_business_driver": None,
+            "decision_justification": None,
+            "limitations": ["No ABIL business context was supplied; no comparison was performed."],
+        }
+
+    individual = [
+        {
+            "evidence_id": signal["evidence_id"],
+            "business_driver": signal["name"],
+            "description": signal["value"],
+            "reported_impact": signal["impact"],
+            "reported_confidence": signal["confidence"],
+            "affected_segments": signal["affected_segments"],
+            "department": signal["department"],
+            "priority": signal["priority"],
+            "priority_source": signal["priority_source"],
+            "source": signal["source"],
+            "supplied_recommendation": signal["source_recommendation"],
+            "recommended_action": signal["action"],
+            "rationale": signal["rationale"],
+            "limitations": signal["limitations"],
+        }
+        for signal in signals
+    ]
+    dominant = assessment.get("dominant_driver") if assessment else None
+    findings: list[str] = []
+    if count == 1:
+        findings.append("One supplied context was assessed; there are no peer contexts to compare.")
+    else:
+        impact_order = {"NONE": 0, "LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
+        highest = max(impact_order.get(str(signal["impact"]).upper(), -1) for signal in signals)
+        highest_signals = [signal for signal in signals if impact_order.get(str(signal["impact"]).upper(), -1) == highest]
+        findings.append(
+            f"Highest reported impact is {highest_signals[0]['impact']} across "
+            f"{len(highest_signals)} of {count} supplied contexts."
+        )
+        if dominant:
+            findings.append(
+                f"The existing ABIL assessment selected {dominant} as the dominant business driver."
+            )
+
+    justification = None
+    if assessment:
+        justification = (
+            f"The existing ABIL assessment selected {dominant} using its established ordering: "
+            "reported severity first, then supplied confidence; original event order resolves exact ties. "
+            "This is a business-context assessment, not a causal finding or a change to churn predictions."
+        )
+    return {
+        "status": "SINGLE_CONTEXT" if count == 1 else "COMPARISON_AVAILABLE",
+        "context_count": count,
+        "individual_assessments": individual,
+        "comparative_findings": findings,
+        "dominant_business_driver": dominant,
+        "decision_justification": justification,
+        "limitations": [
+            "Impact and confidence are supplied context evidence evaluated by existing ABIL rules; they are not calibrated churn probabilities.",
+            "No causal effect on churn, recommendation effectiveness, or customer outcome is measured by this comparison.",
+            "Comparisons are limited to the contexts supplied with this execution.",
+        ],
+    }
+
+
 def evaluate_business_context(
     document: dict[str, Any], *, sector: str, execution_id: str
 ) -> dict[str, Any]:
@@ -102,4 +174,5 @@ def evaluate_business_context(
         "summary": bundle.summary,
         "assessment": assessment,
         "signals": signals,
+        "comparative_report": _comparative_report(signals, assessment),
     }
