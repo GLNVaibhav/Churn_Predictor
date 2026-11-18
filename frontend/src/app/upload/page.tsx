@@ -9,6 +9,7 @@ import { DatasetIntelligence } from "@/components/upload/dataset-intelligence";
 import AttractButton from "@/components/kokonutui/attract-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ErrorBanner, EmptyState, LoadingState } from "@/components/shared/query-states";
@@ -33,8 +34,36 @@ const normalizeSector = (value: string) => {
   return normalized === "retail" || normalized === "e-commerce" ? "ecommerce" : normalized;
 };
 
+function isBusinessContextDocument(value: unknown, expectedSector?: string) {
+  if (!value || Array.isArray(value) || typeof value !== "object") return false;
+  const document = value as Record<string, unknown>;
+  if (document.sector !== undefined &&
+      (typeof document.sector !== "string" ||
+       (expectedSector && normalizeSector(document.sector) !== normalizeSector(expectedSector)))) return false;
+  if (!Array.isArray(document.events) || document.events.length < 1 || document.events.length > 100) return false;
+  return document.events.every((item) => {
+    if (!item || Array.isArray(item) || typeof item !== "object") return false;
+    const event = item as Record<string, unknown>;
+    return typeof event.category === "string" && Boolean(event.category.trim()) &&
+      typeof event.description === "string" && Boolean(event.description.trim()) &&
+      typeof event.severity === "string" &&
+      ["LOW", "MEDIUM", "HIGH", "CRITICAL"].includes(event.severity.toUpperCase()) &&
+      typeof event.confidence === "number" && Number.isFinite(event.confidence) &&
+      event.confidence >= 0 && event.confidence <= 1 &&
+      (event.affected_segments === undefined ||
+        (Array.isArray(event.affected_segments) && event.affected_segments.every((segment) => typeof segment === "string"))) &&
+      (event.source === undefined || typeof event.source === "string") &&
+      (event.recommendation === undefined || typeof event.recommendation === "string") &&
+      (event.recommended_action === undefined || typeof event.recommended_action === "string") &&
+      (event.department === undefined || typeof event.department === "string") &&
+      (event.priority === undefined || (Number.isInteger(event.priority) && Number(event.priority) >= 1 && Number(event.priority) <= 5)) &&
+      (event.timestamp === undefined || typeof event.timestamp === "string");
+  });
+}
+
 export default function UploadPage() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const executionControlsRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const context = useExecutionContext();
   const upload = useUploadDataset();
@@ -45,6 +74,12 @@ export default function UploadPage() {
   const [selectedSector, setSelectedSector] = useState<string>("");
   const [routingMode, setRoutingMode] = useState<"auto" | "manual">("auto");
   const [businessContextText, setBusinessContextText] = useState("");
+  const [businessContextCategory, setBusinessContextCategory] = useState("");
+  const [businessContextSeverity, setBusinessContextSeverity] = useState("");
+  const [businessContextConfidence, setBusinessContextConfidence] = useState("");
+  const [businessContextDocument, setBusinessContextDocument] = useState<Record<string, unknown> | null>(null);
+  const [businessContextFileName, setBusinessContextFileName] = useState<string | null>(null);
+  const [businessContextMode, setBusinessContextMode] = useState<"text" | "json">("text");
   const [step, setStep] = useState(0);
   const [browserFileSize, setBrowserFileSize] = useState<number | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -54,40 +89,35 @@ export default function UploadPage() {
   const preview = useMemo(() => (upload.data ? mapUploadPreview(upload.data) : null), [upload.data]);
   const maxStep = preview ? 4 : 0;
   const contextValid = useMemo(() => {
-    if (!businessContextText.trim()) return false;
-    try {
-      const parsed = JSON.parse(businessContextText);
-      return Boolean(
-        parsed && !Array.isArray(parsed) && typeof parsed === "object" &&
-        (!parsed.sector || (typeof parsed.sector === "string" && normalizeSector(parsed.sector) === normalizeSector(selectedSector))) &&
-        Array.isArray(parsed.events) && parsed.events.length > 0 &&
-        parsed.events.every((event: Record<string, unknown>) =>
-          typeof event.category === "string" && event.category.trim() &&
-          typeof event.description === "string" && event.description.trim() &&
-          ["LOW", "MEDIUM", "HIGH", "CRITICAL"].includes(String(event.severity).toUpperCase()) &&
-          typeof event.confidence === "number" && event.confidence >= 0 && event.confidence <= 1 &&
-          (event.affected_segments === undefined || (Array.isArray(event.affected_segments) && event.affected_segments.every((segment) => typeof segment === "string"))) &&
-          (event.source === undefined || typeof event.source === "string") &&
-          (event.recommendation === undefined || typeof event.recommendation === "string") &&
-          (event.recommended_action === undefined || typeof event.recommended_action === "string") &&
-          (event.department === undefined || typeof event.department === "string") &&
-          (event.priority === undefined || (Number.isInteger(event.priority) && Number(event.priority) >= 1 && Number(event.priority) <= 5)) &&
-          (event.timestamp === undefined || typeof event.timestamp === "string")
-        )
-      );
-    } catch {
-      return false;
+    if (businessContextMode === "json") {
+      return businessContextDocument
+        ? isBusinessContextDocument(businessContextDocument, selectedSector)
+        : false;
     }
-  }, [businessContextText, selectedSector]);
+    const hasTypedContext = Boolean(
+      businessContextText.trim() || businessContextCategory.trim() ||
+      businessContextSeverity || businessContextConfidence,
+    );
+    if (!hasTypedContext) return false;
+    const confidence = Number(businessContextConfidence);
+    return Boolean(
+      businessContextText.trim() &&
+      businessContextCategory.trim() &&
+      ["LOW", "MEDIUM", "HIGH", "CRITICAL"].includes(businessContextSeverity) &&
+      businessContextConfidence.trim() &&
+      Number.isFinite(confidence) && confidence >= 0 && confidence <= 1,
+    );
+  }, [businessContextCategory, businessContextConfidence, businessContextDocument, businessContextMode, businessContextSeverity, businessContextText, selectedSector]);
+  const hasContextInput = businessContextMode === "json"
+    ? Boolean(businessContextDocument)
+    : Boolean(businessContextText.trim() || businessContextCategory.trim() || businessContextSeverity || businessContextConfidence);
   const contextSignalCount = useMemo(() => {
-    if (!businessContextText.trim()) return 0;
-    try {
-      const parsed = JSON.parse(businessContextText);
-      return Array.isArray(parsed?.events) ? parsed.events.length : Object.keys(parsed || {}).length;
-    } catch {
-      return 0;
+    if (businessContextMode === "json") {
+      const events = businessContextDocument?.events;
+      return Array.isArray(events) ? events.length : 0;
     }
-  }, [businessContextText]);
+    return businessContextText.trim() ? 1 : 0;
+  }, [businessContextDocument, businessContextMode, businessContextText]);
   const preflightChecks = useMemo(
     () => [
       { label: "CSV parsed", complete: Boolean(preview), detail: preview ? `${preview.rowCount.toLocaleString()} rows detected` : "Upload a customer CSV" },
@@ -101,15 +131,15 @@ export default function UploadPage() {
       },
       {
         label: "Context preview (optional)",
-        complete: true,
+        complete: !hasContextInput || contextValid,
         detail: contextValid
-          ? `${contextSignalCount} ABIL signals validated for this execution`
-          : businessContextText.trim()
-            ? "Context must contain one or more events with category, description, severity, and confidence from 0 to 1"
+          ? `${contextSignalCount} ABIL context item${contextSignalCount === 1 ? "" : "s"} ready for this execution`
+          : hasContextInput
+            ? "Complete the typed context details or choose a valid JSON file"
             : "No context supplied; analysis can continue without ABIL",
       },
     ],
-    [businessContextText, contextSignalCount, contextValid, preview, routingMode, selectedSector],
+    [contextSignalCount, contextValid, hasContextInput, preview, routingMode, selectedSector],
   );
   const preflightReady = preflightChecks.every((item) => item.complete);
 
@@ -136,12 +166,38 @@ export default function UploadPage() {
 
   function handleContextFile(file?: File) {
     if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".json") || file.size > 1024 * 1024) {
+      setContextError("Choose a JSON file no larger than 1 MB.");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
-      setBusinessContextText(String(reader.result || ""));
-      setContextError(null);
+      try {
+        const parsed: unknown = JSON.parse(String(reader.result || ""));
+        if (!isBusinessContextDocument(parsed)) throw new Error("The file must contain one or more valid ABIL events.");
+        setBusinessContextDocument(parsed as Record<string, unknown>);
+        setBusinessContextFileName(file.name);
+        setBusinessContextMode("json");
+        setContextError(null);
+      } catch (error) {
+        setBusinessContextDocument(null);
+        setBusinessContextFileName(null);
+        setContextError(error instanceof Error ? error.message : "Could not read this JSON file.");
+      }
     };
+    reader.onerror = () => setContextError("Could not read this JSON file.");
     reader.readAsText(file);
+  }
+
+  function configureAnalysis() {
+    setStep(2);
+    requestAnimationFrame(() => {
+      executionControlsRef.current?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "center",
+      });
+      executionControlsRef.current?.focus({ preventScroll: true });
+    });
   }
 
   async function runAnalysis() {
@@ -155,24 +211,30 @@ export default function UploadPage() {
       return;
     }
 
-    const trimmed = businessContextText.trim();
     let businessContext: Record<string, unknown> | undefined;
-    if (trimmed) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") throw new Error("Context JSON must be an object.");
-        if (!contextValid) throw new Error("Context schema is invalid or its sector does not match the selected analysis sector.");
-        const events = (parsed.events as Record<string, unknown>[]).map((event) => ({
-          ...event,
-          severity: String(event.severity).toUpperCase(),
-        }));
-        businessContext = { ...parsed, events } as Record<string, unknown>;
-        setContextError(null);
-      } catch (error) {
-        setContextError(error instanceof Error ? error.message : "Invalid JSON context.");
-        return;
-      }
+    if (hasContextInput && !contextValid) {
+      setContextError("Complete the business context fields or choose a valid JSON file before continuing.");
+      return;
     }
+    if (contextValid && businessContextMode === "json" && businessContextDocument) {
+      const events = (businessContextDocument.events as Record<string, unknown>[]).map((event) => ({
+        ...event,
+        severity: String(event.severity).toUpperCase(),
+      }));
+      businessContext = { ...businessContextDocument, sector: selectedSector, events };
+    } else if (contextValid && businessContextMode === "text") {
+      businessContext = {
+        sector: selectedSector,
+        events: [{
+          category: businessContextCategory.trim(),
+          description: businessContextText.trim(),
+          severity: businessContextSeverity,
+          confidence: Number(businessContextConfidence),
+          source: "user_supplied_text",
+        }],
+      };
+    }
+    setContextError(null);
 
     submissionLockRef.current = true;
     setStep(4);
@@ -224,6 +286,7 @@ export default function UploadPage() {
           </SectionCard>
 
           {preview ? (
+            <div ref={executionControlsRef} id="analysis-controls" tabIndex={-1} className="rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
             <SectionCard title="Execution Controls" description="Shown after CSV parsing">
               <div className="space-y-4">
                 <div>
@@ -275,12 +338,14 @@ export default function UploadPage() {
                   </p>
                 </div>
                 <label className="flex cursor-pointer items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted">
-                  <span className="flex items-center gap-2 font-medium"><FileJson className="h-4 w-4 text-primary" />Load context preview JSON</span>
+                  <span className="flex items-center gap-2 font-medium"><FileJson className="h-4 w-4 text-primary" />Load ABIL JSON file</span>
                   <span className="text-xs text-muted-foreground">{contextSignalCount} signals</span>
                   <input type="file" accept=".json,application/json" className="hidden" onChange={(event) => handleContextFile(event.target.files?.[0])} />
                 </label>
+                {businessContextFileName ? <p className="text-xs text-muted-foreground">Loaded: {businessContextFileName}</p> : null}
               </div>
             </SectionCard>
+            </div>
           ) : (
             <SectionCard title="Next Step" description="Unlock after CSV parsing">
               <div className="rounded-lg border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground">
@@ -357,28 +422,53 @@ export default function UploadPage() {
 
           {preview ? (
             <>
-              <DatasetIntelligence profile={preview} browserFileSize={browserFileSize} onBack={() => setStep(0)} onContinue={() => setStep(2)} />
+              <DatasetIntelligence profile={preview} browserFileSize={browserFileSize} onBack={() => setStep(0)} onContinue={configureAnalysis} />
 
-              <SectionCard title="Business Context" description="Optional ABIL context is validated and associated with this analysis execution. It enriches decision support without changing model predictions.">
-                <details className="group rounded-lg border border-border bg-muted/20" open={!contextValid}>
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium">
-                    <span>Advanced context payload</span>
-                    <span className="text-xs text-muted-foreground">{contextSignalCount} signals</span>
-                  </summary>
-                  <div className="border-t border-border p-4">
-                    <p className="mb-3 text-xs leading-5 text-muted-foreground">Provide one or more business events. Severity and confidence are decision-support evidence only; context does not change customer churn predictions.</p>
-                    <textarea
-                      value={businessContextText}
-                      onChange={(event) => {
-                        setBusinessContextText(event.target.value);
-                        setContextError(null);
-                      }}
-                      placeholder='{"events":[{"category":"Business Objective","description":"Retain premium customers","severity":"HIGH","confidence":0.85,"affected_segments":["Premium"]}]}'
-                      className="min-h-36 w-full resize-y rounded-md border border-border bg-background p-3 font-mono text-xs outline-none transition-colors focus:border-primary"
-                    />
-                    {contextError ? <p className="mt-2 text-xs text-destructive">{contextError}</p> : businessContextText.trim() && !contextValid ? <p className="mt-2 text-xs text-destructive">Context must contain one or more valid ABIL events.</p> : null}
+              <SectionCard title="Business Context" description="Add ABIL context as plain text or load a structured JSON file. Context informs decision support and does not change model predictions.">
+                <div className="space-y-4">
+                  <div className="inline-flex rounded-md bg-muted/50 p-1" role="tablist" aria-label="Business context input format">
+                    <button type="button" role="tab" aria-selected={businessContextMode === "text"} onClick={() => { setBusinessContextMode("text"); setContextError(null); }} className={cn("rounded px-3 py-1.5 text-sm font-medium transition-colors", businessContextMode === "text" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>Type context</button>
+                    <button type="button" role="tab" aria-selected={businessContextMode === "json"} onClick={() => { setBusinessContextMode("json"); setContextError(null); }} className={cn("rounded px-3 py-1.5 text-sm font-medium transition-colors", businessContextMode === "json" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>Use JSON file</button>
                   </div>
-                </details>
+                  {businessContextMode === "text" ? (
+                    <div className="space-y-3">
+                      <label className="block space-y-1.5 text-sm font-medium">
+                        <span>Context type</span>
+                        <Input value={businessContextCategory} onChange={(event) => { setBusinessContextCategory(event.target.value); setContextError(null); }} placeholder="e.g. Business objective or service disruption" />
+                      </label>
+                      <label className="block space-y-1.5 text-sm font-medium">
+                        <span>Business context</span>
+                        <textarea value={businessContextText} onChange={(event) => { setBusinessContextText(event.target.value); setContextError(null); }} placeholder="Describe the current business situation or event..." className="min-h-28 w-full resize-y rounded-md border border-border bg-background p-3 text-sm outline-none transition-colors focus:border-primary" />
+                      </label>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="block space-y-1.5 text-sm font-medium">
+                          <span>Severity</span>
+                          <Select value={businessContextSeverity} onValueChange={(value) => { if (value) { setBusinessContextSeverity(value); setContextError(null); } }}>
+                            <SelectTrigger><SelectValue placeholder="Select severity" /></SelectTrigger>
+                            <SelectContent>
+                              {["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((value) => <SelectItem key={value} value={value}>{value[0] + value.slice(1).toLowerCase()}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </label>
+                        <label className="block space-y-1.5 text-sm font-medium">
+                          <span>Confidence (0–1)</span>
+                          <Input type="number" min="0" max="1" step="0.01" value={businessContextConfidence} onChange={(event) => { setBusinessContextConfidence(event.target.value); setContextError(null); }} placeholder="Enter your confidence" />
+                        </label>
+                      </div>
+                      <p className="text-xs leading-5 text-muted-foreground">Severity and confidence are supplied by you as decision-support context. They do not alter churn predictions.</p>
+                    </div>
+                  ) : businessContextDocument ? (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">{businessContextFileName || "ABIL JSON context"}</p>
+                      <pre className="max-h-56 overflow-auto rounded-md border border-border bg-muted/20 p-3 text-xs">{JSON.stringify(businessContextDocument, null, 2)}</pre>
+                      {!contextValid ? <p className="text-xs text-destructive">Check the JSON events and ensure its sector matches the selected industry.</p> : null}
+                    </div>
+                  ) : (
+                    <p className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">Choose “Load ABIL JSON file” in Execution Controls to attach a structured context document.</p>
+                  )}
+                  {contextError ? <p role="alert" className="text-sm text-destructive">{contextError}</p> : null}
+                  {businessContextMode === "text" && hasContextInput && !contextValid && !contextError ? <p className="text-sm text-destructive">Complete all context fields, including severity and confidence, or clear them to continue without ABIL context.</p> : null}
+                </div>
               </SectionCard>
 
               <SectionCard title="Preflight Checklist" description="Execution unlocks when the run is ready">
@@ -406,7 +496,7 @@ export default function UploadPage() {
                 <div>
                   <p className="text-sm font-semibold">Ready to execute</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {preview.fileName} will run {routingMode === "manual" ? `as ${sectorLabel(selectedSector)} using manual override` : `using automatic ${preview.detectedSector ? sectorLabel(preview.detectedSector) : "unconfirmed sector"} routing`}. {contextValid ? `${contextSignalCount} ABIL signals will inform decision support only;` : "No ABIL context is attached;"} model predictions remain independent of business context.
+                    {preview.fileName} will run {routingMode === "manual" ? `as ${sectorLabel(selectedSector)} using manual override` : `using automatic ${preview.detectedSector ? sectorLabel(preview.detectedSector) : "unconfirmed sector"} routing`}. {contextValid ? `${contextSignalCount} ABIL context item${contextSignalCount === 1 ? "" : "s"} will inform decision support only;` : "No ABIL context is attached;"} model predictions remain independent of business context.
                   </p>
                 </div>
                 <Button onClick={runAnalysis} disabled={!context.uploadId || !preflightReady || analyze.isPending || submissionLockRef.current}>
